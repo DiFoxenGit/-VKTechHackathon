@@ -5,7 +5,7 @@ import re
 from fastapi import HTTPException
 
 from .generation import completion
-from .layout import DEFAULT_MARGINS, DEFAULT_SAFE_AREA
+from .layout import DEFAULT_MARGINS, DEFAULT_SAFE_AREA, estimated_text_height
 from .parsing import best_text_color, contrast_ratio
 
 MIN_CONTRAST = 4.5
@@ -129,21 +129,6 @@ def issue(
         "category": category,
         "severity": severity,
     }
-
-
-def estimated_text_height(element):
-    _, _, w, _ = element["box"]
-    size = element["font_size"]
-    chars = max(1, (w - 12) / (size * 0.55))
-    return (
-        sum(
-            max(1, math.ceil(len(line) / chars))
-            for line in element["text"].splitlines()
-        )
-        * size
-        * 1.3
-        + 8
-    )
 
 
 def audit(deck, template, sources):

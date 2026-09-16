@@ -11,6 +11,36 @@ DEFAULT_MARGINS = {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9}
 MIN_BULLETS_FOR_COLUMNS = 4
 
 
+def estimated_text_height(element):
+    """Rough height of a text block: the same estimate for layout and audit.
+
+    Layout uses it to pick a size that fits, audit to report what does not. They
+    must share one formula, otherwise the composer produces slides its own audit
+    rejects.
+    """
+    _, _, w, _ = element["box"]
+    size = element["font_size"]
+    chars = max(1, (w - 12) / (size * 0.55))
+    return (
+        sum(max(1, math.ceil(len(line) / chars)) for line in element["text"].splitlines())
+        * size
+        * 1.3
+        + 8
+    )
+
+
+def fit_text(element, scale, minimum=12):
+    """Step the font down the template's own scale until the text fits its box."""
+    height = element["box"][3]
+    if estimated_text_height(element) <= height:
+        return element
+    for size in sorted({s for s in scale if minimum <= s <= element["font_size"]}, reverse=True):
+        element["font_size"] = size
+        if estimated_text_height(element) <= height:
+            break
+    return element
+
+
 def content_demand(content):
     """How much room this slide needs and what kind of room."""
     bullets = content["bullets"]
@@ -272,6 +302,11 @@ def compose(outline, template, variant):
             text_box("body", bullets, [margin, top, w, h])
         # Resolve the text color once, against this slide's real background, so
         # layout, export and the contrast audit all agree on what will be rendered.
+        # Подогнать текст до аудита: пользователь не должен чинить руками то,
+        # что вёрстка умеет посчитать сама.
+        for element in elements:
+            if element["kind"] == "text":
+                fit_text(element, scale)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)
         for element in elements:

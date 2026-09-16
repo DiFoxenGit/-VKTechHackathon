@@ -967,3 +967,24 @@ def test_split_variant_still_uses_two_columns_for_dense_slides():
     )
     ids = {e["id"] for e in deck["slides"][0]["elements"]}
     assert {"body_left", "body_right"} <= ids, ids
+
+
+def test_layout_shrinks_text_before_the_audit_sees_it():
+    """Вёрстка сама подбирает кегль из шкалы, а не оставляет это пользователю."""
+    from designer.audit import audit
+    from designer.models import Outline
+
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = [
+        "Очень длинный тезис о результатах пилота, который занимает много места",
+        "Второй столь же длинный тезис о работе команд и планах развития сервиса",
+        "Третий длинный тезис про экономию времени дизайнера на каждой колоде",
+        "Четвёртый длинный тезис про масштабирование сервиса на всю компанию",
+    ]
+    template = synthetic_template([pattern(0), pattern(1)])
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    body = next(e for e in deck["slides"][0]["elements"] if e.get("role") == "body")
+    assert body["font_size"] in template["tokens"]["font_sizes"]
+    report = audit(deck, template, [{"id": "brief", "text": "Пилот"}])
+    assert not [i for i in report["issues"] if i["code"] == "text_overflow"]
