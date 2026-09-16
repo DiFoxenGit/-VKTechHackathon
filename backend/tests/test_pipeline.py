@@ -1,3 +1,4 @@
+import json
 import io
 import os
 import time
@@ -692,3 +693,72 @@ def test_base_path_makes_urls_proxy_safe(tmp_path, monkeypatch):
         assert client.get("/openapi.json").json()["servers"] == [
             {"url": "/presentations"}
         ]
+
+
+def mock_provider(monkeypatch, responses):
+    """Serve scripted model answers; returns the list of captured requests."""
+    import httpx
+
+    from designer import generation
+
+    monkeypatch.setenv("DESIGNER_LLM_BASE_URL", "https://inference.example/v1")
+    monkeypatch.setenv("DESIGNER_LLM_MODEL", "test-open-model")
+    monkeypatch.setenv("DESIGNER_LLM_RETRY_DELAY", "0")
+    monkeypatch.setattr(generation, "RETRY_DELAY", 0.0)
+    captured = []
+    real_client = httpx.AsyncClient
+
+    def handler(request):
+        payload = json.loads(request.content)
+        captured.append(payload)
+        answer = responses[min(len(captured) - 1, len(responses) - 1)]
+        return httpx.Response(200, json={"choices": [{"message": {"content": answer}}]})
+
+    monkeypatch.setattr(
+        generation.httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
+    )
+    return captured
+
+
+def test_retry_recovers_from_unusable_model_answers(client, monkeypatch):
+    """A weaker model gets its answer back with the reason and a second chance."""
+    captured = mock_provider(
+        monkeypatch,
+        [
+            "сейчас соберу структуру",  # no JSON at all
+            json.dumps(outline(2)),  # valid JSON, wrong slide count
+            "```json\n" + json.dumps(outline(3)) + "\n```",  # fenced, correct
+        ],
+    )
+    response = client.post(
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20", "slide_count": 3}
+    )
+    assert response.status_code == 200, response.text
+    assert len(response.json()["slides"]) == 3
+    assert len(captured) == 3
+    # The repair turn carries the failed answer and the reason, not just the prompt.
+    roles = [m["role"] for m in captured[-1]["messages"]]
+    assert roles == ["system", "user", "assistant", "user"]
+    assert "не подошёл" in captured[-1]["messages"][-1]["content"]
+
+
+def test_retry_gives_up_with_a_readable_reason(client, monkeypatch):
+    captured = mock_provider(monkeypatch, ["not json"])
+    response = client.post("/api/v1/outlines", json={"brief": "Данные для проверки"})
+    assert response.status_code == 502
+    assert "Модель не вернула корректный ответ" in response.json()["detail"]
+    assert len(captured) == 3
+
+
+def test_unknown_source_refs_are_retried(client, monkeypatch):
+    bad = outline(1)
+    bad["slides"][0]["source_refs"] = ["не-существует"]
+    captured = mock_provider(monkeypatch, [json.dumps(bad), json.dumps(outline(1))])
+    response = client.post(
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20", "slide_count": 1}
+    )
+    assert response.status_code == 200, response.text
+    assert len(captured) == 2
+    assert "source_refs" in captured[-1]["messages"][-1]["content"]
