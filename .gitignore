@@ -27,3 +27,6 @@ templates/
 # Система
 .DS_Store
 Thumbs.db
+
+# Артефакты сборки TypeScript
+*.tsbuildinfo
