@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import hashlib
 import json
 import logging
@@ -46,6 +47,27 @@ def provider():
     return url, model
 
 
+def message_text(message):
+    """Текст ответа, в какой бы форме его ни прислал провайдер.
+
+    Модели с режимом рассуждений возвращают content = null и кладут ответ в
+    reasoning_content, а часть провайдеров присылает content списком частей.
+    """
+    content = message.get("content")
+    if isinstance(content, list):
+        content = "".join(
+            part.get("text", "")
+            for part in content
+            if isinstance(part, dict) and part.get("type") in (None, "text")
+        )
+    if not content:
+        content = message.get("reasoning_content") or ""
+    text = content.strip() if isinstance(content, str) else ""
+    if not text:
+        raise InvalidCompletion("Провайдер вернул пустой ответ")
+    return text
+
+
 def parse_json(text):
     """Accept the JSON a chat model returns: fenced blocks and stray prose around it."""
     value = text.strip()
@@ -81,9 +103,85 @@ async def ask(messages):
         )
         response.raise_for_status()
         try:
-            return response.json()["choices"][0]["message"]["content"].strip()
+            return message_text(response.json()["choices"][0]["message"])
         except (ValueError, KeyError, IndexError, AttributeError) as exc:
             raise InvalidCompletion(f"Ответ провайдера без содержимого: {exc}") from exc
+
+
+def vision_provider():
+    """Отдельная модель для проверки по картинке; по умолчанию — основная."""
+    url = (os.getenv("DESIGNER_VLM_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL", "")).rstrip("/")
+    model = os.getenv("DESIGNER_VLM_MODEL", "")
+    if not url or not model:
+        raise HTTPException(
+            503,
+            "Configure DESIGNER_VLM_MODEL (and DESIGNER_VLM_BASE_URL) for image-based audit",
+        )
+    return url, model
+
+
+def vision_available():
+    return bool(
+        os.getenv("DESIGNER_VLM_MODEL")
+        and (os.getenv("DESIGNER_VLM_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL"))
+    )
+
+
+async def ask_vision(prompt, payload, image_png: bytes):
+    """Один слайд картинкой + его текст. Ответ — JSON, как и у текстовых агентов."""
+    url, model = vision_provider()
+    encoded = base64.b64encode(image_png).decode()
+    async with httpx.AsyncClient(timeout=httpx.Timeout(180, connect=15)) as client:
+        response = await client.post(
+            url + "/chat/completions",
+            headers={
+                "Authorization": "Bearer "
+                + (os.getenv("DESIGNER_VLM_API_KEY") or os.getenv("DESIGNER_LLM_API_KEY", "local"))
+            },
+            json={
+                "model": model,
+                "temperature": 0.1,
+                # Режим рассуждений съедает лимит: ответу нужен запас после мыслей.
+                "max_tokens": 6000,
+                "messages": [
+                    {"role": "system", "content": prompt},
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/png;base64,{encoded}"},
+                            },
+                            {
+                                "type": "text",
+                                "text": json.dumps(payload, ensure_ascii=False),
+                            },
+                        ],
+                    },
+                ],
+                "response_format": {"type": "json_object"},
+            },
+        )
+        response.raise_for_status()
+        try:
+            answer = message_text(response.json()["choices"][0]["message"])
+        except (ValueError, KeyError, IndexError, AttributeError) as exc:
+            raise InvalidCompletion(f"Ответ VLM без содержимого: {exc}") from exc
+    return parse_json(answer)
+
+
+async def vision_completion(prompt, payload, image_png, attempts=2):
+    """Проверка по картинке с повтором: пустой ответ модели не должен терять слайд."""
+    last = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return await ask_vision(prompt, payload, image_png)
+        except (InvalidCompletion, ValueError, httpx.HTTPError) as exc:
+            last = exc
+            LOGGER.warning("Vision attempt %s/%s failed: %s", attempt, attempts, exc)
+            if attempt < attempts and RETRY_DELAY:
+                await asyncio.sleep(RETRY_DELAY)
+    raise InvalidCompletion(str(last) or "VLM не ответила")
 
 
 async def completion(agent, payload, validate=None):

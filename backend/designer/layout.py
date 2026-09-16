@@ -132,6 +132,11 @@ def candidate_patterns(patterns):
 
     for rule in ((2, 0.2, 0.65), (2, 0.3, 0.45), (1, 0.45, 0.3)):
         found = [p for p in patterns if usable(p, *rule)]
+        # Сначала страницы без украшений в рабочей области: заглушки под фото
+        # наследуются от макета и остаются на готовом слайде пустыми кругами.
+        clean = [p for p in found if not p.get("decoration_count")]
+        if len(clean) >= 3:
+            return clean
         if len(found) >= 3:
             return found
     return [p for p in patterns if p.get("title_box")] or patterns

@@ -1,12 +1,17 @@
 {
-  "version": "1.3.0",
-  "agents": {"outline": "outline.v3.txt", "audit": "audit.v1.txt"},
+  "version": "1.4.0",
+  "agents": {"outline": "outline.v3.txt", "audit": "audit.v1.txt", "audit_image": "audit.image.v1.txt"},
   "variants": [
     {"id": "classic", "description": "Вертикальный рассказ: текст сверху, визуализация снизу"},
     {"id": "split", "description": "Две колонки: текст слева, визуализация или тезисы справа"},
     {"id": "focus", "description": "Акцент: визуализация сверху, краткие выводы снизу"}
   ],
   "changelog": [
+    {
+      "version": "1.4.0",
+      "agents": {"audit_image": "v1"},
+      "why": "Приложение 1 требует контентных проверок по картинке слайда. Добавлен агент audit_image: слайд рендерится в PNG и уходит мультимодальной модели с одиннадцатью вопросами «да/нет»."
+    },
     {
       "version": "1.3.0",
       "agents": {"outline": "v3 (расширён набор схем)"},

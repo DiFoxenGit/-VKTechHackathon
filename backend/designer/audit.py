@@ -1,10 +1,22 @@
+import asyncio
 import hashlib
+import logging
 import math
 import re
 
+import httpx
 from fastapi import HTTPException
 
-from .generation import completion, known_numbers, unsupported_numbers
+from .generation import (
+    PROMPTS,
+    InvalidCompletion,
+    ask_vision,
+    vision_completion,
+    completion,
+    known_numbers,
+    unsupported_numbers,
+    workflow,
+)
 from .language import CYRILLIC, LATIN, foreign_labels, visual_labels
 from .layout import (
     DEFAULT_MARGINS,
@@ -13,6 +25,8 @@ from .layout import (
     ink_area,
 )
 from .parsing import best_text_color, contrast_ratio
+
+LOGGER = logging.getLogger("designer.audit")
 
 MIN_CONTRAST = 4.5
 MAX_BULLETS = 6
@@ -435,6 +449,70 @@ def audit(deck, template, sources):
             "Contextual audit uses text, not slide images",
         ],
     }
+
+
+VISUAL_CODES = {
+    "title_conclusion": "Заголовок называет тему, а не вывод",
+    "title_matches": "Содержимое не соответствует заголовку",
+    "one_sentence": "Слайд не пересказывается одним предложением",
+    "facts_supported": "Факты со слайда не подтверждаются материалами",
+    "has_content": "На слайде только заголовок",
+    "visuals_relevant": "Визуализация не относится к теме слайда",
+    "no_garbage": "Служебный мусор на слайде",
+    "no_typos": "Опечатки в тексте",
+    "one_language": "На слайде больше одного языка",
+    "table_supports": "Элементы таблицы или легенды не работают на мысль слайда",
+    "readable": "Текст обрезан, наезжает на другие блоки или нечитаем",
+}
+
+
+async def visual_audit(deck, sources, images):
+    """Контекстные проверки Приложения 1 по изображению каждого слайда.
+
+    Детерминированные правила уже проверили геометрию по координатам; здесь модель
+    смотрит на отрендеренный слайд глазами зрителя и отвечает на вопросы «да/нет».
+    Слайды проверяются параллельно: это самая долгая часть пайплайна.
+    """
+    prompt = (PROMPTS / workflow()["agents"]["audit_image"]).read_text()
+    source_text = "\n".join(s["text"] for s in sources)[:8000]
+
+    async def one(index, slide, image):
+        payload = {
+            "slide_index": index,
+            "title": slide["content"]["title"],
+            "bullets": slide["content"]["bullets"],
+            "visual": slide["content"]["visual"],
+            "sources": source_text,
+        }
+        try:
+            result = await vision_completion(prompt, payload, image)
+        except (HTTPException, InvalidCompletion, httpx.HTTPError, ValueError) as exc:
+            LOGGER.warning("Visual audit failed on slide %s: %s", index, exc)
+            return []
+        findings = []
+        for item in (result.get("issues") or [])[:12]:
+            if not isinstance(item, dict):
+                continue
+            code = str(item.get("code", "content"))[:60]
+            findings.append(
+                issue(
+                    index,
+                    "slide_image",
+                    code,
+                    (VISUAL_CODES.get(code, "Замечание по слайду") + ": ")
+                    + str(item.get("message", ""))[:600],
+                    category="contextual",
+                )
+            )
+        return findings
+
+    batches = await asyncio.gather(
+        *(
+            one(index, slide, image)
+            for index, (slide, image) in enumerate(zip(deck["slides"], images))
+        )
+    )
+    return [finding for batch in batches for finding in batch]
 
 
 async def contextual_audit(deck, sources):

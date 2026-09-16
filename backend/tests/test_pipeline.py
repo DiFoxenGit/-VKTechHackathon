@@ -1109,3 +1109,89 @@ def test_every_diagram_kind_exports_as_native_shapes(client, tmp_path):
     )
     for word in ("Анализ", "План", "Метрики", "Было", "Стало", "Q1"):
         assert word in text, word
+
+
+def test_visual_audit_reads_the_slide_image(monkeypatch):
+    """Контекстные проверки Приложения 1 идут по картинке, а не по тексту."""
+    import asyncio
+
+    from designer import audit as audit_module
+
+    seen = {}
+
+    async def fake_vision(prompt, payload, image):
+        seen["prompt"] = prompt
+        seen["payload"] = payload
+        seen["image"] = image
+        return {
+            "issues": [
+                {"code": "title_conclusion", "message": "Заголовок называет тему"},
+                {"code": "readable", "message": "Текст наезжает на логотип"},
+                "мусор, который модель прислала не по схеме",
+            ]
+        }
+
+    monkeypatch.setattr(audit_module, "vision_completion", fake_vision)
+    deck = {
+        "slides": [
+            {
+                "content": {
+                    "title": "Конверсия",
+                    "bullets": ["Тезис"],
+                    "visual": {"kind": "none"},
+                }
+            }
+        ]
+    }
+    findings = asyncio.run(
+        audit_module.visual_audit(deck, [{"id": "brief", "text": "Источник"}], [b"PNG"])
+    )
+    assert [f["code"] for f in findings] == ["title_conclusion", "readable"]
+    assert all(f["category"] == "contextual" for f in findings)
+    assert all(f["element_id"] == "slide_image" for f in findings)
+    assert seen["image"] == b"PNG"
+    assert seen["payload"]["title"] == "Конверсия"
+    assert "картинк" in seen["prompt"].lower() or "изображени" in seen["prompt"].lower()
+
+
+def test_visual_audit_survives_a_broken_model_answer(monkeypatch):
+    """Сбой проверки по картинке не должен ронять весь аудит."""
+    import asyncio
+
+    from designer import audit as audit_module
+
+    async def broken(prompt, payload, image):
+        raise audit_module.InvalidCompletion("модель вернула мусор")
+
+    monkeypatch.setattr(audit_module, "vision_completion", broken)
+    deck = {"slides": [{"content": {"title": "Т", "bullets": [], "visual": {"kind": "none"}}}]}
+    findings = asyncio.run(audit_module.visual_audit(deck, [{"id": "brief", "text": "и"}], [b"PNG"]))
+    assert findings == []
+
+
+def test_reasoning_models_answer_is_recovered():
+    """Модель в режиме рассуждений кладёт ответ мимо content — читаем всё равно."""
+    from designer.generation import InvalidCompletion, message_text
+
+    assert message_text({"content": " {\"a\":1} "}) == '{"a":1}'
+    assert message_text({"content": None, "reasoning_content": "{}"}) == "{}"
+    assert message_text({"content": [{"type": "text", "text": "{}"}]}) == "{}"
+    try:
+        message_text({"content": None})
+    except InvalidCompletion:
+        pass
+    else:
+        raise AssertionError("пустой ответ должен считаться непригодным")
+
+
+def test_layout_prefers_slides_without_template_clutter():
+    """Пустые заглушки макета переезжают на готовый слайд, поэтому их избегаем."""
+    from designer.layout import candidate_patterns
+
+    clutter = [dict(pattern(i), decoration_count=6, decoration_area=0.2) for i in range(3)]
+    clean = [dict(pattern(i + 3), decoration_count=0) for i in range(3)]
+    chosen = candidate_patterns(clutter + clean)
+    assert {p["index"] for p in chosen} == {3, 4, 5}
+    # Если чистых страниц мало, берём что есть — пустая колода хуже украшений.
+    only_two_clean = clutter + clean[:2]
+    assert len(candidate_patterns(only_two_clean)) == 5

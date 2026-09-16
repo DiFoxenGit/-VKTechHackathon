@@ -336,6 +336,19 @@ def convert_pdf(pptx_path: Path, destination: Path):
         shutil.copyfile(converted, destination)
 
 
+def render_slides(pdf_path: Path, width=1280):
+    """Слайды как PNG — то, что реально увидит зритель, а не наше представление."""
+    import pymupdf
+
+    pages = []
+    with pymupdf.open(pdf_path) as document:
+        for page in document:
+            zoom = width / page.rect.width if page.rect.width else 1
+            pixmap = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+            pages.append(pixmap.tobytes("png"))
+    return pages
+
+
 def export_html(pdf_path: Path, destination: Path, title: str):
     import pymupdf
 

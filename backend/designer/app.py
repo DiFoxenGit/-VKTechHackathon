@@ -15,8 +15,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from .audit import apply_fixes, audit, contextual_audit
-from .exporting import convert_pdf, export_html, export_pptx, verify_pptx
+from .audit import apply_fixes, audit, contextual_audit, visual_audit
+from .exporting import (
+    convert_pdf,
+    export_html,
+    export_pptx,
+    render_slides,
+    verify_pptx,
+)
 from .generation import generate_outline, provider, sources_for, workflow
 from .layout import compose
 from .models import Brief, FixRequest, GenerateRequest, SlideEdit
@@ -346,15 +352,36 @@ def create_app(data_dir=None, seed_dir=None):
         record = store.get("presentations", presentation_id)
         return {"revision": record["revision"], **record["audit"]}
 
+    def slide_images(record):
+        """PNG каждого слайда текущей ревизии; PDF рендерится один раз и кэшируется."""
+        folder = store.directory("presentations", record["id"])
+        pdf = folder / f"r{record['revision']}.pdf"
+        with store.lock:
+            if not pdf.exists():
+                convert_pdf(folder / f"r{record['revision']}.pptx", pdf)
+        return render_slides(pdf)
+
     @api.post("/presentations/{presentation_id}/audit", tags=["Audit"])
-    async def run_audit(presentation_id: str, contextual: bool = False):
+    async def run_audit(
+        presentation_id: str, contextual: bool = False, visual: bool = False
+    ):
         record = store.get("presentations", presentation_id)
         report = audit(
             record["deck"],
             store.get("templates", record["template_id"]),
             record["sources"],
         )
-        if contextual:
+        if visual:
+            # Проверка по картинке слайда: то, что просит Приложение 1.
+            try:
+                images = await run_in_threadpool(slide_images, record)
+            except (RuntimeError, subprocess.TimeoutExpired) as exc:
+                raise HTTPException(503, str(exc)) from exc
+            findings = await visual_audit(record["deck"], record["sources"], images)
+            report["issues"].extend(findings)
+            report["counts"]["warnings"] += len(findings)
+            report["contextual"] = {"status": "completed", "input": "slide_images"}
+        elif contextual:
             findings = await contextual_audit(record["deck"], record["sources"])
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
