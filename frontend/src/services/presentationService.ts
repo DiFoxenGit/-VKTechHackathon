@@ -156,7 +156,7 @@ export const presentationService: PresentationService & {
   },
 
   audit: (presentationId, contextual = false) =>
-    contextual ? api.runAudit(presentationId, true) : api.audit(presentationId),
+    contextual ? api.runAudit(presentationId, { contextual: true }) : api.audit(presentationId),
 
   fix: (presentationId, revision, issueIds) => api.applyFixes(presentationId, revision, issueIds),
 

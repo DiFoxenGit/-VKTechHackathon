@@ -26,7 +26,7 @@ from .exporting import (
 from .generation import generate_outline, provider, sources_for, workflow
 from .layout import compose
 from .models import Brief, FixRequest, GenerateRequest, SlideEdit
-from .parsing import parse_content, parse_template
+from .parsing import PARSER_VERSION, parse_content, parse_template
 from .storage import Store
 
 LOGGER = logging.getLogger(__name__)
@@ -59,6 +59,31 @@ def register_template(store, data, name):
         return store.put("templates", template)
 
 
+def refresh_templates(store):
+    """Переразобрать шаблоны, разобранные прежней версией парсера.
+
+    Идентификаторы сохраняются: ссылки в презентациях и на фронтенде не ломаются.
+    """
+    updated = 0
+    for record in store.list("templates"):
+        if record.get("parser") == PARSER_VERSION:
+            continue
+        source = store.directory("templates", record["id"]) / "source.pptx"
+        if not source.exists():
+            continue
+        try:
+            template = parse_template(source.read_bytes(), record["name"])
+        except Exception:
+            LOGGER.exception("Cannot re-parse template %s", record["id"])
+            continue
+        template.update(id=record["id"], sha256=record["sha256"])
+        store.put("templates", template)
+        updated += 1
+    if updated:
+        LOGGER.info("Re-parsed %s template(s) with parser v%s", updated, PARSER_VERSION)
+    return updated
+
+
 def create_app(data_dir=None, seed_dir=None):
     store = Store(Path(data_dir or os.getenv("DESIGNER_DATA_DIR", "./designer_data")))
     tasks = set()
@@ -67,6 +92,7 @@ def create_app(data_dir=None, seed_dir=None):
     @asynccontextmanager
     async def lifespan(app):
         store.recover()
+        await run_in_threadpool(refresh_templates, store)
         seed = seed_dir or os.getenv("DESIGNER_TEMPLATE_DIR")
         if seed:
             for path in sorted(Path(seed).glob("*.pptx")):

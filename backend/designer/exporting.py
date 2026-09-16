@@ -39,7 +39,7 @@ def _font(font, name, size, color, bold=False):
         element.set("typeface", name)
 
 
-def _clone_slide(deck, source):
+def _clone_slide(deck, source, branding=None):
     target = deck.slides.add_slide(source.slide_layout)
     for shape in list(target.shapes):
         shape._element.getparent().remove(shape._element)
@@ -57,7 +57,7 @@ def _clone_slide(deck, source):
     for shape in source.shapes:
         # Keep artwork and footer/page-number placeholders; remove sample content.
         # The audit reads the same predicate to know what is on the finished slide.
-        if not preserved_shape(shape, deck.slide_width, deck.slide_height):
+        if not preserved_shape(shape, deck.slide_width, deck.slide_height, branding):
             continue
         element = copy.deepcopy(shape._element)
         is_footer = is_footer_placeholder(shape)
@@ -96,13 +96,14 @@ def diagram_style(font, accent, background, text_color, palette):
             shape.fill.solid()
             shape.fill.fore_color.rgb = RGBColor.from_string(accent)
 
-    def label(shape, text, outline=False):
+    def label(shape, text, outline=False, fit=0.82):
+        """fit — доля ширины фигуры под текст: у шеврона внутри меньше места,
+        чем по габаритам, и без поправки длинное слово рвётся по слогам."""
         shape.text_frame.word_wrap = True
         shape.text = text
-        # Ширина фигуры известна: подбираем кегль, чтобы слово не рвалось по слогам.
         longest = max((len(word) for word in text.split()), default=1)
-        usable = shape.width / 12700 * 0.82
-        size = max(8.0, min(13.0, usable / (longest * 0.55)))
+        usable = shape.width / 12700 * fit
+        size = max(7.0, min(13.0, usable / (longest * 0.55)))
         colour = text_color if outline else on_accent
         for paragraph in shape.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
@@ -129,8 +130,15 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
     originals = list(deck.slides)
     original_ids = list(deck.slides._sldIdLst)
     palette = template["tokens"]["colors"]
+    # Пустой набор — это результат разбора («ничего не повторяется»), а не его
+    # отсутствие: отличаем по наличию ключа, иначе включится старое правило.
+    branding = (
+        {tuple(box) for box in template["branding"]}
+        if "branding" in template
+        else None
+    )
     for slide_data in deck_data["slides"]:
-        slide = _clone_slide(deck, originals[slide_data["pattern_index"]])
+        slide = _clone_slide(deck, originals[slide_data["pattern_index"]], branding)
         background = slide_data.get("background") or background_color(
             slide, template["tokens"]["theme"]
         )

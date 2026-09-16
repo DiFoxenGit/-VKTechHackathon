@@ -173,7 +173,8 @@ def draw_process(shapes, box, data, style):
             int(height),
         )
         style["paint"](shape, "solid")
-        style["label"](shape, label)
+        # У шеврона стрелка съедает края: текста помещается примерно половина ширины.
+        style["label"](shape, label, fit=0.5)
 
 
 def draw_cycle(shapes, box, data, style):
@@ -191,7 +192,7 @@ def draw_cycle(shapes, box, data, style):
         ny = cy + radius * math.sin(angle) - node / 2
         shape = shapes.add_shape(SHAPE.OVAL, int(nx), int(ny), int(node), int(node))
         style["paint"](shape, "solid")
-        style["label"](shape, label)
+        style["label"](shape, label, fit=0.68)
     arrow = shapes.add_shape(
         SHAPE.CIRCULAR_ARROW,
         int(cx - radius * 0.45),
@@ -218,7 +219,8 @@ def draw_pyramid(shapes, box, data, style):
             int(band * 0.94),
         )
         style["paint"](shape, "solid")
-        style["label"](shape, label)
+        # Верхние уровни пирамиды узкие, подпись подстраивается под свой ярус.
+        style["label"](shape, label, fit=0.55 if index == 0 else 0.72)
 
 
 def draw_timeline(shapes, box, data, style):

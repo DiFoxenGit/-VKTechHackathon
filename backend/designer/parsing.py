@@ -17,6 +17,11 @@ NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
 # carry sample content here are replaced during export; everything else is branding.
 CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 
+# Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
+# разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
+# работали бы по устаревшему «паспорту» файла.
+PARSER_VERSION = 2
+
 
 def is_footer_placeholder(shape):
     return shape.is_placeholder and any(
@@ -25,7 +30,39 @@ def is_footer_placeholder(shape):
     )
 
 
-def preserved_shape(shape, width, height):
+def shape_key(shape, width, height):
+    """Положение фигуры с точностью, достаточной, чтобы узнать её на другом слайде."""
+    return (
+        round(shape.left / width, 3),
+        round(shape.top / height, 3),
+        round(shape.width / width, 3),
+        round(shape.height / height, 3),
+    )
+
+
+def branding_boxes(slides, width, height, share=0.4):
+    """Фигуры, повторяющиеся на многих слайдах: логотип, плашка, колонтитул.
+
+    Всё остальное на конкретном слайде — образец содержания: серые кружки под
+    фото, рамки под иконки, демонстрационные иллюстрации. Единственный честный
+    признак брендинга — повторяемость, а не координаты: в разных шаблонах
+    логотип живёт где угодно.
+    """
+    counts = Counter()
+    for slide in slides:
+        seen = set()
+        for shape in slide.shapes:
+            if shape.has_text_frame and shape.text.strip():
+                continue
+            if shape.is_placeholder:
+                continue
+            seen.add(shape_key(shape, width, height))
+        counts.update(seen)
+    threshold = max(2, int(len(slides) * share))
+    return {box for box, count in counts.items() if count >= threshold}
+
+
+def preserved_shape(shape, width, height, branding=None):
     """True when export keeps this template shape: artwork, footers, page numbers.
 
     Export and audit must agree on what survives cloning, otherwise the audit
@@ -46,11 +83,18 @@ def preserved_shape(shape, width, height):
     )
     left, top, right, bottom = CONTENT_REGION
     inside = min(y + h, bottom) > max(y, top) and min(x + w, right) > max(x, left)
-    if not shape.has_text_frame:
-        # Sample charts, illustrations and icon sets are content, not branding.
-        return not (w * h < 0.85 and inside)
-    # Любой заполненный текстовый блок — образец, его заменяет новый контент.
-    return not shape.text.strip()
+    # Заполненный текст — всегда образец: его заменяет новый контент.
+    if shape.has_text_frame and shape.text.strip():
+        return False
+    # Остальное — фигуры без текста: фон, плашки, кружки-заглушки под фото.
+    # Автофигура тоже имеет текстовую рамку, поэтому решает не наличие рамки,
+    # а повторяемость по колоде.
+    if branding is not None:
+        # Фон во всю страницу остаётся всегда, остальное — только если
+        # повторяется по колоде.
+        return w * h >= 0.85 or shape_key(shape, width, height) in branding
+    # Без статистики по шаблону остаётся прежнее правило про рабочую область.
+    return not (w * h < 0.85 and inside)
 
 
 def relative_luminance(value):
@@ -266,6 +310,7 @@ def parse_template(data: bytes, name: str):
 
     patterns = []
     layouts = list(deck.slide_layouts)
+    branding = branding_boxes(list(deck.slides), width, height)
     for index, slide in enumerate(deck.slides):
         shapes = scan(slide.shapes)
         text_shapes = [s for s in shapes if s["text"].strip()]
@@ -296,7 +341,9 @@ def parse_template(data: bytes, name: str):
         # Shapes that survive cloning: artwork, footers, page numbers. Content must
         # not collide with them, so the audit needs their boxes.
         reserved = []
-        kept = [sh for sh in slide.shapes if preserved_shape(sh, width, height)]
+        kept = [
+            sh for sh in slide.shapes if preserved_shape(sh, width, height, branding)
+        ]
         # Layout artwork is inherited by the cloned slide even though it is not copied.
         kept += [sh for sh in slide.slide_layout.shapes if not sh.is_placeholder]
         for sh in kept:
@@ -347,7 +394,10 @@ def parse_template(data: bytes, name: str):
             "colors": [c for c, _ in colors.most_common()],
             "theme": theme,
         },
+        "parser": PARSER_VERSION,
         "geometry": geometry,
+        # Экспорт должен сохранять ровно то же, что учёл аудит.
+        "branding": sorted(branding),
         "layouts": [
             {"index": i, "name": layout.name} for i, layout in enumerate(layouts)
         ],

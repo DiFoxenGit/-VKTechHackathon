@@ -91,8 +91,12 @@ export const api = {
     request<{ items: ApiPresentation[] }>(`/presentations?offset=${offset}&limit=${limit}`),
 
   audit: (id: string) => request<ApiAuditReport>(`/presentations/${id}/audit`),
-  runAudit: (id: string, contextual = false) =>
-    request<ApiAuditReport>(`/presentations/${id}/audit?contextual=${contextual}`, { method: 'POST' }),
+  /** visual=true отправляет картинку каждого слайда мультимодальной модели. */
+  runAudit: (id: string, { contextual = false, visual = false } = {}) =>
+    request<ApiAuditReport>(
+      `/presentations/${id}/audit?contextual=${contextual}&visual=${visual}`,
+      { method: 'POST' },
+    ),
   applyFixes: (id: string, revision: number, issueIds: string[]) =>
     request<ApiPresentation>(`/presentations/${id}/fixes`, json({ revision, issue_ids: issueIds })),
   editSlide: (id: string, index: number, revision: number, content: ApiSlideContent) =>

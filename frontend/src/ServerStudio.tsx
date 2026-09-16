@@ -110,6 +110,22 @@ export default function ServerStudio() {
     }
   }
 
+  async function runVisualAudit() {
+    if (!deck) return;
+    setBusy(true);
+    setError('');
+    try {
+      const report = await api.runAudit(deck.id, { visual: true });
+      setDecks(list =>
+        list.map((item, index) => (index === active ? { ...item, audit: report } : item)),
+      );
+    } catch (exc) {
+      setError(message(exc));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function applySelected() {
     if (!deck || !selected.size) return;
     setBusy(true);
@@ -327,13 +343,32 @@ export default function ServerStudio() {
                   </li>
                 ))}
               </ul>
-              <button
-                className="studio-primary"
-                disabled={busy || selected.size === 0}
-                onClick={() => void applySelected()}
-              >
-                Исправить выбранные ({selected.size})
-              </button>
+              <div className="studio-audit-actions">
+                <button
+                  className="studio-primary"
+                  disabled={busy || selected.size === 0}
+                  onClick={() => void applySelected()}
+                >
+                  Исправить выбранные ({selected.size})
+                </button>
+                <button
+                  className="studio-secondary"
+                  disabled={busy}
+                  title="Каждый слайд уходит картинкой мультимодальной модели: заголовки-выводы, факты, мусор, читаемость"
+                  onClick={() => void runVisualAudit()}
+                >
+                  Проверить по изображению
+                </button>
+              </div>
+              {deck.audit.contextual?.status === 'completed' && (
+                <p className="studio-muted">
+                  Контекстная проверка выполнена, вход:{' '}
+                  {deck.audit.contextual.input === 'slide_images'
+                    ? 'изображения слайдов'
+                    : 'текст слайдов'}
+                  .
+                </p>
+              )}
             </aside>
           </div>
         </>

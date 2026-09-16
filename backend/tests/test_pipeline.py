@@ -1195,3 +1195,93 @@ def test_layout_prefers_slides_without_template_clutter():
     # Если чистых страниц мало, берём что есть — пустая колода хуже украшений.
     only_two_clean = clutter + clean[:2]
     assert len(candidate_patterns(only_two_clean)) == 5
+
+
+def test_templates_are_reparsed_after_a_parser_upgrade(tmp_path, monkeypatch):
+    """Шаблон в хранилище не должен остаться с устаревшим разбором."""
+    from designer.app import create_app, refresh_templates
+    from designer.parsing import PARSER_VERSION
+
+    with TestClient(create_app(data_dir=tmp_path)) as client:
+        created = client.post(
+            "/api/v1/templates",
+            files={"file": ("t.pptx", template_bytes())},
+        )
+        assert created.status_code == 201, created.text
+        template_id = created.json()["id"]
+        store = client.app.state.store
+        stale = store.get("templates", template_id)
+        stale["parser"] = 0
+        stale["geometry"] = {}
+        store.put("templates", stale)
+
+        assert refresh_templates(store) == 1
+        fresh = store.get("templates", template_id)
+        assert fresh["parser"] == PARSER_VERSION
+        assert fresh["geometry"]["safe_area"]
+        assert fresh["id"] == template_id
+        # Повторный вызов ничего не делает: версия уже актуальна.
+        assert refresh_templates(store) == 0
+
+
+def test_sample_artwork_is_not_copied_into_the_result(tmp_path):
+    """Фигуры-образцы с прототипа не должны переезжать на готовый слайд."""
+    import io
+
+    from pptx import Presentation as Deck
+    from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
+    from pptx.util import Emu
+
+    from designer.exporting import export_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+
+    source = Deck()
+    for index in range(3):
+        slide = source.slides.add_slide(source.slide_layouts[1])
+        slide.shapes.title.text = "Образец заголовка"
+        slide.placeholders[1].text = "Образец текста"
+        # Кружок-заглушка под фото: на каждом слайде в своём месте.
+        slide.shapes.add_shape(
+            MSO_AUTO_SHAPE_TYPE.OVAL,
+            Emu(900000 + index * 400000),
+            Emu(3000000),
+            Emu(700000),
+            Emu(700000),
+        )
+    # Плашка на одном и том же месте всех слайдов — это уже брендинг.
+    for slide in source.slides:
+        slide.shapes.add_shape(
+            MSO_AUTO_SHAPE_TYPE.RECTANGLE, Emu(100000), Emu(100000), Emu(400000), Emu(200000)
+        )
+    buffer = io.BytesIO()
+    source.save(buffer)
+    data = buffer.getvalue()
+
+    template = parse_template(data, "sample.pptx")
+    assert len(template["branding"]) == 1, template["branding"]
+
+    plan = {
+        "title": "Проверка",
+        "slides": [
+            {
+                "title": "Вывод",
+                "bullets": ["Тезис"],
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": {"kind": "none"},
+            }
+        ],
+    }
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    source_path = tmp_path / "template.pptx"
+    source_path.write_bytes(data)
+    output = tmp_path / "out.pptx"
+    export_pptx(source_path, template, deck, output)
+
+    shapes = list(Deck(output).slides[0].shapes)
+    ovals = [s for s in shapes if s.shape_type == 1 and s.width == Emu(700000)]
+    plates = [s for s in shapes if s.shape_type == 1 and s.width == Emu(400000)]
+    assert not ovals, "заглушка под фото попала в результат"
+    assert plates, "повторяющаяся плашка шаблона потерялась"
