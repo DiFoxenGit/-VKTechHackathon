@@ -9,6 +9,7 @@ from pathlib import Path
 import httpx
 from fastapi import HTTPException
 
+from .language import CYRILLIC, LATIN, foreign_labels, visual_labels
 from .models import Brief, Outline
 
 PROMPTS = Path(__file__).parent / "prompts"
@@ -255,6 +256,25 @@ async def generate_outline(request, sources):
                 + ", ".join(sorted(unknown))
                 + ". Допустимые: "
                 + ", ".join(sorted(allowed))
+            )
+        deck_text = " ".join(
+            slide.title + " " + " ".join(slide.bullets) for slide in outline.slides
+        )
+        cyrillic = len(CYRILLIC.findall(deck_text)) > len(LATIN.findall(deck_text))
+        strangers = sorted(
+            {
+                label
+                for slide in outline.slides
+                for label in foreign_labels(
+                    visual_labels(slide.visual.model_dump()), cyrillic
+                )
+            }
+        )
+        if strangers:
+            raise ValueError(
+                "Подписи в визуализациях на другом языке: "
+                + ", ".join(strangers[:8])
+                + ". Переведи все подписи, названия серий и единицы на язык колоды."
             )
         invented = unsupported_numbers(
             "\n".join(

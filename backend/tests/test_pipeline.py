@@ -1025,3 +1025,30 @@ def test_focus_variant_fills_the_slide_with_larger_type():
     for element in focus["slides"][0]["elements"]:
         if element["kind"] == "text":
             assert element["font_size"] in template["tokens"]["font_sizes"]
+
+
+def test_english_labels_send_the_model_back(client, monkeypatch):
+    """Русская колода с английскими подписями осей не доходит до вёрстки."""
+    english = outline(1)
+    english["slides"][0]["visual"] = {
+        "kind": "bar",
+        "categories": ["Before launch", "After launch"],
+        "series": [{"name": "Teams", "values": [10.0, 20.0]}],
+        "unit": "teams",
+    }
+    russian = outline(1)
+    russian["slides"][0]["visual"] = {
+        "kind": "bar",
+        "categories": ["Пилот", "Запуск"],
+        "series": [{"name": "Команды", "values": [10.0, 20.0]}],
+        "unit": "команд",
+    }
+    captured = mock_provider(monkeypatch, [json.dumps(english), json.dumps(russian)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Пилот: 10 команд, запуск 20 команд. Разделы 1, 2, 3.", "slide_count": 1},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][0]["visual"]["categories"] == ["Пилот", "Запуск"]
+    assert len(captured) == 2
+    assert "Before launch" in captured[-1]["messages"][-1]["content"]

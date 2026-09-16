@@ -348,8 +348,9 @@ def compose(outline, template, variant):
         for element in elements:
             if element["kind"] == "text":
                 fit_text(element, scale)
-        if variant == "focus":
-            grow_text(elements, scale, width * height)
+        # Пустой слайд — замечание аудита. Кегль поднимается по шкале шаблона, пока
+        # слайд не выйдет из «пустой» зоны; в «фокусе» цель выше по стилю варианта.
+        grow_text(elements, scale, width * height, target=0.45 if variant == "focus" else 0.28)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)
         for element in elements:

@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Экспорт](https://img.shields.io/badge/Экспорт-PPTX%20·%20PDF%20·%20HTML-FF0053)](#-экспорт)
-[![Тесты](https://img.shields.io/badge/Тесты-36%20сценариев-520978)](#-тесты)
+[![Тесты](https://img.shields.io/badge/Тесты-40%20сценариев-520978)](#-тесты)
 [![Кейс](https://img.shields.io/badge/Кейс-VK%20Tech%20·%20ЛЦТ%202026-8A83D1)](#-о-кейсе)
 
 [Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md)
@@ -48,7 +48,8 @@ cp .env.example .env          # адрес модели, токены, порт�
 docker compose up --build -d
 ```
 
-- Интерфейс: <http://localhost:3000>
+- Интерфейс: <http://localhost:3000> — демо-режим
+- Серверная студия: <http://localhost:3000/#studio> — полный пайплайн: шаблон, три варианта, аудит с подсветкой, экспорт
 - API: <http://localhost:8000>, Swagger: <http://localhost:8000/docs>
 - Шаблоны из папки `templates/` импортируются при старте (папка не коммитится: файлы принадлежат организаторам)
 
@@ -125,7 +126,7 @@ flowchart LR
 ## 🧪 Тесты
 
 ```bash
-cd backend && pytest -q      # 36 сценариев: парсинг, вёрстка, аудит, фиксы, экспорт, API
+cd backend && pytest -q      # 40 сценариев: парсинг, вёрстка, аудит, фиксы, экспорт, API
 cd frontend && npm run build # tsc -b и сборка
 ```
 
