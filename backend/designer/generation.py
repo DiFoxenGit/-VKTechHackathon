@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 from pathlib import Path
 
 import httpx
@@ -125,6 +126,86 @@ async def completion(agent, payload, validate=None):
     raise HTTPException(502, f"Модель не вернула корректный ответ: {last}")
 
 
+# A 32k-token window holds roughly this much Russian text next to the schema and
+# the instructions. Long content packs are selected down to fit instead of failing.
+CONTEXT_BUDGET = max(2000, int(os.getenv("DESIGNER_CONTEXT_CHARS", "24000")))
+CHUNK_SIZE = 1200
+
+WORD = re.compile(r"\w{4,}", re.UNICODE)
+
+
+def chunk_text(text, size=CHUNK_SIZE):
+    """Split on blank lines, then pack paragraphs into chunks of about `size`."""
+    chunks, current = [], ""
+    for paragraph in re.split(r"\n\s*\n", text.strip()):
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+        while len(paragraph) > size:
+            # A single huge paragraph still has to be cut somewhere.
+            cut = paragraph.rfind(" ", 0, size) or size
+            chunks.append(paragraph[:cut].strip())
+            paragraph = paragraph[cut:].strip()
+        if len(current) + len(paragraph) + 2 > size and current:
+            chunks.append(current.strip())
+            current = ""
+        current += paragraph + "\n\n"
+    if current.strip():
+        chunks.append(current.strip())
+    return chunks
+
+
+def relevance(chunk, terms):
+    """Share of the query vocabulary present in this chunk."""
+    if not terms:
+        return 0.0
+    words = set(WORD.findall(chunk.lower()))
+    return len(words & terms) / len(terms)
+
+
+def select_context(sources, query, budget=CONTEXT_BUDGET):
+    """Fit the sources into the model's window, keeping what the brief asks about.
+
+    Order inside a document is preserved, so the planner still sees a narrative,
+    and every source keeps its id: dropped text never breaks source_refs.
+    """
+    total = sum(len(s["text"]) for s in sources)
+    if total <= budget:
+        return sources
+    terms = set(WORD.findall(query.lower()))
+    scored = []
+    for source in sources:
+        chunks = chunk_text(source["text"])
+        for position, chunk in enumerate(chunks):
+            # The opening of a document carries context a keyword match misses.
+            head_bonus = 0.25 if position == 0 else 0.0
+            scored.append(
+                {
+                    "source": source["id"],
+                    "position": position,
+                    "text": chunk,
+                    "score": relevance(chunk, terms) + head_bonus,
+                }
+            )
+    scored.sort(key=lambda item: (-item["score"], item["source"], item["position"]))
+    kept, used = [], 0
+    for item in scored:
+        if used + len(item["text"]) > budget:
+            continue
+        kept.append(item)
+        used += len(item["text"])
+    result = []
+    for source in sources:
+        parts = sorted(
+            (item for item in kept if item["source"] == source["id"]),
+            key=lambda item: item["position"],
+        )
+        text = "\n\n[...]\n\n".join(item["text"] for item in parts)
+        # A source that lost every chunk still appears, so its id stays valid.
+        result.append({**source, "text": text or source["text"][:1000]})
+    return result
+
+
 def sources_for(store, request: Brief):
     result = [{"id": "brief", "text": request.brief}]
     for identifier in request.content_pack_ids:
@@ -158,7 +239,7 @@ async def generate_outline(request, sources):
         "outline",
         {
             **request.model_dump(exclude={"outline", "template_id"}),
-            "sources": sources,
+            "sources": select_context(sources, request.brief),
             "schema": Outline.model_json_schema(),
         },
         validate=validate,

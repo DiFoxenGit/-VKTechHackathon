@@ -853,3 +853,40 @@ def test_layout_avoids_patterns_whose_branding_sits_in_the_content_band():
         "classic",
     )
     assert deck["slides"][0]["pattern_index"] == 0
+
+
+def test_long_content_pack_is_cut_to_the_model_window():
+    """A 32k-token model cannot swallow a whole content pack; keep what matters."""
+    from designer.generation import chunk_text, select_context
+
+    noise = ("Посторонний текст про парковку и столовую. " * 20 + "\n\n") * 30
+    fact = "Конверсия выросла на 18 процентов после запуска пилота.\n\n"
+    text = noise + fact + noise
+    assert len(chunk_text(text)) > 10
+    selected = select_context(
+        [{"id": "pack", "text": text}], "Как выросла конверсия после пилота", budget=6000
+    )
+    kept = selected[0]["text"]
+    assert len(kept) <= 6000
+    assert "Конверсия выросла на 18" in kept
+    assert selected[0]["id"] == "pack"
+
+
+def test_short_sources_are_passed_through_untouched():
+    from designer.generation import select_context
+
+    sources = [{"id": "brief", "text": "Короткий бриф"}, {"id": "p1", "text": "Материал"}]
+    assert select_context(sources, "бриф", budget=6000) == sources
+
+
+def test_every_source_survives_selection_so_refs_stay_valid():
+    """Dropping a document entirely would make its source_refs unresolvable."""
+    from designer.generation import select_context
+
+    sources = [
+        {"id": "brief", "text": "Конверсия и пилот"},
+        {"id": "pack", "text": "Совершенно другая тема. " * 2000},
+    ]
+    selected = select_context(sources, "конверсия пилот", budget=3000)
+    assert [s["id"] for s in selected] == ["brief", "pack"]
+    assert all(s["text"] for s in selected)
