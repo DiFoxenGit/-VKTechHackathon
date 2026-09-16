@@ -20,7 +20,18 @@ class Visual(StrictModel):
     raised by the audit where the user can see and decide on them.
     """
 
-    kind: Literal["none", "table", "bar", "line", "process", "icon"] = "none"
+    kind: Literal[
+        "none",
+        "table",
+        "bar",
+        "line",
+        "process",
+        "icon",
+        "cycle",
+        "pyramid",
+        "timeline",
+        "comparison",
+    ] = "none"
     categories: list[str] = Field(default_factory=list, max_length=20)
     series: list[Series] = Field(default_factory=list, max_length=8)
     columns: list[str] = Field(default_factory=list, max_length=8)
@@ -43,8 +54,12 @@ class Visual(StrictModel):
             or any(len(r) != len(self.columns) for r in self.rows)
         ):
             raise ValueError("Table rows must match columns")
-        if self.kind in ("process", "icon") and not self.steps:
-            raise ValueError("Process/icon requires steps")
+        if self.kind in ("process", "icon", "cycle", "pyramid", "timeline") and not self.steps:
+            raise ValueError("Step diagrams require steps")
+        if self.kind == "comparison" and (
+            len(self.columns) != 2 or not self.rows or any(len(r) != 2 for r in self.rows)
+        ):
+            raise ValueError("Comparison requires two columns and rows of two cells")
         return self
 
 

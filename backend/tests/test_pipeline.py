@@ -1052,3 +1052,60 @@ def test_english_labels_send_the_model_back(client, monkeypatch):
     assert response.json()["slides"][0]["visual"]["categories"] == ["Пилот", "Запуск"]
     assert len(captured) == 2
     assert "Before launch" in captured[-1]["messages"][-1]["content"]
+
+
+def test_every_diagram_kind_exports_as_native_shapes(client, tmp_path):
+    """Схемы и пиктограммы должны быть фигурами PowerPoint, а не картинкой."""
+    from pptx import Presentation as Deck
+
+    from designer.exporting import export_pptx, verify_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+
+    kinds = {
+        "icon": {"kind": "icon", "steps": ["Рост выручки", "Команда", "Сроки"]},
+        "process": {"kind": "process", "steps": ["Анализ", "Пилот", "Запуск"]},
+        "cycle": {"kind": "cycle", "steps": ["План", "Работа", "Оценка"]},
+        "pyramid": {"kind": "pyramid", "steps": ["Цель", "Метрики", "Данные"]},
+        "timeline": {"kind": "timeline", "steps": ["Q1", "Q2", "Q3"]},
+        "comparison": {
+            "kind": "comparison",
+            "columns": ["Было", "Стало"],
+            "rows": [["Ручная вёрстка", "Автоматическая"], ["4 часа", "20 секунд"]],
+        },
+    }
+    plan = {
+        "title": "Все виды схем",
+        "slides": [
+            {
+                "title": f"Схема {name}",
+                "bullets": ["Проверка нативности"],
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": visual,
+            }
+            for name, visual in kinds.items()
+        ],
+    }
+    data = Outline.model_validate(plan).model_dump()
+    source = template_bytes()
+    template = parse_template(source, "unknown.pptx")
+    deck = compose(data, template, "classic")
+    source_path = tmp_path / "template.pptx"
+    source_path.write_bytes(source)
+    output = tmp_path / "deck.pptx"
+    export_pptx(source_path, template, deck, output)
+
+    report = verify_pptx(output, len(kinds))
+    assert report["raster_slides"] == []
+    assert report["native_objects"] >= len(kinds) * 3
+    # Подписи шагов доезжают до файла как редактируемый текст.
+    text = " ".join(
+        shape.text
+        for slide in Deck(output).slides
+        for shape in slide.shapes
+        if shape.has_text_frame
+    )
+    for word in ("Анализ", "План", "Метрики", "Было", "Стало", "Q1"):
+        assert word in text, word

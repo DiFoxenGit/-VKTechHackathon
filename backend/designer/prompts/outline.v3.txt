@@ -25,8 +25,13 @@ rather than making up answers.
 VISUALS. Use a visual only where the source carries the data for it:
 - bar or line for numbers over categories or time; categories and every series must have the same
   length, and "unit" is REQUIRED — write what the values measure ("команд", "млн руб.", "%").
+  A chart needs at least two categories: a single value belongs in the title, not in a bar.
 - table for comparisons: maximum 5 columns and 6 data rows.
-- process for ordered steps, icon for a short list of named items.
+- process for ordered steps that lead somewhere, timeline for dated milestones,
+  cycle for a repeating loop, pyramid for levels from foundation to top (first step
+  is the top), comparison for "before vs after" with exactly two columns and rows of
+  two cells, icon for a short list of named items.
+- Step diagrams carry at most 6 short labels; two or three words each, no sentences.
 - "none" when the slide is a statement, a question or a conclusion.
 Do not force a chart and do not fabricate sample data. Aim for a visual on roughly half the slides
 when the sources allow it, so the deck is neither a wall of text nor a set of empty pages.

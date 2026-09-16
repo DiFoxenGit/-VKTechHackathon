@@ -20,6 +20,8 @@ MAX_BULLET_WORDS = 15
 MAX_TABLE_ROWS = 7
 MAX_TABLE_COLUMNS = 5
 MAX_SERIES = 5
+# Больше элементов в схеме — подписи мельче кегля шаблона.
+MAX_STEPS = 6
 MAX_FONT_FAMILIES = 2
 MIN_FONT_SIZE = 12
 # A slide below the first value reads as empty, above the second as a wall of text.
@@ -109,8 +111,7 @@ def audit(deck, template, sources):
     )
     # The script the deck is written in decides what counts as a foreign label.
     cyrillic_deck = len(CYRILLIC.findall(deck_text)) > len(LATIN.findall(deck_text))
-    source_text = "\n".join(s["text"] for s in sources)
-    source_numbers = set(re.findall(r"\d+(?:[.,]\d+)?", source_text))
+    source_numbers = known_numbers(sources)
     for slide in deck["slides"]:
         index = slide["index"]
         content = slide["content"]
@@ -194,6 +195,17 @@ def audit(deck, template, sources):
                         f"ориентир — не более {MAX_TABLE_ROWS} строк и {MAX_TABLE_COLUMNS} колонок",
                     )
                 )
+        if visual["kind"] in ("process", "icon", "cycle", "pyramid", "timeline"):
+            if len(visual["steps"]) > MAX_STEPS:
+                issues.append(
+                    issue(
+                        index,
+                        "visual",
+                        "diagram_steps",
+                        f"В схеме {len(visual['steps'])} элементов; "
+                        f"ориентир — не более {MAX_STEPS}, иначе подписи нечитаемы",
+                    )
+                )
         if visual["kind"] in ("bar", "line"):
             if len(visual["series"]) > MAX_SERIES:
                 issues.append(
@@ -202,6 +214,15 @@ def audit(deck, template, sources):
                         None,
                         "chart_series",
                         f"На диаграмме {len(visual['series'])} серий; ориентир — не более {MAX_SERIES}",
+                    )
+                )
+            if len(visual["categories"]) < 2:
+                issues.append(
+                    issue(
+                        index,
+                        "visual",
+                        "chart_single_value",
+                        "В диаграмме одно значение: число на слайде читается лучше графика",
                     )
                 )
             if not visual.get("unit", "").strip():
@@ -237,15 +258,14 @@ def audit(deck, template, sources):
         background = slide.get("background") or template["tokens"]["theme"].get(
             "lt1", "FFFFFF"
         )
-        numbers = set(re.findall(r"\d+(?:[.,]\d+)?", text))
-        if numbers - source_numbers:
+        numbers = unsupported_numbers(text, source_numbers)
+        if numbers:
             issues.append(
                 issue(
                     index,
                     None,
                     "unverified_number",
-                    "Числа не найдены дословно в источниках: "
-                    + ", ".join(sorted(numbers - source_numbers)),
+                    "Числа не найдены дословно в источниках: " + ", ".join(numbers),
                 )
             )
         reserved = [

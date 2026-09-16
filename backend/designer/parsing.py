@@ -33,6 +33,11 @@ def preserved_shape(shape, width, height):
     """
     if shape.has_table or shape.has_chart:
         return False
+    # Плейсхолдер — это место под контент, а не украшение. Пустая рамка под фото
+    # или иконку, перенесённая в результат, читается как мусор на слайде.
+    # Исключение — колонтитул, дата и номер: они часть фирменного оформления.
+    if shape.is_placeholder:
+        return is_footer_placeholder(shape)
     x, y, w, h = (
         shape.left / width,
         shape.top / height,
@@ -44,9 +49,8 @@ def preserved_shape(shape, width, height):
     if not shape.has_text_frame:
         # Sample charts, illustrations and icon sets are content, not branding.
         return not (w * h < 0.85 and inside)
-    # Footer, date and page-number placeholders are branding and stay put;
-    # any other filled text box is sample copy that the new content replaces.
-    return is_footer_placeholder(shape) or not shape.text.strip()
+    # Любой заполненный текстовый блок — образец, его заменяет новый контент.
+    return not shape.text.strip()
 
 
 def relative_luminance(value):
@@ -272,6 +276,7 @@ def parse_template(data: bytes, name: str):
             title = min(text_shapes, key=lambda s: s["box"]["y"])
         # Score layout decorations inside the content area, excluding full-page backgrounds.
         decoration_area = 0.0
+        decoration_count = 0
         for sh in slide.slide_layout.shapes:
             if sh.is_placeholder:
                 continue
@@ -282,9 +287,12 @@ def parse_template(data: bytes, name: str):
                 sh.height / height,
             )
             if w * h < 0.85:
-                decoration_area += max(0, min(x + w, 0.95) - max(x, 0.05)) * max(
+                covered = max(0, min(x + w, 0.95) - max(x, 0.05)) * max(
                     0, min(y + h, 0.87) - max(y, 0.23)
                 )
+                decoration_area += covered
+                if covered > 0:
+                    decoration_count += 1
         # Shapes that survive cloning: artwork, footers, page numbers. Content must
         # not collide with them, so the audit needs their boxes.
         reserved = []
@@ -313,6 +321,7 @@ def parse_template(data: bytes, name: str):
                 "background": background_color(slide, theme),
                 "reserved": reserved,
                 "decoration_area": round(decoration_area, 5),
+                "decoration_count": decoration_count,
                 "index": index,
                 "layout_index": layouts.index(slide.slide_layout)
                 if slide.slide_layout in layouts

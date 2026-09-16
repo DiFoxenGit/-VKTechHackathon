@@ -148,6 +148,9 @@ def score_pattern(pattern, demand, recent, uses=0):
     dense = demand["has_visual"] or demand["lines"] > 4
     score = 1.0
     score -= pattern.get("decoration_area", 0.0) * (2.4 if dense else 0.8)
+    # Шаблон может держать в макете россыпь мелких украшений: на пустом слайде
+    # они остаются висеть и читаются как забытые заглушки.
+    score -= min(0.4, 0.05 * pattern.get("decoration_count", 0))
     score -= branding_in_band(pattern) * 2.0
     score += free_area(pattern) * (0.5 if demand["has_visual"] else 0.2)
     score += 0.05 * min(pattern.get("text_slots", 0), 4)

@@ -13,11 +13,13 @@ from pptx import Presentation
 from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
-from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.enum.text import PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
+from .visuals import DIAGRAMS
 from .parsing import (
     background_color,
     best_text_color,
@@ -74,6 +76,52 @@ def _clone_slide(deck, source):
                     node.set(key, mapping[value])
         target.shapes._spTree.insert_element_before(element, "p:extLst")
     return target
+
+
+def diagram_style(font, accent, background, text_color, palette):
+    """Кисти для библиотеки диаграмм: заливка, подпись внутри фигуры и под ней."""
+    on_accent = best_text_color(accent, palette)
+
+    def paint(shape, role):
+        shape.line.fill.background()
+        if role == "hole":
+            shape.fill.solid()
+            shape.fill.fore_color.rgb = RGBColor.from_string(background)
+        elif role == "outline":
+            shape.fill.background()
+            shape.line.fill.solid()
+            shape.line.fill.fore_color.rgb = RGBColor.from_string(accent)
+            shape.line.width = Pt(1.25)
+        else:
+            shape.fill.solid()
+            shape.fill.fore_color.rgb = RGBColor.from_string(accent)
+
+    def label(shape, text, outline=False):
+        shape.text_frame.word_wrap = True
+        shape.text = text
+        # Ширина фигуры известна: подбираем кегль, чтобы слово не рвалось по слогам.
+        longest = max((len(word) for word in text.split()), default=1)
+        usable = shape.width / 12700 * 0.82
+        size = max(8.0, min(13.0, usable / (longest * 0.55)))
+        colour = text_color if outline else on_accent
+        for paragraph in shape.text_frame.paragraphs:
+            paragraph.alignment = PP_ALIGN.CENTER
+            _font(paragraph.font, font, size, colour)
+            for run in paragraph.runs:
+                _font(run.font, font, size, colour)
+
+    def caption(shapes, box, text):
+        left, top, width, height = box
+        frame = shapes.add_textbox(left, top, width, max(height, Pt(12)))
+        frame.text_frame.word_wrap = True
+        frame.text_frame.text = text
+        for paragraph in frame.text_frame.paragraphs:
+            paragraph.alignment = PP_ALIGN.CENTER
+            _font(paragraph.font, font, 12, text_color)
+            for run in paragraph.runs:
+                _font(run.font, font, 12, text_color)
+
+    return {"paint": paint, "label": label, "caption": caption}
 
 
 def export_pptx(template_path: Path, template, deck_data, output: Path):
@@ -183,26 +231,13 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                         )
                         for p in cell.text_frame.paragraphs:
                             _font(p.font, font, 13, color, r == 0)
-            elif kind in ("process", "icon"):
-                steps = element["data"]["steps"]
-                gap = Pt(8)
-                sw = int((w - gap * (len(steps) - 1)) / len(steps))
-                for i, label in enumerate(steps):
-                    shape = slide.shapes.add_shape(
-                        MSO_AUTO_SHAPE_TYPE.CHEVRON
-                        if kind == "process"
-                        else MSO_AUTO_SHAPE_TYPE.OVAL,
-                        int(x + i * (sw + gap)),
-                        y,
-                        sw,
-                        h,
-                    )
-                    shape.fill.solid()
-                    shape.fill.fore_color.rgb = RGBColor.from_string(accent)
-                    shape.line.fill.background()
-                    shape.text = label
-                    for p in shape.text_frame.paragraphs:
-                        _font(p.font, font, 14, best_text_color(accent, palette))
+            elif kind in DIAGRAMS:
+                DIAGRAMS[kind](
+                    slide.shapes,
+                    (int(x), int(y), int(w), int(h)),
+                    element["data"],
+                    diagram_style(font, accent, background, text_color, palette),
+                )
         slide.notes_slide.notes_text_frame.text = slide_data["content"]["notes"]
     for identifier in original_ids:
         deck.part.drop_rel(identifier.rId)
