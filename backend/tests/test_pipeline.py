@@ -762,3 +762,94 @@ def test_unknown_source_refs_are_retried(client, monkeypatch):
     assert response.status_code == 200, response.text
     assert len(captured) == 2
     assert "source_refs" in captured[-1]["messages"][-1]["content"]
+
+
+def synthetic_template(patterns):
+    """Minimal template dict with the fields the layout scorer reads."""
+    return {
+        "name": "synthetic",
+        "width": 9144000,
+        "height": 5143500,
+        "tokens": {
+            "fonts": ["Arial"],
+            "font_sizes": [18, 24, 32],
+            "colors": ["1C1D22", "FFFFFF"],
+            "theme": {"lt1": "FFFFFF", "accent1": "FF0053"},
+        },
+        "geometry": {
+            "safe_area": {"x": 0.06, "y": 0.06, "w": 0.88, "h": 0.8},
+            "margins": {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9},
+            "guides": [],
+        },
+        "layouts": [{"index": 0, "name": "Blank"}],
+        "patterns": patterns,
+    }
+
+
+def pattern(index, decoration=0.0, reserved=(), text_slots=3):
+    return {
+        "index": index,
+        "layout_index": 0,
+        "layout_name": "Blank",
+        "background": "FFFFFF",
+        "decoration_area": decoration,
+        "reserved": [dict(zip(("x", "y", "w", "h"), box)) for box in reserved],
+        "title_box": {"x": 0.06, "y": 0.08, "w": 0.8, "h": 0.14},
+        "shapes": [],
+        "text_slots": text_slots,
+    }
+
+
+def test_layout_picks_the_roomiest_pattern_for_a_chart():
+    from designer.models import Outline
+
+    busy = pattern(0, decoration=0.22, reserved=[(0.5, 0.2, 0.45, 0.6)])
+    roomy = pattern(1, decoration=0.01)
+    content = outline(1)  # first slide carries a bar chart
+    deck = compose(
+        Outline.model_validate(content).model_dump(),
+        synthetic_template([busy, roomy]),
+        "classic",
+    )
+    assert deck["slides"][0]["pattern_index"] == 1
+    assert deck["slides"][0]["pattern_choice"]["free_area"] > 0.9
+
+
+def test_layout_does_not_repeat_one_pattern_across_the_deck():
+    from designer.models import Outline
+
+    template = synthetic_template([pattern(0), pattern(1), pattern(2)])
+    deck = compose(
+        Outline.model_validate(outline(3)).model_dump(), template, "classic"
+    )
+    used = [s["pattern_index"] for s in deck["slides"]]
+    assert len(set(used)) == 3, used
+    # Neighbouring slides never share a pattern.
+    assert all(a != b for a, b in zip(used, used[1:]))
+
+
+def test_layout_choice_is_deterministic():
+    from designer.models import Outline
+
+    template = synthetic_template([pattern(0), pattern(1), pattern(2)])
+    plan = Outline.model_validate(outline(3)).model_dump()
+    first = [s["pattern_index"] for s in compose(plan, template, "classic")["slides"]]
+    second = [s["pattern_index"] for s in compose(plan, template, "classic")["slides"]]
+    assert first == second
+
+
+def test_layout_avoids_patterns_whose_branding_sits_in_the_content_band():
+    """A corner logo is fine; a panel across the content area is not."""
+    from designer.layout import branding_in_band
+    from designer.models import Outline
+
+    corner_logo = pattern(0, reserved=[(0.86, 0.02, 0.12, 0.08)])
+    mid_panel = pattern(1, reserved=[(0.1, 0.3, 0.8, 0.4)])
+    assert branding_in_band(corner_logo) == 0
+    assert branding_in_band(mid_panel) > 0.3
+    deck = compose(
+        Outline.model_validate(outline(1)).model_dump(),
+        synthetic_template([mid_panel, corner_logo]),
+        "classic",
+    )
+    assert deck["slides"][0]["pattern_index"] == 0

@@ -9,6 +9,105 @@ DEFAULT_SAFE_AREA = {"x": 0.055, "y": 0.055, "w": 0.89, "h": 0.825}
 DEFAULT_MARGINS = {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9}
 
 
+def content_demand(content):
+    """How much room this slide needs and what kind of room."""
+    bullets = content["bullets"]
+    return {
+        "lines": sum(1 + len(b) // 60 for b in bullets),
+        "has_visual": content["visual"]["kind"] != "none",
+        "title_length": len(content["title"]),
+    }
+
+
+# Band where composed content actually lands; branding here is what collides.
+CONTENT_BAND = (0.05, 0.22, 0.95, 0.9)
+
+
+def free_area(pattern):
+    """Share of the slide left for content once template branding is placed."""
+    used = sum(b["w"] * b["h"] for b in pattern.get("reserved", []))
+    return max(0.0, 1.0 - min(1.0, used))
+
+
+def branding_in_band(pattern):
+    """Branding area that sits where the content will go, as a slide fraction.
+
+    A logo in the corner costs nothing; a decorative panel across the middle of
+    the page makes every block on that pattern collide with the template.
+    """
+    left, top, right, bottom = CONTENT_BAND
+    total = 0.0
+    for box in pattern.get("reserved", []):
+        overlap_w = max(0.0, min(box["x"] + box["w"], right) - max(box["x"], left))
+        overlap_h = max(0.0, min(box["y"] + box["h"], bottom) - max(box["y"], top))
+        total += overlap_w * overlap_h
+    return round(total, 5)
+
+
+def candidate_patterns(patterns):
+    """Content pages a new slide can be built on, best first.
+
+    Strict picks are full-width title pages. Some templates carry only one such
+    slide, so the pool is widened until there is something to choose from:
+    repeating one pattern twelve times is a worse outcome than a looser match.
+    """
+
+    def usable(pattern, min_slots, max_title_y, min_title_w):
+        box = pattern.get("title_box")
+        return bool(
+            pattern["text_slots"] >= min_slots
+            and box
+            and box["y"] < max_title_y
+            and box["w"] > min_title_w
+        )
+
+    for rule in ((2, 0.2, 0.65), (2, 0.3, 0.45), (1, 0.45, 0.3)):
+        found = [p for p in patterns if usable(p, *rule)]
+        if len(found) >= 3:
+            return found
+    return [p for p in patterns if p.get("title_box")] or patterns
+
+
+def score_pattern(pattern, demand, recent, uses=0):
+    """Rank a template pattern for one slide.
+
+    Selection must be explainable on stage: a busy pattern loses points when the
+    slide is dense, a pattern with room wins when a chart has to fit, and repeating
+    the neighbour's pattern is penalised so the deck does not look like one slide
+    printed twelve times.
+    """
+    dense = demand["has_visual"] or demand["lines"] > 4
+    score = 1.0
+    score -= pattern.get("decoration_area", 0.0) * (2.4 if dense else 0.8)
+    score -= branding_in_band(pattern) * 2.0
+    score += free_area(pattern) * (0.5 if demand["has_visual"] else 0.2)
+    score += 0.05 * min(pattern.get("text_slots", 0), 4)
+    title_box = pattern.get("title_box")
+    if title_box:
+        score += 0.12 if title_box["w"] > 0.6 else 0.0
+        # A shallow title band cannot hold a long conclusion-style headline.
+        if demand["title_length"] > 60 and title_box["h"] < 0.1:
+            score -= 0.15
+    if recent and pattern["index"] == recent[-1]:
+        score -= 0.6
+    # Reuse is allowed, but every repeat costs more, so a deck spreads over the
+    # patterns the template actually offers.
+    score -= 0.22 * uses
+    return round(score, 6)
+
+
+def choose_pattern(candidates, content, recent, usage=None):
+    demand = content_demand(content)
+    usage = usage or {}
+    scored = [
+        (score_pattern(p, demand, recent, usage.get(p["index"], 0)), -p["index"], p)
+        for p in candidates
+    ]
+    # Deterministic: equal scores resolve by the lowest pattern index.
+    best = max(scored, key=lambda item: (item[0], item[1]))
+    return best[2], best[0]
+
+
 def compose(outline, template, variant):
     width, height = template["width"] / 12700, template["height"] / 12700
     tokens = template["tokens"]
@@ -25,27 +124,18 @@ def compose(outline, template, variant):
     body_size = min(scale, key=lambda s: abs(s - height * 0.045)) if scale else 18
     accent = tokens["theme"].get("accent1", palette[0])
     slides = []
-    candidates = [
-        p
-        for p in template["patterns"]
-        if p["text_slots"] >= 2
-        and p.get("title_box")
-        and p["title_box"]["y"] < 0.2
-        and p["title_box"]["w"] > 0.65
-    ] or template["patterns"]
+    candidates = candidate_patterns(template["patterns"])
     # Prefer reusable content pages over covers, speaker cards, and icon catalogues.
     candidates = sorted(
         candidates,
         key=lambda p: (p.get("decoration_area", 0), abs(p["text_slots"] - 4)),
     )
+    recent: list[int] = []
+    usage: dict[int, int] = {}
     for i, content in enumerate(outline["slides"]):
-        best = [
-            p
-            for p in candidates
-            if p.get("decoration_area", 0)
-            <= candidates[0].get("decoration_area", 0) + 0.015
-        ]
-        pattern = best[i % len(best)]
+        pattern, pattern_score = choose_pattern(candidates, content, recent, usage)
+        recent = [*recent, pattern["index"]][-3:]
+        usage[pattern["index"]] = usage.get(pattern["index"], 0) + 1
         # Margins come from the template's own safe area, not from constants, so an
         # unseen template keeps its own rhythm.
         right = width * min(1.0, safe["x"] + safe["w"])
@@ -185,6 +275,14 @@ def compose(outline, template, variant):
                 "background": background,
                 "index": i,
                 "pattern_index": pattern["index"],
+                # Kept so the UI and the pitch can answer "why this layout?".
+                "pattern_choice": {
+                    "score": pattern_score,
+                    "decoration_area": pattern.get("decoration_area", 0.0),
+                    "free_area": round(free_area(pattern), 5),
+                    "branding_in_band": branding_in_band(pattern),
+                    "text_slots": pattern.get("text_slots", 0),
+                },
                 "layout_index": pattern["layout_index"],
                 "content": copy.deepcopy(content),
                 "elements": elements,
