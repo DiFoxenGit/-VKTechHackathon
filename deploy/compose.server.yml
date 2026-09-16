@@ -1,0 +1,34 @@
+# Продакшн-слой поверх docker-compose.yml: наружу смотрит только Caddy.
+services:
+  backend:
+    ports: !override []
+    environment:
+      DESIGNER_CORS_ORIGINS: ${DESIGNER_CORS_ORIGINS:-http://84.201.151.7}
+    restart: always
+
+  frontend:
+    ports: !override []
+    build:
+      args:
+        VITE_API_URL: /api/v1
+    restart: always
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+      - caddy-logs:/var/log/caddy
+    restart: always
+
+volumes:
+  caddy-data:
+  caddy-config:
+  caddy-logs:

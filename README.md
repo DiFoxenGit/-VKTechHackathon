@@ -12,7 +12,7 @@
 [![Тесты](https://img.shields.io/badge/Тесты-32%20сценария-520978)](#-тесты)
 [![Кейс](https://img.shields.io/badge/Кейс-VK%20Tech%20·%20ЛЦТ%202026-8A83D1)](#-о-кейсе)
 
-[Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md)
+[Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md)
 
 </div>
 
@@ -162,6 +162,7 @@ docs/               API.md, openapi.json, gap-analysis.md
 | [MODELS.md](MODELS.md) | модели, лицензии, требования, ограничения |
 | [AUDIT.md](AUDIT.md) | проверки и их покрытие тестами |
 | [docs/API.md](docs/API.md) | контракт HTTP API и сценарий работы |
+| [docs/deploy.md](docs/deploy.md) | развёртывание на сервере, переменные окружения, домен |
 | [docs/gap-analysis.md](docs/gap-analysis.md) | что закрыто по ТЗ и что осталось |
 
 ## 🤝 Разработка
