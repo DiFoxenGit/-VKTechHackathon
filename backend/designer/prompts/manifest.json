@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "agents": {"outline": "outline.v1.txt", "audit": "audit.v1.txt"},
+  "variants": [
+    {"id": "classic", "description": "Вертикальный рассказ: текст сверху, визуализация снизу"},
+    {"id": "split", "description": "Две колонки: текст слева, визуализация или тезисы справа"},
+    {"id": "focus", "description": "Акцент: визуализация сверху, краткие выводы снизу"}
+  ]
+}

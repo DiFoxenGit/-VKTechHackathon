@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DESIGNER_DATA_DIR: /data
+      DESIGNER_TEMPLATE_DIR: /templates
+      DESIGNER_CORS_ORIGINS: ${DESIGNER_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      DESIGNER_API_KEY: ${DESIGNER_API_KEY:-}
+      DESIGNER_LLM_BASE_URL: ${DESIGNER_LLM_BASE_URL:-}
+      DESIGNER_LLM_MODEL: ${DESIGNER_LLM_MODEL:-}
+      DESIGNER_LLM_API_KEY: ${DESIGNER_LLM_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - designer-data:/data
+      - ./templates:/templates:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api/v1
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  designer-data:

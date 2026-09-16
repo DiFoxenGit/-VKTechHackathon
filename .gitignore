@@ -1,8 +1,29 @@
+# Зависимости и сборки
 node_modules/
 dist/
-*.tsbuildinfo
+.next/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.venv-*/
+.pytest_cache/
+.ruff_cache/
+
+# Секреты и данные сервиса
 .env
-.env.local
+.env.*
+!.env.example
+designer_data/
+demo-output/
 tmp/
-output/
-.playwright-cli/
+
+# Материалы кейса: принадлежат организаторам, в репозиторий не попадают
+templates/
+Датасет/
+ТЗ/
+
+# Система
+.DS_Store
+Thumbs.db
