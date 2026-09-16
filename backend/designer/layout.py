@@ -7,6 +7,8 @@ from .parsing import best_text_color
 
 DEFAULT_SAFE_AREA = {"x": 0.055, "y": 0.055, "w": 0.89, "h": 0.825}
 DEFAULT_MARGINS = {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9}
+# Below this a two-column split leaves both columns nearly empty.
+MIN_BULLETS_FOR_COLUMNS = 4
 
 
 def content_demand(content):
@@ -215,10 +217,14 @@ def compose(outline, template, variant):
                         "data": visual,
                     }
                 )
-            else:
+            elif len(bullets) >= MIN_BULLETS_FOR_COLUMNS:
                 pivot = math.ceil(len(bullets) / 2)
                 text_box("body_left", bullets[:pivot], [margin, top, bw, h])
                 text_box("body_right", bullets[pivot:], [margin + bw + gap, top, bw, h])
+            else:
+                # Two thin columns holding one line each read as an empty slide and
+                # the audit flags them. Few bullets stay in one full-width block.
+                text_box("body", bullets, [margin, top, w, h])
         elif has_visual:
             text_h = (
                 min(

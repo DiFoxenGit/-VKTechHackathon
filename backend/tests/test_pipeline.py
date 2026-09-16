@@ -890,3 +890,80 @@ def test_every_source_survives_selection_so_refs_stay_valid():
     selected = select_context(sources, "конверсия пилот", budget=3000)
     assert [s["id"] for s in selected] == ["brief", "pack"]
     assert all(s["text"] for s in selected)
+
+
+def test_foreign_chart_labels_are_reported():
+    """ТЗ требует одну языковую колоду; подписи осей — место, где модель срывается."""
+    from designer.audit import audit, foreign_labels
+    from designer.models import Outline
+
+    assert foreign_labels(["Before launch"], True) == ["Before launch"]
+    assert foreign_labels(["Пилот", "Q1", "KPI", "%"], True) == []
+    assert foreign_labels(["Before launch"], False) == []
+
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {
+        "kind": "bar",
+        "categories": ["Before launch", "After launch"],
+        "series": [{"name": "Teams", "values": [10.0, 20.0]}],
+        "unit": "команд",
+    }
+    template = synthetic_template([pattern(0), pattern(1)])
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "Пилот 10 20 команд"}])
+    found = [i for i in report["issues"] if i["code"] == "foreign_language"]
+    assert found, [i["code"] for i in report["issues"]]
+    assert "Before launch" in found[0]["message"]
+
+
+def test_english_deck_keeps_english_labels():
+    from designer.audit import audit
+    from designer.models import Outline
+
+    plan = outline(1)
+    plan["title"] = "Pilot results"
+    plan["slides"][0]["title"] = "Teams doubled after launch"
+    plan["slides"][0]["bullets"] = ["Pilot covered 10 teams", "Launch reached 20 teams"]
+    plan["slides"][0]["visual"] = {
+        "kind": "bar",
+        "categories": ["Before", "After"],
+        "series": [{"name": "Teams", "values": [10.0, 20.0]}],
+        "unit": "teams",
+    }
+    template = synthetic_template([pattern(0), pattern(1)])
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "Pilot 10 20 teams"}])
+    assert not [i for i in report["issues"] if i["code"] == "foreign_language"]
+
+
+def test_split_variant_keeps_short_slides_in_one_column():
+    """Две колонки по одной строке читаются как пустой слайд."""
+    from designer.audit import audit
+    from designer.models import Outline
+
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = ["Единственный тезис о результате пилота"]
+    template = synthetic_template([pattern(0), pattern(1)])
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "split")
+    bodies = [e for e in deck["slides"][0]["elements"] if e.get("role") == "body"]
+    assert len(bodies) == 1, [e["id"] for e in bodies]
+    # Текст занимает всю ширину рабочей области, а не половину.
+    title = next(e for e in deck["slides"][0]["elements"] if e["role"] == "title")
+    assert bodies[0]["box"][2] > title["box"][2] * 0.9
+    audit(deck, template, [{"id": "brief", "text": "Пилот"}])
+
+
+def test_split_variant_still_uses_two_columns_for_dense_slides():
+    from designer.models import Outline
+
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = [f"Тезис номер {i} о результате" for i in range(5)]
+    deck = compose(
+        Outline.model_validate(plan).model_dump(),
+        synthetic_template([pattern(0), pattern(1)]),
+        "split",
+    )
+    ids = {e["id"] for e in deck["slides"][0]["elements"]}
+    assert {"body_left", "body_right"} <= ids, ids
