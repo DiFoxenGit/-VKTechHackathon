@@ -29,6 +29,43 @@ def estimated_text_height(element):
     )
 
 
+def ink_area(element):
+    """Area a block actually covers once rendered; a text box is usually emptier."""
+    _, _, w, h = element["box"]
+    if element["kind"] == "text":
+        return w * min(h, estimated_text_height(element))
+    return w * h
+
+
+def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
+    """Raise the type size while the slide still reads as empty.
+
+    The focus variant carries one thought per slide. With the body size of a dense
+    layout such a slide covers a fifth of the page, which the audit rightly calls
+    empty; a pitch slide answers that with bigger type, not with filler text.
+    """
+    if not slide_area:
+        return elements
+    steps = sorted(s for s in scale if s <= maximum)
+    for _ in range(4):
+        if sum(ink_area(e) for e in elements) / slide_area >= target:
+            break
+        grew = False
+        for element in elements:
+            if element["kind"] != "text":
+                continue
+            larger = [s for s in steps if s > element["font_size"]]
+            if not larger:
+                continue
+            candidate = dict(element, font_size=larger[0])
+            if estimated_text_height(candidate) <= element["box"][3]:
+                element["font_size"] = larger[0]
+                grew = True
+        if not grew:
+            break
+    return elements
+
+
 def fit_text(element, scale, minimum=12):
     """Step the font down the template's own scale until the text fits its box."""
     height = element["box"][3]
@@ -292,12 +329,16 @@ def compose(outline, template, variant):
                     }
                 )
         elif variant == "focus" and bullets:
-            text_box("lead", bullets[:1], [margin + w * 0.1, top, w * 0.8, h * 0.3])
-            text_box(
-                "body",
-                bullets[1:],
-                [margin + w * 0.1, top + h * 0.36, w * 0.8, h * 0.64],
-            )
+            if len(bullets) == 1:
+                # Одна мысль занимает всю площадь: тогда кегль есть куда растить.
+                text_box("lead", bullets, [margin + w * 0.1, top, w * 0.8, h])
+            else:
+                text_box("lead", bullets[:1], [margin + w * 0.1, top, w * 0.8, h * 0.3])
+                text_box(
+                    "body",
+                    bullets[1:],
+                    [margin + w * 0.1, top + h * 0.36, w * 0.8, h * 0.64],
+                )
         else:
             text_box("body", bullets, [margin, top, w, h])
         # Resolve the text color once, against this slide's real background, so
@@ -307,6 +348,8 @@ def compose(outline, template, variant):
         for element in elements:
             if element["kind"] == "text":
                 fit_text(element, scale)
+        if variant == "focus":
+            grow_text(elements, scale, width * height)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)
         for element in elements:

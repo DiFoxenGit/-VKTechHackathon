@@ -322,14 +322,14 @@ def test_provider_contract_and_failures(client, monkeypatch):
         lambda **kwargs: real_client(transport=httpx.MockTransport(handler), **kwargs),
     )
     response = client.post(
-        "/api/v1/outlines", json={"brief": "Данные: 10 и 20", "slide_count": 3}
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
     )
     assert response.status_code == 200, response.text
     assert len(response.json()["slides"]) == 3
     assert captured[0]["model"] == "test-open-model"
     assert captured[0]["response_format"] == {"type": "json_object"}
     response = client.post(
-        "/api/v1/outlines", json={"brief": "Данные: 10 и 20", "slide_count": 4}
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 4}
     )
     assert response.status_code == 502
 
@@ -347,7 +347,7 @@ def test_provider_contract_and_failures(client, monkeypatch):
     )
     assert (
         client.post(
-            "/api/v1/outlines", json={"brief": "Данные для проверки"}
+            "/api/v1/outlines", json={"brief": "Данные для проверки: 1, 2, 3"}
         ).status_code
         == 502
     )
@@ -733,7 +733,7 @@ def test_retry_recovers_from_unusable_model_answers(client, monkeypatch):
         ],
     )
     response = client.post(
-        "/api/v1/outlines", json={"brief": "Данные: 10 и 20", "slide_count": 3}
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
     )
     assert response.status_code == 200, response.text
     assert len(response.json()["slides"]) == 3
@@ -746,7 +746,7 @@ def test_retry_recovers_from_unusable_model_answers(client, monkeypatch):
 
 def test_retry_gives_up_with_a_readable_reason(client, monkeypatch):
     captured = mock_provider(monkeypatch, ["not json"])
-    response = client.post("/api/v1/outlines", json={"brief": "Данные для проверки"})
+    response = client.post("/api/v1/outlines", json={"brief": "Данные для проверки: 1, 2, 3"})
     assert response.status_code == 502
     assert "Модель не вернула корректный ответ" in response.json()["detail"]
     assert len(captured) == 3
@@ -757,7 +757,7 @@ def test_unknown_source_refs_are_retried(client, monkeypatch):
     bad["slides"][0]["source_refs"] = ["не-существует"]
     captured = mock_provider(monkeypatch, [json.dumps(bad), json.dumps(outline(1))])
     response = client.post(
-        "/api/v1/outlines", json={"brief": "Данные: 10 и 20", "slide_count": 1}
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 1}
     )
     assert response.status_code == 200, response.text
     assert len(captured) == 2
@@ -988,3 +988,40 @@ def test_layout_shrinks_text_before_the_audit_sees_it():
     assert body["font_size"] in template["tokens"]["font_sizes"]
     report = audit(deck, template, [{"id": "brief", "text": "Пилот"}])
     assert not [i for i in report["issues"] if i["code"] == "text_overflow"]
+
+
+def test_invented_numbers_send_the_model_back_for_another_try(client, monkeypatch):
+    """ТЗ: все цифры со слайда есть в материалах. Выдуманное число — повод переспросить."""
+    derived = outline(1)
+    derived["slides"][0]["title"] = "Участие выросло на 100%"
+    good = outline(1)
+    good["slides"][0]["title"] = "Команд стало 20 вместо 10"
+    captured = mock_provider(monkeypatch, [json.dumps(derived), json.dumps(good)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Пилот: 10 команд, после запуска 20 команд", "slide_count": 1},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][0]["title"] == "Команд стало 20 вместо 10"
+    assert len(captured) == 2
+    assert "100" in captured[-1]["messages"][-1]["content"]
+
+
+def test_focus_variant_fills_the_slide_with_larger_type():
+    """Один тезис на слайд — это крупный кегль, а не четверть пустой страницы."""
+    from designer.layout import ink_area
+    from designer.models import Outline
+
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = ["Пилот охватил десять команд"]
+    template = synthetic_template([pattern(0), pattern(1)])
+    data = Outline.model_validate(plan).model_dump()
+    classic = compose(data, template, "classic")
+    focus = compose(data, template, "focus")
+    area = focus["width"] * focus["height"]
+    fill = lambda deck: sum(ink_area(e) for e in deck["slides"][0]["elements"]) / area
+    assert fill(focus) > fill(classic)
+    for element in focus["slides"][0]["elements"]:
+        if element["kind"] == "text":
+            assert element["font_size"] in template["tokens"]["font_sizes"]

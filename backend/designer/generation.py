@@ -206,6 +206,27 @@ def select_context(sources, query, budget=CONTEXT_BUDGET):
     return result
 
 
+NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
+
+
+def numbers_in(text):
+    """Numbers as written, with the decimal separator normalised."""
+    return {value.replace(",", ".") for value in NUMBER.findall(text)}
+
+
+def known_numbers(sources):
+    return numbers_in("\n".join(source["text"] for source in sources))
+
+
+def unsupported_numbers(text, known):
+    """Numbers on a slide that no source states literally.
+
+    The brief demands that every figure on a slide exists in the materials, so a
+    derived percentage is as wrong as an invented one.
+    """
+    return sorted(numbers_in(text) - known)
+
+
 def sources_for(store, request: Brief):
     result = [{"id": "brief", "text": request.brief}]
     for identifier in request.content_pack_ids:
@@ -218,6 +239,8 @@ def sources_for(store, request: Brief):
 
 async def generate_outline(request, sources):
     allowed = {s["id"] for s in sources}
+
+    known = known_numbers(sources)
 
     def validate(result):
         outline = Outline.model_validate(result)
@@ -232,6 +255,22 @@ async def generate_outline(request, sources):
                 + ", ".join(sorted(unknown))
                 + ". Допустимые: "
                 + ", ".join(sorted(allowed))
+            )
+        invented = unsupported_numbers(
+            "\n".join(
+                slide.title + "\n" + "\n".join(slide.bullets)
+                for slide in outline.slides
+            ),
+            known,
+        )
+        if invented:
+            # Ask again instead of shipping the figure: the audit would flag it and
+            # the user would have to rewrite the slide by hand.
+            raise ValueError(
+                "Числа отсутствуют в источниках: "
+                + ", ".join(invented[:8])
+                + ". Используй только те цифры, что есть в материалах дословно, "
+                "и не вычисляй проценты, кратности и суммы."
             )
         return outline
 

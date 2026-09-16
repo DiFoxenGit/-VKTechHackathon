@@ -5,7 +5,12 @@ import re
 from fastapi import HTTPException
 
 from .generation import completion
-from .layout import DEFAULT_MARGINS, DEFAULT_SAFE_AREA, estimated_text_height
+from .layout import (
+    DEFAULT_MARGINS,
+    DEFAULT_SAFE_AREA,
+    estimated_text_height,
+    ink_area,
+)
 from .parsing import best_text_color, contrast_ratio
 
 MIN_CONTRAST = 4.5
@@ -93,18 +98,6 @@ def clamp_box(box, container):
         w,
         h,
     ]
-
-
-def ink_area(element):
-    """Area a block actually covers once rendered.
-
-    A text box is allocated generously and usually holds less; measuring the
-    estimated text height instead of the frame keeps the fill ratio honest.
-    """
-    _, _, w, h = element["box"]
-    if element["kind"] == "text":
-        return w * min(h, estimated_text_height(element))
-    return w * h
 
 
 def issue(
