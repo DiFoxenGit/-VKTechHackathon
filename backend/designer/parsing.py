@@ -9,6 +9,7 @@ from pathlib import Path
 
 from lxml import etree
 from pptx import Presentation
+from pptx.oxml.ns import qn
 from pypdf import PdfReader
 
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
@@ -20,7 +21,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 5
+PARSER_VERSION = 8
 
 
 def is_footer_placeholder(shape):
@@ -60,6 +61,122 @@ def branding_boxes(slides, width, height, share=0.4):
         counts.update(seen)
     threshold = max(2, int(len(slides) * share))
     return {box for box, count in counts.items() if count >= threshold}
+
+
+def master_text_defaults(master, theme):
+    """Типографика уровня мастера: p:txStyles — последний источник правды.
+
+    Стиль заголовка и текста в шаблоне часто не написан ни на слайде, ни на
+    макете: он объявлен один раз в мастере. Без него мы бы подставляли свой
+    кегль и цвет, то есть ломали дизайн-систему шаблона.
+    """
+    defaults = {}
+    styles = master._element.find(qn("p:txStyles"))
+    if styles is None:
+        return defaults
+    for role, tag in (("title", "p:titleStyle"), ("body", "p:bodyStyle")):
+        node = styles.find(qn(tag))
+        if node is None:
+            continue
+        level = node.find(qn("a:lvl1pPr"))
+        if level is None:
+            continue
+        style = {"font": None, "size": None, "bold": None, "color": None, "align": None}
+        if level.get("algn"):
+            style["align"] = level.get("algn")
+        run = level.find(qn("a:defRPr"))
+        if run is not None:
+            if run.get("sz"):
+                style["size"] = round(int(run.get("sz")) / 100, 2)
+            if run.get("b") is not None:
+                style["bold"] = run.get("b") in ("1", "true")
+            latin = run.find(qn("a:latin"))
+            if latin is not None and latin.get("typeface"):
+                face = latin.get("typeface")
+                style["font"] = None if face.startswith("+") else face
+            srgb = run.find(f"{qn('a:solidFill')}/{qn('a:srgbClr')}")
+            scheme = run.find(f"{qn('a:solidFill')}/{qn('a:schemeClr')}")
+            if srgb is not None:
+                style["color"] = srgb.get("val")
+            elif scheme is not None:
+                style["color"] = theme.get(scheme.get("val"))
+        defaults[role] = style
+    return defaults
+
+
+def frame_defaults(shape, theme):
+    """Стиль, объявленный в самой рамке: <a:lstStyle> первого уровня.
+
+    В шаблонах формат заголовка обычно живёт здесь — на плейсхолдере макета, а не
+    в runs слайда, где текста может не быть вовсе.
+    """
+    style = {"font": None, "size": None, "bold": None, "color": None, "align": None}
+    if not shape.has_text_frame:
+        return style
+    body = shape.text_frame._txBody
+    level = body.find(f"{qn('a:lstStyle')}/{qn('a:lvl1pPr')}")
+    if level is None:
+        return style
+    if level.get("algn"):
+        style["align"] = level.get("algn")
+    run = level.find(qn("a:defRPr"))
+    if run is None:
+        return style
+    if run.get("sz"):
+        style["size"] = round(int(run.get("sz")) / 100, 2)
+    if run.get("b") is not None:
+        style["bold"] = run.get("b") in ("1", "true")
+    latin = run.find(qn("a:latin"))
+    if latin is not None and latin.get("typeface"):
+        face = latin.get("typeface")
+        style["font"] = None if face.startswith("+") else face
+    srgb = run.find(f"{qn('a:solidFill')}/{qn('a:srgbClr')}")
+    scheme = run.find(f"{qn('a:solidFill')}/{qn('a:schemeClr')}")
+    if srgb is not None:
+        style["color"] = srgb.get("val")
+    elif scheme is not None:
+        style["color"] = theme.get(scheme.get("val"))
+    return style
+
+
+def text_style(shape, theme):
+    """Как шаблон оформляет текст в этой рамке.
+
+    Мы не изобретаем типографику: заголовок нового слайда получает кегль, цвет,
+    начертание и выравнивание того блока, который занимал его место в шаблоне.
+    Берём первый непустой абзац — он задаёт тон всей рамке.
+    """
+    style = {
+        "font": None,
+        "size": None,
+        "bold": None,
+        "color": None,
+        "align": None,
+        "caps": False,
+    }
+    for paragraph in shape.text_frame.paragraphs:
+        if not paragraph.text.strip() and not paragraph.runs:
+            continue
+        if paragraph.alignment is not None:
+            style["align"] = str(paragraph.alignment).split(" ")[0].lower()
+        for font in [*(run.font for run in paragraph.runs), paragraph.font]:
+            if style["font"] is None and font.name and not font.name.startswith("+"):
+                style["font"] = font.name
+            if style["size"] is None and font.size:
+                style["size"] = round(font.size.pt, 2)
+            if style["bold"] is None and font.bold is not None:
+                style["bold"] = bool(font.bold)
+            if style["color"] is None:
+                value = color_value(font.color, theme)
+                if value:
+                    style["color"] = value
+        break
+    for key, value in frame_defaults(shape, theme).items():
+        if style.get(key) is None:
+            style[key] = value
+    text = shape.text.strip()
+    style["caps"] = bool(text) and text == text.upper() and any(c.isalpha() for c in text)
+    return style
 
 
 def preserved_shape(shape, width, height, branding=None):
@@ -303,6 +420,7 @@ def parse_template(data: bytes, name: str):
             }
             if shape.has_text_frame:
                 item["text"] = shape.text[:2000]
+                item["style"] = text_style(shape, theme)
                 for p in shape.text_frame.paragraphs:
                     for font in [p.font, *(r.font for r in p.runs)]:
                         if font.name and not font.name.startswith("+"):
@@ -330,8 +448,51 @@ def parse_template(data: bytes, name: str):
     patterns = []
     layouts = list(deck.slide_layouts)
     branding = branding_boxes(list(deck.slides), width, height)
+    master_defaults = {}
+    for master in deck.slide_masters:
+        master_defaults = master_text_defaults(master, theme) or master_defaults
+        if master_defaults:
+            break
+
+    def inherit_styles(slide, shapes):
+        """Стиль плейсхолдера живёт в макете: на слайде он часто пустой.
+
+        Без этого заголовок нового слайда получил бы кегль по умолчанию вместо
+        фирменного, хотя шаблон его задаёт — просто уровнем выше.
+        """
+        layout_styles = {}
+        for shape in slide.slide_layout.placeholders:
+            if shape.has_text_frame:
+                layout_styles[shape.placeholder_format.idx] = text_style(shape, theme)
+        for shape in slide.slide_layout.slide_master.placeholders:
+            if shape.has_text_frame:
+                master_style = text_style(shape, theme)
+                role = "title" if "TITLE" in str(shape.placeholder_format.type) else "body"
+                master_defaults.setdefault(role, {})
+                for key, value in master_style.items():
+                    if master_defaults[role].get(key) is None:
+                        master_defaults[role][key] = value
+        for item, shape in zip(shapes, slide.shapes):
+            if not shape.is_placeholder or "style" not in item:
+                continue
+            role = (
+                "title"
+                if "TITLE" in str(shape.placeholder_format.type)
+                else "body"
+            )
+            for parent in (
+                layout_styles.get(shape.placeholder_format.idx),
+                master_defaults.get(role),
+            ):
+                if not parent:
+                    continue
+                for key, value in parent.items():
+                    if item["style"].get(key) is None:
+                        item["style"][key] = value
+        return shapes
+
     for index, slide in enumerate(deck.slides):
-        shapes = scan(slide.shapes)
+        shapes = inherit_styles(slide, scan(slide.shapes))
         text_shapes = [s for s in shapes if s["text"].strip()]
         title = next(
             (s for s in text_shapes if "TITLE" in s.get("placeholder", "")), None
@@ -390,8 +551,22 @@ def parse_template(data: bytes, name: str):
             # is meant to sit on, so colliding with it is not a defect.
             if area < 0.85 and covered < 0.5 * area:
                 reserved.append(box)
+        slots = []
+        for item in text_shapes:
+            role = "title" if title and item["id"] == title["id"] else "body"
+            slots.append(
+                {
+                    "role": role,
+                    "box": item["box"],
+                    "style": item.get("style") or {},
+                    "length": len(item["text"]),
+                }
+            )
+        # Порядок чтения: сверху вниз, слева направо — как человек смотрит слайд.
+        slots.sort(key=lambda s: (s["role"] != "title", s["box"]["y"], s["box"]["x"]))
         patterns.append(
             {
+                "slots": slots,
                 "background": background["color"],
                 "background_kind": background["kind"],
                 "reserved": reserved,

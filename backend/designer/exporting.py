@@ -152,7 +152,7 @@ def diagram_style(font, accent, background, text_color, palette):
         shape.text = text
         longest = max((len(word) for word in text.split()), default=1)
         usable = shape.width / 12700 * fit
-        size = max(7.0, min(13.0, usable / (longest * 0.55)))
+        size = max(6.0, min(13.0, usable / (longest * 0.55)))
         colour = text_color if outline else on_accent
         for paragraph in shape.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
@@ -213,25 +213,22 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                 frame.word_wrap = True
                 frame.margin_left = frame.margin_right = Pt(6)
                 frame.margin_top = frame.margin_bottom = Pt(4)
+                align = {
+                    "center": PP_ALIGN.CENTER,
+                    "right": PP_ALIGN.RIGHT,
+                    "justify": PP_ALIGN.JUSTIFY,
+                }.get(element.get("align"), PP_ALIGN.LEFT)
+                # Начертание и выравнивание — из шаблона: так новый слайд читается
+                # как страница той же презентации, а не как вставка.
+                bold = element.get("bold", element["role"] == "title")
                 for j, line in enumerate(element["text"].splitlines()):
                     p = frame.paragraphs[0] if j == 0 else frame.add_paragraph()
                     p.text = line
                     p.space_after = Pt(3)
-                    _font(
-                        p.font,
-                        font,
-                        element["font_size"],
-                        text_color,
-                        element["role"] == "title",
-                    )
+                    p.alignment = align
+                    _font(p.font, font, element["font_size"], text_color, bold)
                     for run in p.runs:
-                        _font(
-                            run.font,
-                            font,
-                            element["font_size"],
-                            text_color,
-                            element["role"] == "title",
-                        )
+                        _font(run.font, font, element["font_size"], text_color, bold)
             elif kind in ("bar", "line"):
                 visual = element["data"]
                 data = CategoryChartData()

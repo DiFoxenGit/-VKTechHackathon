@@ -1341,3 +1341,57 @@ def test_busy_backgrounds_lose_to_calm_ones():
         "classic",
     )
     assert deck["slides"][0]["pattern_index"] == 1
+
+
+def test_layout_follows_the_template_typography():
+    """Кегль, шрифт, начертание и выравнивание берутся у слайда-прототипа."""
+    from designer.layout import compose
+    from designer.models import Outline
+
+    styled = dict(
+        pattern(0),
+        slots=[
+            {
+                "role": "title",
+                "box": {"x": 0.08, "y": 0.08, "w": 0.8, "h": 0.16},
+                "style": {
+                    "font": "Play",
+                    "size": 40.0,
+                    "bold": True,
+                    "color": "FF0053",
+                    "align": "ctr",
+                },
+                "length": 20,
+            },
+            {
+                "role": "body",
+                "box": {"x": 0.08, "y": 0.34, "w": 0.8, "h": 0.5},
+                "style": {
+                    "font": "Play",
+                    "size": 20.0,
+                    "bold": False,
+                    "color": "1C1D22",
+                    "align": "l",
+                },
+                "length": 80,
+            },
+        ],
+    )
+    template = synthetic_template([styled, pattern(1)])
+    template["tokens"]["font_sizes"] = [14, 20, 28, 40]
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    title = deck["slides"][0]["elements"][0]
+    body = next(e for e in deck["slides"][0]["elements"] if e.get("role") == "body")
+    assert title["font"] == "Play"
+    assert title["font_size"] == 40.0
+    assert title["bold"] is True
+    assert title["align"] == "center"
+    # Кегль тела остаётся в пределах шаблонного: расти он может, но немного и
+    # только по шкале самого шаблона.
+    assert 20.0 <= body["font_size"] <= 30.0
+    assert body["font_size"] in template["tokens"]["font_sizes"]
+    assert body["align"] == "left"
+    # Контент начинается там, где его держит прототип.
+    assert body["box"][1] >= deck["height"] * 0.3

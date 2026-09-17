@@ -191,6 +191,45 @@ def choose_pattern(candidates, content, recent, usage=None):
     return best[2], best[0]
 
 
+def union_box(boxes):
+    """Общий прямоугольник для набора рамок прототипа."""
+    if not boxes:
+        return None
+    left = min(b["x"] for b in boxes)
+    top = min(b["y"] for b in boxes)
+    right = max(b["x"] + b["w"] for b in boxes)
+    bottom = max(b["y"] + b["h"] for b in boxes)
+    return {"x": left, "y": top, "w": right - left, "h": bottom - top}
+
+
+def slot_size(style, scale, fallback, minimum=12, maximum=96):
+    """Кегль из шаблона, если он вменяемый; иначе наш расчёт по шкале.
+
+    Мастер иногда объявляет заголовок 14 pt, хотя на слайдах он вдвое крупнее:
+    значение унаследовано из офисных умолчаний и ничего не говорит о дизайне.
+    Такой кегль отбрасываем — лучше расчёт по высоте слайда и шкале шаблона.
+    """
+    size = style.get("size")
+    if not size or size < minimum or size > maximum:
+        return fallback
+    # Заметно мельче расчётного — признак умолчания, а не решения дизайнера.
+    if size < fallback * 0.55:
+        return fallback
+    return size
+
+
+def slot_align(style):
+    """Выравнивание абзаца шаблона в терминах экспорта."""
+    value = (style.get("align") or "").lower()
+    if value.startswith("ctr") or value.startswith("center"):
+        return "center"
+    if value.startswith("r"):
+        return "right"
+    if value.startswith("just"):
+        return "justify"
+    return "left"
+
+
 def compose(outline, template, variant):
     width, height = template["width"] / 12700, template["height"] / 12700
     tokens = template["tokens"]
@@ -219,6 +258,15 @@ def compose(outline, template, variant):
         pattern, pattern_score = choose_pattern(candidates, content, recent, usage)
         recent = [*recent, pattern["index"]][-3:]
         usage[pattern["index"]] = usage.get(pattern["index"], 0) + 1
+        # Слоты прототипа — готовая композиция шаблона: заголовок и текстовые
+        # блоки стоят там, где их поставил дизайнер. Это точнее любой сетки,
+        # выведенной статистикой, поэтому берём их, когда они есть.
+        slots = pattern.get("slots") or []
+        title_slot = next((s for s in slots if s["role"] == "title"), None)
+        body_slots = [s for s in slots if s["role"] == "body"]
+        content_slot = union_box([s["box"] for s in body_slots])
+        title_style = (title_slot or {}).get("style") or {}
+        body_style = (body_slots[0] if body_slots else {}).get("style") or {}
         # Margins come from the template's own safe area, not from constants, so an
         # unseen template keeps its own rhythm.
         right = width * min(1.0, safe["x"] + safe["w"])
@@ -242,15 +290,20 @@ def compose(outline, template, variant):
         for bx, by, _, bh in reserved:
             if by < height * 0.3 and tx + tw * 0.35 < bx < tx + tw:
                 tw = max(width * 0.3, bx - width * 0.012 - tx)
-        current_title_size = title_size
+        # Кегль заголовка — шаблонный, если он объявлен; шкала остаётся запасным
+        # вариантом для файлов, где типографика не описана.
+        current_title_size = slot_size(title_style, scale, title_size, minimum=18)
+        slide_body_size = slot_size(body_style, scale, body_size, minimum=10, maximum=40)
 
         def title_height(size, title_width=tw, title_text=content["title"]):
             chars = max(1, (title_width - 12) / (size * 0.60))
             return math.ceil(len(title_text) / chars) * size * 1.3 + 10
 
-        for size in sorted({s for s in scale if s <= title_size}, reverse=True):
+        for size in sorted(
+            {s for s in scale if s <= current_title_size}, reverse=True
+        ):
             current_title_size = size
-            if title_height(size) <= height * 0.21:
+            if title_height(size) <= height * 0.24:
                 break
         th = max(height * 0.12, title_height(current_title_size))
         for bx, by, bw, bh in reserved:
@@ -258,6 +311,16 @@ def compose(outline, template, variant):
                 ty = min(height * 0.35, max(ty, by + bh + height * 0.02))
         top = max(height * 0.26, ty + th + height * 0.035)
         bottom = height * min(1.0, safe["y"] + safe["h"])
+        if content_slot and content_slot["w"] * content_slot["h"] >= 0.12:
+            # Контент занимает ту же область, что и на слайде-прототипе.
+            slot_top = height * content_slot["y"]
+            slot_bottom = height * (content_slot["y"] + content_slot["h"])
+            if slot_top >= ty + th * 0.6:
+                # Берём вертикальный ритм прототипа: где у шаблона начинается и
+                # заканчивается контент. Горизонталь остаётся на направляющих
+                # шаблона — так левые края блоков совпадают, и аудит это видит.
+                top = max(slot_top, ty + th + height * 0.02)
+                bottom = max(top + height * 0.2, slot_bottom)
         w, h, gap = right - margin, bottom - top, width * 0.03
         elements = [
             {
@@ -267,6 +330,8 @@ def compose(outline, template, variant):
                 "text": content["title"],
                 "box": [tx, ty, tw, th],
                 "font_size": current_title_size,
+                "bold": True if title_style.get("bold") is None else title_style["bold"],
+                "align": slot_align(title_style),
             }
         ]
         bullets = content["bullets"]
@@ -282,7 +347,12 @@ def compose(outline, template, variant):
                         "role": "body",
                         "text": "\n".join("• " + s for s in items),
                         "box": box,
-                        "font_size": body_size,
+                        "font_size": slide_body_size,
+                        "bold": bool(body_style.get("bold")),
+                        # Маркированный список выравнивается по левому краю, даже
+                        # если в образце рамка была центрирована: иначе маркеры
+                        # разъезжаются и текст читается тяжело.
+                        "align": "left" if len(items) > 1 else slot_align(body_style),
                     }
                 )
 
@@ -364,7 +434,17 @@ def compose(outline, template, variant):
                 fit_text(element, scale)
         # Пустой слайд — замечание аудита. Кегль поднимается по шкале шаблона, пока
         # слайд не выйдет из «пустой» зоны; в «фокусе» цель выше по стилю варианта.
-        grow_text(elements, scale, width * height, target=0.45 if variant == "focus" else 0.28)
+        # «Фокус» — вариант со сценой: там крупный кегль оправдан. В остальных
+        # вариантах текст не перерастает тот кегль, который выбрал шаблон.
+        grow_text(
+            elements,
+            scale,
+            width * height,
+            target=0.45 if variant == "focus" else 0.28,
+            maximum=(
+                60 if variant == "focus" else max(slide_body_size, body_size) * 1.5
+            ),
+        )
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         luma = pattern.get("bg_luma")
         if luma is not None:
@@ -381,8 +461,11 @@ def compose(outline, template, variant):
         if needs_scrim:
             background = tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)
+        slide_font = title_style.get("font") or body_style.get("font") or font
         for element in elements:
-            element.update(font=font, color=text_color, accent=accent)
+            element.update(font=slide_font, color=text_color, accent=accent)
+            element.setdefault("bold", element.get("role") == "title")
+            element.setdefault("align", "left")
         slides.append(
             {
                 "background": background,

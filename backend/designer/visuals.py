@@ -166,7 +166,9 @@ def draw_process(shapes, box, data, style):
     # высокий шеврон почти не оставляет места тексту. Держим его низким.
     height = min(h, cell * 0.62)
     top = y + (h - height) / 2
-    usable = max(0.25, (cell - height * 0.9) / cell)
+    # Стрелка вырезает по половине высоты с каждой стороны: это и есть потеря
+    # ширины под текст. Оценка честная, поэтому длинное слово не рвётся.
+    usable = max(0.22, (cell - height) / cell)
     for index, label in enumerate(steps):
         shape = shapes.add_shape(
             SHAPE.PENTAGON if index == 0 else SHAPE.CHEVRON,
