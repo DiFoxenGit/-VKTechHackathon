@@ -337,12 +337,21 @@ def card_slots(body_slots, width, height, minimum=2, maximum=6):
     # Мелкие подписи тоже повторяются рядами, но это не карточки: текст в них
     # окажется микроскопическим, а слайд — пустым. Берём только крупную сетку
     # внутри рабочей области.
-    boxes = [s["box"] for s in body_slots if s["box"]["y"] >= 0.18]
+    boxes = [
+        s["box"]
+        for s in body_slots
+        if s.get("role", "body") == "body" and s["box"]["y"] >= 0.18
+    ]
     if len(boxes) < minimum:
+        return []
+    # Каталог иконок — это тоже ряды одинаковых рамок, но не карточки: класть
+    # туда тезисы бессмысленно.
+    if len(boxes) > 10:
         return []
     median_w = sorted(b["w"] for b in boxes)[len(boxes) // 2]
     median_h = sorted(b["h"] for b in boxes)[len(boxes) // 2]
-    if median_w * median_h < 0.045:
+    # Карточка — блок, куда помещается фраза: примерно от 2% площади слайда.
+    if median_w * median_h < 0.02 or median_w < 0.12:
         return []
     cards = [
         b
@@ -355,7 +364,7 @@ def card_slots(body_slots, width, height, minimum=2, maximum=6):
     cards.sort(key=lambda b: (round(b["y"], 2), b["x"]))
     cards = cards[:maximum]
     # Сетка должна занимать заметную часть слайда, иначе контент повиснет в углу.
-    if sum(b["w"] * b["h"] for b in cards) < 0.16:
+    if sum(b["w"] * b["h"] for b in cards) < 0.12:
         return []
     return [
         [b["x"] * width, b["y"] * height, b["w"] * width, b["h"] * height]
