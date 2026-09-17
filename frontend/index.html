@@ -3,10 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0674ff" />
-    <meta name="description" content="Слайд — рабочее пространство для создания презентаций в фирменном стиле. От идеи до готовых слайдов." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0077ff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="description"
+      content="Слайдер — сервис, который читает корпоративный шаблон как дизайн-систему и собирает по нему презентацию: структура, три варианта вёрстки, аудит и экспорт."
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Слайд — дизайнер презентаций</title>
+    <title>Слайдер — презентации в стиле вашего шаблона</title>
+    <script>
+      // Тема ставится до первого кадра: иначе тёмный интерфейс моргнёт белым.
+      try {
+        var saved = localStorage.getItem('designer-theme');
+        if (saved === 'light' || saved === 'dark') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,167 @@
+/**
+ * Дизайн-токены интерфейса. Одна палитра, два режима.
+ *
+ * Светлая тема — значения на :root, тёмная переопределяет только то, что меняет
+ * роль. Выбор пользователя ставит data-theme на <html>; без выбора работает
+ * системная настройка. Любой новый цвет объявляется здесь, а не в компонентах.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Фирменный акцент: синий VK Tech и розовый для внимания. */
+  --brand-500: #0077ff;
+  --brand-600: #005ee0;
+  --brand-100: #e6f1ff;
+  --accent-500: #ff3885;
+  --accent-100: #ffe8f1;
+
+  --ok-500: #12a150;
+  --warn-500: #b45309;
+  --warn-100: #fff4e5;
+  --error-500: #d92d20;
+  --error-100: #fef3f2;
+
+  /* Поверхности: страница, карточка, приподнятый блок, разделитель. */
+  --ground: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #eef1f6;
+  --line: #e2e6ee;
+  --line-strong: #cfd6e2;
+
+  --ink: #14161c;
+  --ink-2: #454b57;
+  --ink-3: #6b7280;
+  --on-brand: #ffffff;
+
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  --shadow-2: 0 8px 24px rgba(16, 24, 40, 0.08);
+
+  --radius-1: 8px;
+  --radius-2: 12px;
+  --radius-3: 18px;
+
+  --step-1: 4px;
+  --step-2: 8px;
+  --step-3: 12px;
+  --step-4: 16px;
+  --step-5: 24px;
+  --step-6: 32px;
+  --step-7: 48px;
+
+  --font-ui: 'Manrope Variable', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-brand: 'Play', var(--font-ui);
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+
+  --speed: 0.18s;
+}
+
+/* Системная тёмная тема — если пользователь не выбирал вручную. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --brand-500: #4d9bff;
+    --brand-600: #75b2ff;
+    --brand-100: #16243a;
+    --accent-500: #ff5c9b;
+    --accent-100: #35172a;
+
+    --ok-500: #3ecf8e;
+    --warn-500: #f5a524;
+    --warn-100: #2c2211;
+    --error-500: #ff6b63;
+    --error-100: #34181a;
+
+    --ground: #0e1116;
+    --surface: #171b22;
+    --surface-2: #1f242d;
+    --line: #2a303a;
+    --line-strong: #3a414d;
+
+    --ink: #f2f4f8;
+    --ink-2: #c3c9d4;
+    --ink-3: #8e97a6;
+    --on-brand: #0b1220;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* Явный выбор пользователя побеждает системный. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --brand-500: #4d9bff;
+  --brand-600: #75b2ff;
+  --brand-100: #16243a;
+  --accent-500: #ff5c9b;
+  --accent-100: #35172a;
+
+  --ok-500: #3ecf8e;
+  --warn-500: #f5a524;
+  --warn-100: #2c2211;
+  --error-500: #ff6b63;
+  --error-100: #34181a;
+
+  --ground: #0e1116;
+  --surface: #171b22;
+  --surface-2: #1f242d;
+  --line: #2a303a;
+  --line-strong: #3a414d;
+
+  --ink: #f2f4f8;
+  --ink-2: #c3c9d4;
+  --ink-3: #8e97a6;
+  --on-brand: #0b1220;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

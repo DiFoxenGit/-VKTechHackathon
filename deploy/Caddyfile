@@ -17,14 +17,6 @@
 		}
 	}
 
-	handle /docs* {
-		reverse_proxy backend:8000
-	}
-
-	handle /openapi.json {
-		reverse_proxy backend:8000
-	}
-
 	handle /health {
 		reverse_proxy backend:8000
 	}

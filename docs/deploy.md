@@ -58,6 +58,7 @@ bash deploy/deploy.sh
 | `DESIGNER_LLM_API_KEY` | ключ провайдера, остаётся на сервере и в браузер не попадает |
 | `DESIGNER_CORS_ORIGINS` | адрес, с которого открывают интерфейс |
 | `DESIGNER_API_KEY` | необязательный Bearer-токен для API |
+| `DESIGNER_DOCS` | `0` на публичном сервере: закрывает Swagger, ReDoc и `openapi.json` |
 
 Пример для Yandex AI Studio (только открытые веса до 35B, как требует ТЗ):
 

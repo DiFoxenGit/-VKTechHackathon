@@ -1,9 +1,6 @@
 {
-  "name": "slide-studio",
+  "name": "slider-studio",
   "private": true,
-  "overrides": {
-    "image-size": "^2.0.4"
-  },
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -14,9 +11,7 @@
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
     "@fontsource/play": "^5.3.0",
-    "jszip": "^3.10.1",
     "lucide-react": "^0.468.0",
-    "pptxgenjs": "^4.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

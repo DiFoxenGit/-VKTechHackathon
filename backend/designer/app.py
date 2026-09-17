@@ -141,12 +141,18 @@ def create_app(data_dir=None, seed_dir=None):
     base_path = (os.getenv("DESIGNER_BASE_PATH") or "").strip().rstrip("/")
     if base_path and not base_path.startswith("/"):
         base_path = "/" + base_path
+    # Swagger и схема — инструмент разработчика, а не публичная страница сервиса.
+    # На сервере DESIGNER_DOCS=0 закрывает их полностью, включая /openapi.json.
+    docs_open = os.getenv("DESIGNER_DOCS", "1").lower() not in ("0", "false", "no", "off")
     app = FastAPI(
         title="VK Presentation Designer API",
         version="1.0.0",
         lifespan=lifespan,
         root_path=base_path,
         description="Headless presentation pipeline. Coordinates in points; revisions protect edits.",
+        docs_url="/docs" if docs_open else None,
+        redoc_url="/redoc" if docs_open else None,
+        openapi_url="/openapi.json" if docs_open else None,
     )
     app.state.store = store
     origins = [
