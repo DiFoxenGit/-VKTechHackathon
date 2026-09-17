@@ -21,7 +21,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 13
+PARSER_VERSION = 14
 
 
 def is_footer_placeholder(shape):
@@ -671,6 +671,18 @@ def parse_template(data: bytes, name: str):
             if artwork or area < 0.6 or covered < 0.5 * area:
                 if box not in reserved:
                     reserved.append(box)
+        # Ряд одинаковых значков — заготовка страницы-каталога. Экспорт не
+        # переносит его, когда раскладывать по нему нечего, поэтому вёрстка и
+        # аудит тоже не должны считать его препятствием.
+        icon_sizes = Counter(
+            (round(b["w"], 2), round(b["h"], 2))
+            for b in reserved
+            if 0.0002 < b["w"] * b["h"] < 0.02
+        )
+        for box in reserved:
+            key = (round(box["w"], 2), round(box["h"], 2))
+            if icon_sizes.get(key, 0) >= 3 and 0.0002 < box["w"] * box["h"] < 0.02:
+                box["icons"] = True
         slots = []
         for item in text_shapes:
             role = "title" if title and item["id"] == title["id"] else "body"

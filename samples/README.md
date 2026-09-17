@@ -11,15 +11,15 @@
 
 | Шаблон | Вариант | Слайдов | Время | Ошибок аудита | Предупреждения |
 |---|---|---|---|---|---|
-| Шаблон презентации VK Education | Классический | 9 | 29 с | 0 | fill_ratio × 4 |
-| Шаблон презентации VK Education | Две колонки | 9 | 29 с | 0 | branding_overlap × 1, fill_ratio × 3 |
-| Шаблон презентации VK Education | Фокус | 9 | 29 с | 0 | fill_ratio × 2 |
-| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Классический | 9 | 32 с | 0 | branding_overlap × 1, empty_content × 1, fill_ratio × 3, text_over_image × 4 |
-| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Две колонки | 9 | 32 с | 0 | branding_overlap × 1, empty_content × 1, fill_ratio × 1, text_over_image × 4 |
-| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Фокус | 9 | 32 с | 0 | empty_content × 1, fill_ratio × 3, text_over_image × 4 |
-| VK Tech шаблон | Классический | 10 | 30 с | 0 | fill_ratio × 3, text_over_image × 2, text_overflow × 2 |
-| VK Tech шаблон | Две колонки | 10 | 30 с | 0 | branding_overlap × 2, fill_ratio × 5, text_over_image × 2 |
-| VK Tech шаблон | Фокус | 10 | 30 с | 0 | fill_ratio × 4, text_over_image × 2, text_overflow × 1 |
+| Шаблон презентации VK Education | Классический | 7 | 26 с | 0 | fill_ratio × 1, source_reference × 1, text_overflow × 1 |
+| Шаблон презентации VK Education | Две колонки | 7 | 26 с | 0 | fill_ratio × 1, source_reference × 1 |
+| Шаблон презентации VK Education | Фокус | 7 | 26 с | 0 | fill_ratio × 1, source_reference × 1, text_overflow × 1 |
+| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Классический | 7 | 39 с | 0 | fill_ratio × 1, text_over_image × 1 |
+| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Две колонки | 7 | 39 с | 0 | fill_ratio × 1, text_over_image × 1 |
+| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Фокус | 7 | 39 с | 0 | fill_ratio × 1, text_over_image × 1 |
+| VK Tech шаблон | Классический | 10 | 59 с | 0 | fill_ratio × 5, text_over_image × 2, text_overflow × 1 |
+| VK Tech шаблон | Две колонки | 10 | 59 с | 0 | branding_overlap × 1, fill_ratio × 6, text_over_image × 2 |
+| VK Tech шаблон | Фокус | 10 | 59 с | 0 | fill_ratio × 3, text_over_image × 2, text_overflow × 2 |
 
 Время — на всю задачу: план колоды моделью, три варианта вёрстки, аудит и экспорт.
 Одна задача делает сразу три варианта, поэтому в таблице оно повторяется.

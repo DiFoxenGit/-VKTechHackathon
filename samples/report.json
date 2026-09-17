@@ -2,106 +2,105 @@
   {
     "template": "Шаблон презентации VK Education",
     "variant": "classic",
-    "slides": 9,
-    "seconds": 29.1,
+    "slides": 7,
+    "seconds": 26.4,
     "errors": 0,
     "warnings": {
-      "fill_ratio": 4
+      "source_reference": 1,
+      "fill_ratio": 1,
+      "text_overflow": 1
     }
   },
   {
     "template": "Шаблон презентации VK Education",
     "variant": "split",
-    "slides": 9,
-    "seconds": 29.1,
+    "slides": 7,
+    "seconds": 26.4,
     "errors": 0,
     "warnings": {
-      "fill_ratio": 3,
-      "branding_overlap": 1
+      "source_reference": 1,
+      "fill_ratio": 1
     }
   },
   {
     "template": "Шаблон презентации VK Education",
     "variant": "focus",
-    "slides": 9,
-    "seconds": 29.1,
+    "slides": 7,
+    "seconds": 26.4,
     "errors": 0,
     "warnings": {
-      "fill_ratio": 2
+      "source_reference": 1,
+      "fill_ratio": 1,
+      "text_overflow": 1
     }
   },
   {
     "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "classic",
-    "slides": 9,
-    "seconds": 32.3,
+    "slides": 7,
+    "seconds": 38.6,
     "errors": 0,
     "warnings": {
-      "empty_content": 1,
-      "fill_ratio": 3,
-      "text_over_image": 4,
-      "branding_overlap": 1
+      "fill_ratio": 1,
+      "text_over_image": 1
     }
   },
   {
     "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "split",
-    "slides": 9,
-    "seconds": 32.3,
+    "slides": 7,
+    "seconds": 38.6,
     "errors": 0,
     "warnings": {
-      "empty_content": 1,
       "fill_ratio": 1,
-      "text_over_image": 4,
-      "branding_overlap": 1
+      "text_over_image": 1
     }
   },
   {
     "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "focus",
-    "slides": 9,
-    "seconds": 32.3,
+    "slides": 7,
+    "seconds": 38.6,
     "errors": 0,
     "warnings": {
-      "empty_content": 1,
-      "fill_ratio": 3,
-      "text_over_image": 4
+      "fill_ratio": 1,
+      "text_over_image": 1
     }
   },
   {
     "template": "VK Tech шаблон",
     "variant": "classic",
     "slides": 10,
-    "seconds": 30.3,
+    "seconds": 58.9,
+    "errors": 0,
+    "warnings": {
+      "fill_ratio": 5,
+      "text_over_image": 2,
+      "text_overflow": 1
+    }
+  },
+  {
+    "template": "VK Tech шаблон",
+    "variant": "split",
+    "slides": 10,
+    "seconds": 58.9,
+    "errors": 0,
+    "warnings": {
+      "fill_ratio": 6,
+      "text_over_image": 2,
+      "branding_overlap": 1
+    }
+  },
+  {
+    "template": "VK Tech шаблон",
+    "variant": "focus",
+    "slides": 10,
+    "seconds": 58.9,
     "errors": 0,
     "warnings": {
       "fill_ratio": 3,
       "text_over_image": 2,
       "text_overflow": 2
-    }
-  },
-  {
-    "template": "VK Tech шаблон",
-    "variant": "split",
-    "slides": 10,
-    "seconds": 30.3,
-    "errors": 0,
-    "warnings": {
-      "fill_ratio": 5,
-      "text_over_image": 2,
-      "branding_overlap": 2
-    }
-  },
-  {
-    "template": "VK Tech шаблон",
-    "variant": "focus",
-    "slides": 10,
-    "seconds": 30.3,
-    "errors": 0,
-    "warnings": {
-      "fill_ratio": 4,
-      "text_over_image": 2,
-      "text_overflow": 1
     }
   }
 ]

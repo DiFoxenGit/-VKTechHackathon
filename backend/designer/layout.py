@@ -104,6 +104,44 @@ def center_content(elements, top, bottom):
     return elements
 
 
+def dodge_decor(elements, reserved, bottom, gap):
+    """Опустить блок, который наехал на мелкий декор шаблона.
+
+    Иконка над подписью, разделитель, уголок — их положение задал дизайнер, и
+    правильный ответ не «убрать декор», а начать текст ниже него. Двигаем только
+    вниз и только пока блок остаётся в отведённой области: уехавший за край
+    текст хуже, чем близкое соседство с линией.
+    """
+    for element in elements:
+        if element.get("role") == "title" or element.get("from_template"):
+            continue
+        x, y, w, h = element["box"]
+        for bx, by, bw, bh in reserved:
+            if bx >= x + w or bx + bw <= x or by >= y + h or by + bh <= y:
+                continue
+            if (bw * bh) > 0.5 * (w * h):
+                # Крупная плашка — это фон страницы, а не помеха.
+                continue
+            shifted = by + bh + gap
+            if shifted + h > bottom or shifted <= y:
+                continue
+            # Уйти от декора на чужой блок — не решение: проверяем, свободно ли
+            # место, куда двигаем.
+            clash = any(
+                other is not element
+                and other["box"][0] < x + w
+                and other["box"][0] + other["box"][2] > x
+                and other["box"][1] < shifted + h
+                and other["box"][1] + other["box"][3] > shifted
+                for other in elements
+            )
+            if clash:
+                continue
+            element["box"][1] = shifted
+            y = shifted
+    return elements
+
+
 def fit_text(element, scale, minimum=12):
     """Step the font down the template's own scale until the text fits its box."""
     height = element["box"][3]
@@ -509,12 +547,19 @@ def compose(outline, template, variant):
             ty, tw = height * safe["y"], right - margin
         tx = margin
         has_visual = content["visual"]["kind"] != "none"
+        # Карточки шаблона стоят на своих местах: заголовок обязан закончиться
+        # выше первой из них, иначе длинный заголовок ложится прямо на карточку.
+        cards = (
+            card_slots(body_slots, width, height)
+            if not has_visual and variant != "focus"
+            else []
+        )
         # Compose around branding the template keeps on every slide: narrow the
         # title away from a corner logo, and drop below a full-width wordmark.
         reserved = [
             (width * b["x"], height * b["y"], width * b["w"], height * b["h"])
             for b in pattern.get("reserved", [])
-            if b["w"] * b["h"] < 0.6
+            if b["w"] * b["h"] < 0.6 and not b.get("icons")
         ]
         if not from_template_title:
             for bx, by, _, bh in reserved:
@@ -536,6 +581,16 @@ def compose(outline, template, variant):
             if title_height(size) <= height * 0.24:
                 break
         th = max(height * 0.12, title_height(current_title_size))
+        if cards:
+            limit = min(box[1] for box in cards) - ty - height * 0.025
+            if limit >= height * 0.08:
+                for size in sorted(
+                    {s for s in scale if s <= current_title_size}, reverse=True
+                ):
+                    current_title_size = size
+                    if title_height(size) <= limit:
+                        break
+                th = min(th, limit)
         for bx, by, bw, bh in reserved:
             if by < ty + th and by + bh > ty and bx < tx + tw and bx + bw > tx:
                 ty = min(height * 0.35, max(ty, by + bh + height * 0.02))
@@ -580,11 +635,6 @@ def compose(outline, template, variant):
         ]
         bullets = content["bullets"]
         visual = content["visual"]
-        cards = (
-            card_slots(body_slots, width, height)
-            if not has_visual and variant != "focus"
-            else []
-        )
 
         def text_box(identifier, items, box, elements=elements, marker=True):
             """marker=False — для карточек шаблона: маркер там уже нарисован
@@ -668,15 +718,20 @@ def compose(outline, template, variant):
                     }
                 )
         elif variant == "focus" and bullets:
+            # Акцентный блок встаёт на ту же вертикаль, что и заголовок: свой
+            # отступ здесь читался бы как съехавшая вёрстка, и аудит был прав,
+            # когда его находил. Разница варианта — в кегле и в одной мысли на
+            # слайде, а не в самодельных полях.
+            lead_x, lead_w = tx, min(tw, w)
             if len(bullets) == 1:
                 # Одна мысль занимает всю площадь: тогда кегль есть куда растить.
-                text_box("lead", bullets, [margin + w * 0.1, top, w * 0.8, h])
+                text_box("lead", bullets, [lead_x, top, lead_w, h])
             else:
-                text_box("lead", bullets[:1], [margin + w * 0.1, top, w * 0.8, h * 0.3])
+                text_box("lead", bullets[:1], [lead_x, top, lead_w, h * 0.3])
                 text_box(
                     "body",
                     bullets[1:],
-                    [margin + w * 0.1, top + h * 0.36, w * 0.8, h * 0.64],
+                    [lead_x, top + h * 0.36, lead_w, h * 0.64],
                 )
         elif cards and len(bullets) >= 2:
             # Тезисы расходятся по карточкам шаблона: по одному на карточку,
@@ -717,6 +772,7 @@ def compose(outline, template, variant):
             ),
         )
         center_content(elements, top, bottom)
+        dodge_decor(elements, reserved, bottom, height * 0.015)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         luma = pattern.get("bg_luma")
         if luma is not None:  # noqa: SIM108 - читаемее развёрнуто

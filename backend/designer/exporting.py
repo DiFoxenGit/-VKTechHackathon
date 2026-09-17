@@ -61,7 +61,34 @@ def _buried(shape, content):
     return False
 
 
-def _clone_slide(deck, source, branding=None, content=()):
+def _orphan_icon_row(source, width, height, branding):
+    """Ряд одинаковых значков прототипа, под которым не будет содержания.
+
+    На странице-каталоге шаблона над каждой подписью стоит иконка. Если наш
+    слайд не раскладывается по этим ячейкам, иконки остаются висеть рядком без
+    текста — читается как забытая заготовка. Такой ряд не переносим; одиночный
+    значок это правило не трогает, он часть оформления страницы.
+    """
+    groups = {}
+    for shape in source.shapes:
+        if shape.has_text_frame and shape.text.strip():
+            continue
+        if branding and shape_key(shape, width, height) in branding:
+            continue
+        w, h = shape.width / width, shape.height / height
+        if not (0.0002 < w * h < 0.02):
+            continue
+        if not 0.15 < shape.top / height < 0.85:
+            continue
+        groups.setdefault((round(w, 2), round(h, 2)), []).append(shape.shape_id)
+    orphans = set()
+    for members in groups.values():
+        if len(members) >= 3:
+            orphans.update(members)
+    return orphans
+
+
+def _clone_slide(deck, source, branding=None, content=(), orphans=frozenset()):
     target = deck.slides.add_slide(source.slide_layout)
     for shape in list(target.shapes):
         shape._element.getparent().remove(shape._element)
@@ -85,7 +112,9 @@ def _clone_slide(deck, source, branding=None, content=()):
         repeated = branding and shape_key(
             shape, deck.slide_width, deck.slide_height
         ) in branding
-        if not repeated and _buried(shape, content):
+        if not repeated and (
+            _buried(shape, content) or shape.shape_id in orphans
+        ):
             continue
         element = copy.deepcopy(shape._element)
         is_footer = is_footer_placeholder(shape)
@@ -233,9 +262,13 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
             tuple(Pt(v) for v in element["box"])
             for element in slide_data["elements"]
         ]
-        slide = _clone_slide(
-            deck, originals[slide_data["pattern_index"]], branding, content_boxes
+        source = originals[slide_data["pattern_index"]]
+        orphans = (
+            frozenset()
+            if any(e.get("from_template") for e in slide_data["elements"])
+            else _orphan_icon_row(source, deck.slide_width, deck.slide_height, branding)
         )
+        slide = _clone_slide(deck, source, branding, content_boxes, orphans)
         background = slide_data.get("background") or background_color(
             slide, template["tokens"]["theme"]
         )

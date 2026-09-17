@@ -143,11 +143,9 @@ def audit(deck, template, sources):
                 )
             )
         seen.add(title_key)
-        cover_page = (
-            index == 0
-            and patterns.get(slide.get("pattern_index"), {}).get("role") == "cover"
-        )
-        # Титульная страница из одного названия — это не пустой слайд, а обложка.
+        # Первый слайд колоды — титул: название и, если есть, одна строка под
+        # ним. Отсутствие тезисов там — замысел, а не пустой слайд.
+        cover_page = index == 0 and bool(content["title"].strip())
         if (
             not cover_page
             and not content["bullets"]
@@ -312,8 +310,9 @@ def audit(deck, template, sources):
             for b in patterns.get(slide.get("pattern_index"), {}).get("reserved", [])
             # Фоновая иллюстрация во весь слайд — страница шаблона, а не
             # объект, который текст обязан обходить: читаемость на ней
-            # обеспечивают подложка и контраст.
-            if b["w"] * b["h"] < 0.6
+            # обеспечивают подложка и контраст. Ряд значков экспорт снимает,
+            # когда раскладывать по нему нечего, — проверять его не по чему.
+            if b["w"] * b["h"] < 0.6 and not b.get("icons")
         ]
         edges = [e["box"][0] for e in elements]
         # Направляющие шаблона: левые и правые края текстовых рамок прототипа.

@@ -4,7 +4,7 @@
  * — это рендер собранного PPTX, а не наша перерисовка.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -85,15 +85,40 @@ function ThemeSwitch() {
 
 function WorkflowBadge() {
   const [workflow, setWorkflow] = useState<ApiWorkflow | null>(null);
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     api.workflow().then(setWorkflow).catch(() => setWorkflow(null));
   }, []);
 
+  // Карточка закрывается кликом мимо и клавишей Escape: иначе она перекрывает
+  // половину страницы, пока по ней не попадут повторно.
+  useEffect(() => {
+    if (!open) return undefined;
+    const away = (event: MouseEvent) => {
+      if (!box.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', away);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [open]);
+
   if (!workflow) return null;
   const agents = Object.entries(workflow.agents ?? {});
   return (
-    <details className="workflow">
+    <details
+      className="workflow"
+      ref={box}
+      open={open}
+      onToggle={event => setOpen((event.currentTarget as HTMLDetailsElement).open)}
+    >
       <summary title="Чем собрана колода: версия воркфлоу и агенты">
         воркфлоу {workflow.version}
       </summary>
