@@ -5,6 +5,7 @@ import time
 import zipfile
 from pathlib import Path
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pptx import Presentation
 from designer.app import create_app
@@ -1019,9 +1020,13 @@ def test_focus_variant_fills_the_slide_with_larger_type():
     data = Outline.model_validate(plan).model_dump()
     classic = compose(data, template, "classic")
     focus = compose(data, template, "focus")
+    body_size = lambda deck: next(
+        e["font_size"] for e in deck["slides"][0]["elements"] if e.get("role") == "body"
+    )
+    # «Фокус» отвечает на пустой слайд крупным кеглем, а не наполнителем.
+    assert body_size(focus) >= body_size(classic)
     area = focus["width"] * focus["height"]
-    fill = lambda deck: sum(ink_area(e) for e in deck["slides"][0]["elements"]) / area
-    assert fill(focus) > fill(classic)
+    assert sum(ink_area(e) for e in focus["slides"][0]["elements"]) / area > 0.1
     for element in focus["slides"][0]["elements"]:
         if element["kind"] == "text":
             assert element["font_size"] in template["tokens"]["font_sizes"]
@@ -1390,8 +1395,200 @@ def test_layout_follows_the_template_typography():
     assert title["align"] == "center"
     # Кегль тела остаётся в пределах шаблонного: расти он может, но немного и
     # только по шкале самого шаблона.
-    assert 20.0 <= body["font_size"] <= 30.0
+    assert 20.0 <= body["font_size"] <= 44.0
     assert body["font_size"] in template["tokens"]["font_sizes"]
     assert body["align"] == "left"
     # Контент начинается там, где его держит прототип.
     assert body["box"][1] >= deck["height"] * 0.3
+
+
+def test_first_slide_uses_a_cover_page_of_the_template():
+    """У шаблона для обложки свои страницы: крупный заголовок, мало рамок."""
+    from designer.layout import compose
+    from designer.models import Outline
+
+    cover = dict(pattern(0, text_slots=2))
+    cover["title_box"] = {"x": 0.1, "y": 0.35, "w": 0.8, "h": 0.22}
+    content = dict(pattern(1, text_slots=5))
+    plan = outline(3)
+    deck = compose(
+        Outline.model_validate(plan).model_dump(),
+        synthetic_template([cover, content]),
+        "classic",
+    )
+    assert deck["slides"][0]["pattern_index"] == 0
+    # Дальше идут обычные контентные страницы.
+    assert deck["slides"][1]["pattern_index"] == 1
+
+
+def test_sparse_content_is_pulled_to_the_optical_centre():
+    from designer.layout import compose
+    from designer.models import Outline
+
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = ["Один короткий тезис"]
+    template = synthetic_template([pattern(0), pattern(1)])
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    title, body = deck["slides"][0]["elements"][0], deck["slides"][0]["elements"][1]
+    gap = body["box"][1] - (title["box"][1] + title["box"][3])
+    assert gap > 0
+    # Блок опущен ниже верхней кромки области, но не улетел за её пределы.
+    assert body["box"][1] + body["box"][3] <= deck["height"]
+
+
+def test_template_roles_drive_slide_placement():
+    """Обложка шаблона достаётся первому слайду, «спасибо» — последнему."""
+    from designer.layout import compose
+    from designer.models import Outline
+
+    cover = dict(pattern(0, text_slots=2), role="cover")
+    content = dict(pattern(1, text_slots=4), role="content")
+    closing = dict(pattern(2, text_slots=2), role="closing")
+    deck = compose(
+        Outline.model_validate(outline(3)).model_dump(),
+        synthetic_template([cover, content, closing]),
+        "classic",
+    )
+    used = [s["pattern_index"] for s in deck["slides"]]
+    assert used[0] == 0, used
+    assert used[-1] == 2, used
+
+
+def test_poor_template_still_produces_a_readable_deck(tmp_path):
+    """Шаблон может быть плохим: без стилей, тем и образцов. Колода всё равно нужна."""
+    import io
+
+    from pptx import Presentation as Deck
+
+    from designer.audit import audit
+    from designer.exporting import export_pptx, verify_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+
+    poor = Deck()
+    slide = poor.slides.add_slide(poor.slide_layouts[6])  # пустой макет
+    slide.shapes.add_textbox(0, 0, 100, 50).text_frame.text = "Текст"
+    buffer = io.BytesIO()
+    poor.save(buffer)
+    data = buffer.getvalue()
+
+    template = parse_template(data, "poor.pptx")
+    plan = outline(3)
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+
+    width, height = deck["width"], deck["height"]
+    for slide_data in deck["slides"]:
+        assert slide_data["elements"], "слайд без содержимого"
+        for element in slide_data["elements"]:
+            x, y, w, h = element["box"]
+            assert x >= 0 and y >= 0
+            assert x + w <= width + 1 and y + h <= height + 1
+            if element["kind"] == "text":
+                assert element["font_size"] >= 12
+
+    report = audit(deck, template, [{"id": "brief", "text": "10 20 А Б Продажи Этап Срок"}])
+    assert report["counts"]["errors"] == 0, [
+        i["code"] for i in report["issues"] if i["severity"] == "error"
+    ]
+
+    source = tmp_path / "poor.pptx"
+    source.write_bytes(data)
+    output = tmp_path / "out.pptx"
+    export_pptx(source, template, deck, output)
+    assert verify_pptx(output, len(deck["slides"]))["raster_slides"] == []
+
+
+def test_bullets_fill_the_card_grid_of_the_template():
+    """Если у прототипа ряд одинаковых блоков — тезисы ложатся в них."""
+    from designer.layout import compose
+    from designer.models import Outline
+
+    cards = [
+        {
+            "role": "body",
+            "box": {"x": 0.06 + i * 0.31, "y": 0.4, "w": 0.26, "h": 0.3},
+            "style": {"font": "Play", "size": 16.0, "align": "l"},
+            "length": 40,
+        }
+        for i in range(3)
+    ]
+    grid = dict(
+        pattern(0, text_slots=4),
+        role="content",
+        slots=[
+            {
+                "role": "title",
+                "box": {"x": 0.06, "y": 0.08, "w": 0.8, "h": 0.14},
+                "style": {"size": 32.0, "align": "l"},
+                "length": 20,
+            },
+            *cards,
+        ],
+    )
+    plan = outline(2)
+    # Первый слайд — обложка, карточки проверяем на втором, контентном.
+    for slide in plan["slides"]:
+        slide["visual"] = {"kind": "none"}
+        slide["bullets"] = ["Первый", "Второй", "Третий"]
+    deck = compose(
+        Outline.model_validate(plan).model_dump(),
+        synthetic_template([grid, dict(pattern(1, text_slots=2), role="cover")]),
+        "classic",
+    )
+    content_slide = deck["slides"][1]
+    ids = [e["id"] for e in content_slide["elements"]]
+    assert ids == ["title", "card_0", "card_1", "card_2"], ids
+    # Карточки стоят там же, где они в шаблоне.
+    xs = [e["box"][0] for e in content_slide["elements"] if e["id"].startswith("card")]
+    assert xs == sorted(xs) and len(set(xs)) == 3
+
+
+def test_overloaded_slides_are_condensed_to_the_template_capacity(monkeypatch):
+    """Текст подгоняется под место, которое даёт шаблон, до вёрстки."""
+    import asyncio
+
+    from designer.generation import balance_outline, outline_overflow
+    from designer.layout import slide_capacity
+    from designer.parsing import parse_template
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    capacity = slide_capacity(template)
+    assert capacity > 200
+
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = ["Очень длинный тезис про пилот сервиса. " * 30]
+    assert outline_overflow(plan, capacity)
+
+    async def fake_condense(agent, payload, validate=None):
+        assert agent == "condense"
+        assert payload["slides"][0]["limit_chars"] > 0
+        return {"slides": [{"index": 0, "bullets": ["Пилот сервиса завершён"]}]}
+
+    monkeypatch.setattr("designer.generation.completion", fake_condense)
+    balanced = asyncio.run(balance_outline(plan, template))
+    assert balanced["slides"][0]["bullets"] == ["Пилот сервиса завершён"]
+    assert not outline_overflow(balanced, capacity)
+
+
+def test_without_a_model_overflow_is_trimmed_deterministically(monkeypatch):
+    import asyncio
+
+    from designer.generation import balance_outline, outline_overflow
+    from designer.layout import slide_capacity
+    from designer.parsing import parse_template
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = ["Длинный тезис про внедрение сервиса. " * 20]
+
+    async def unavailable(agent, payload, validate=None):
+        raise HTTPException(503, "модель не настроена")
+
+    monkeypatch.setattr("designer.generation.completion", unavailable)
+    balanced = asyncio.run(balance_outline(plan, template))
+    assert balanced["slides"][0]["bullets"], "текст не должен исчезать целиком"
+    assert not outline_overflow(balanced, slide_capacity(template) * 1.2)

@@ -24,9 +24,15 @@ from .exporting import (
     sample_backgrounds,
     verify_pptx,
 )
-from .generation import generate_outline, provider, sources_for, workflow
+from .generation import (
+    balance_outline,
+    generate_outline,
+    provider,
+    sources_for,
+    workflow,
+)
 from .layout import compose
-from .models import Brief, FixRequest, GenerateRequest, SlideEdit
+from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit
 from .parsing import PARSER_VERSION, parse_content, parse_template
 from .storage import Store
 
@@ -287,6 +293,12 @@ def create_app(data_dir=None, seed_dir=None):
                     outline = request.outline or await generate_outline(
                         request, sources
                     )
+                    # Тексты подгоняются под вместимость шаблона до вёрстки, чтобы
+                    # все три варианта собирались из одного выверенного содержания.
+                    job.update(stage="balance", progress=12)
+                    store.put("jobs", job)
+                    balanced = await balance_outline(outline.model_dump(), template)
+                    outline = Outline.model_validate(balanced)
                     job["outline"] = outline.model_dump()
                     contextual_findings = None
                     if request.contextual_audit:

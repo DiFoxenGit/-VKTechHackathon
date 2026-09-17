@@ -330,7 +330,9 @@ def audit(deck, template, sources):
                 )
             # A block should share a left edge with another block or sit on the
             # safe-area edge; a lone offset reads as a layout mistake.
-            aligned = (
+            # Блок, чья рамка взята из шаблона, выровнен по определению: это
+            # композиция дизайнера, а не наша геометрия.
+            aligned = element.get("from_template") or (
                 len(elements) < 2
                 or abs(x - width * safe["x"]) <= ALIGN_TOLERANCE
                 or abs(x + w - width * (safe["x"] + safe["w"])) <= ALIGN_TOLERANCE

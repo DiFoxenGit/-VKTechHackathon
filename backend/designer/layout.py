@@ -68,6 +68,39 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
     return elements
 
 
+def center_content(elements, top, bottom):
+    """Прижать разреженный контент к оптической середине области.
+
+    Три строки, прибитые к верхнему краю большой пустой области, читаются как
+    недоделанный слайд. Если содержимое занимает меньше половины места, опускаем
+    его на треть свободного пространства — так слайд выглядит собранным.
+    """
+    body = [e for e in elements if e.get("role") != "title"]
+    if not body:
+        return elements
+    used_top = min(e["box"][1] for e in body)
+    used_bottom = max(
+        e["box"][1]
+        + (min(e["box"][3], estimated_text_height(e)) if e["kind"] == "text" else e["box"][3])
+        for e in body
+    )
+    available = bottom - top
+    used = used_bottom - used_top
+    if available <= 0 or used >= available * 0.55:
+        return elements
+    # Рамка ужимается до фактической высоты текста, иначе сдвиг вынесет пустой
+    # низ блока за пределы слайда, и аудит справедливо это заметит.
+    for element in body:
+        if element["kind"] == "text":
+            element["box"][3] = min(
+                element["box"][3], max(24.0, estimated_text_height(element))
+            )
+    shift = (available - used) / 3
+    for element in body:
+        element["box"][1] += shift
+    return elements
+
+
 def fit_text(element, scale, minimum=12):
     """Step the font down the template's own scale until the text fits its box."""
     height = element["box"][3]
@@ -80,13 +113,17 @@ def fit_text(element, scale, minimum=12):
     return element
 
 
-def content_demand(content):
+def content_demand(content, position=1, total=1):
     """How much room this slide needs and what kind of room."""
     bullets = content["bullets"]
     return {
         "lines": sum(1 + len(b) // 60 for b in bullets),
         "has_visual": content["visual"]["kind"] != "none",
         "title_length": len(content["title"]),
+        # Первый слайд — обложка: у шаблона для неё свои страницы, с крупным
+        # заголовком по центру и почти без текстовых блоков.
+        "cover": position == 0,
+        "closing": total > 2 and position == total - 1,
     }
 
 
@@ -171,6 +208,27 @@ def score_pattern(pattern, demand, recent, uses=0):
         # A shallow title band cannot hold a long conclusion-style headline.
         if demand["title_length"] > 60 and title_box["h"] < 0.1:
             score -= 0.15
+    role = pattern.get("role", "content")
+    if demand.get("cover"):
+        # Обложка шаблона — именно та страница, где дизайнер оставил место под
+        # название и автора.
+        score += 1.2 if role == "cover" else 0.0
+        score -= 0.8 if role in ("agenda", "team", "closing") else 0.0
+    elif demand.get("closing"):
+        score += 0.8 if role == "closing" else 0.0
+        score -= 0.6 if role == "cover" else 0.0
+    else:
+        # Контентные страницы: обложки и разделители сюда не годятся.
+        score -= {"cover": 0.9, "section": 0.5, "agenda": 0.4, "closing": 0.7}.get(
+            role, 0.0
+        )
+    if demand.get("cover"):
+        # Обложка шаблона: мало текстовых рамок, заголовок крупный и не у самого
+        # верха. Обычная контентная страница на её месте выглядит как ошибка.
+        title_box = pattern.get("title_box") or {}
+        score += 0.5 if pattern.get("text_slots", 0) <= 3 else -0.3
+        score += 0.4 if title_box.get("y", 0) > 0.2 else 0.0
+        score += 0.3 if title_box.get("h", 0) > 0.15 else 0.0
     if recent and pattern["index"] == recent[-1]:
         score -= 0.6
     # Reuse is allowed, but every repeat costs more, so a deck spreads over the
@@ -179,8 +237,8 @@ def score_pattern(pattern, demand, recent, uses=0):
     return round(score, 6)
 
 
-def choose_pattern(candidates, content, recent, usage=None):
-    demand = content_demand(content)
+def choose_pattern(candidates, content, recent, usage=None, position=1, total=1):
+    demand = content_demand(content, position, total)
     usage = usage or {}
     scored = [
         (score_pattern(p, demand, recent, usage.get(p["index"], 0)), -p["index"], p)
@@ -218,6 +276,42 @@ def slot_size(style, scale, fallback, minimum=12, maximum=96):
     return size
 
 
+def card_slots(body_slots, width, height, minimum=2, maximum=6):
+    """Одинаковые блоки прототипа — готовая карточная сетка шаблона.
+
+    Шаблоны почти всегда содержат страницы с рядом карточек. Разложить тезисы по
+    ним куда лучше, чем печатать их списком: слайд сразу выглядит как страница
+    той же презентации, а не как текст на пустом фоне.
+    """
+    # Мелкие подписи тоже повторяются рядами, но это не карточки: текст в них
+    # окажется микроскопическим, а слайд — пустым. Берём только крупную сетку
+    # внутри рабочей области.
+    boxes = [s["box"] for s in body_slots if s["box"]["y"] >= 0.18]
+    if len(boxes) < minimum:
+        return []
+    median_w = sorted(b["w"] for b in boxes)[len(boxes) // 2]
+    median_h = sorted(b["h"] for b in boxes)[len(boxes) // 2]
+    if median_w * median_h < 0.045:
+        return []
+    cards = [
+        b
+        for b in boxes
+        if abs(b["w"] - median_w) <= median_w * 0.25
+        and abs(b["h"] - median_h) <= max(median_h * 0.6, 0.03)
+    ]
+    if len(cards) < minimum:
+        return []
+    cards.sort(key=lambda b: (round(b["y"], 2), b["x"]))
+    cards = cards[:maximum]
+    # Сетка должна занимать заметную часть слайда, иначе контент повиснет в углу.
+    if sum(b["w"] * b["h"] for b in cards) < 0.16:
+        return []
+    return [
+        [b["x"] * width, b["y"] * height, b["w"] * width, b["h"] * height]
+        for b in cards
+    ]
+
+
 def slot_align(style):
     """Выравнивание абзаца шаблона в терминах экспорта."""
     value = (style.get("align") or "").lower()
@@ -228,6 +322,28 @@ def slot_align(style):
     if value.startswith("just"):
         return "justify"
     return "left"
+
+
+def slide_capacity(template, size=None):
+    """Сколько символов помещается в контентную область этого шаблона.
+
+    Оценка нужна до вёрстки: если текста больше, его лучше сократить целиком по
+    колоде, чем потом уменьшать кегль на конкретном слайде и ломать типографику.
+    """
+    width = template["width"] / 12700
+    height = template["height"] / 12700
+    geometry = template.get("geometry") or {}
+    safe = geometry.get("safe_area") or DEFAULT_SAFE_AREA
+    scale = [s for s in template["tokens"]["font_sizes"] if 10 <= s <= 60]
+    body = size or (
+        min(scale, key=lambda s: abs(s - height * 0.045)) if scale else 18
+    )
+    # Контент занимает область ниже заголовка: примерно две трети рабочей высоты.
+    area_width = width * safe["w"]
+    area_height = height * safe["h"] * 0.62
+    per_line = max(1, (area_width - 12) / (body * 0.55))
+    lines = max(1, area_height / (body * 1.35))
+    return int(per_line * lines * 0.85)
 
 
 def compose(outline, template, variant):
@@ -255,7 +371,9 @@ def compose(outline, template, variant):
     recent: list[int] = []
     usage: dict[int, int] = {}
     for i, content in enumerate(outline["slides"]):
-        pattern, pattern_score = choose_pattern(candidates, content, recent, usage)
+        pattern, pattern_score = choose_pattern(
+            candidates, content, recent, usage, i, len(outline["slides"])
+        )
         recent = [*recent, pattern["index"]][-3:]
         usage[pattern["index"]] = usage.get(pattern["index"], 0) + 1
         # Слоты прототипа — готовая композиция шаблона: заголовок и текстовые
@@ -337,6 +455,11 @@ def compose(outline, template, variant):
         bullets = content["bullets"]
         visual = content["visual"]
         has_visual = visual["kind"] != "none"
+        cards = (
+            card_slots(body_slots, width, height)
+            if not has_visual and variant != "focus"
+            else []
+        )
 
         def text_box(identifier, items, box, elements=elements):
             if items:
@@ -423,6 +546,15 @@ def compose(outline, template, variant):
                     bullets[1:],
                     [margin + w * 0.1, top + h * 0.36, w * 0.8, h * 0.64],
                 )
+        elif cards and len(bullets) >= 2:
+            # Тезисы расходятся по карточкам шаблона: по одному на карточку,
+            # остаток дописывается в последнюю, чтобы ничего не потерять.
+            groups = [[b] for b in bullets[: len(cards)]]
+            for extra in bullets[len(cards) :]:
+                groups[-1].append(extra)
+            for index, (group, box) in enumerate(zip(groups, cards)):
+                text_box(f"card_{index}", group, list(box))
+                elements[-1]["from_template"] = True
         else:
             text_box("body", bullets, [margin, top, w, h])
         # Resolve the text color once, against this slide's real background, so
@@ -432,19 +564,18 @@ def compose(outline, template, variant):
         for element in elements:
             if element["kind"] == "text":
                 fit_text(element, scale)
-        # Пустой слайд — замечание аудита. Кегль поднимается по шкале шаблона, пока
-        # слайд не выйдет из «пустой» зоны; в «фокусе» цель выше по стилю варианта.
-        # «Фокус» — вариант со сценой: там крупный кегль оправдан. В остальных
-        # вариантах текст не перерастает тот кегль, который выбрал шаблон.
+        # Сначала кегль, потом положение: центрирование ужимает рамки по факту
+        # текста, и расти после него уже некуда.
         grow_text(
             elements,
             scale,
             width * height,
-            target=0.45 if variant == "focus" else 0.28,
+            target=0.45 if variant == "focus" else 0.34,
             maximum=(
-                60 if variant == "focus" else max(slide_body_size, body_size) * 1.5
+                60 if variant == "focus" else max(slide_body_size, body_size) * 2.2
             ),
         )
+        center_content(elements, top, bottom)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         luma = pattern.get("bg_luma")
         if luma is not None:

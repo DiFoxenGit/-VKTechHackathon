@@ -21,7 +21,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 8
+PARSER_VERSION = 9
 
 
 def is_footer_placeholder(shape):
@@ -177,6 +177,37 @@ def text_style(shape, theme):
     text = shape.text.strip()
     style["caps"] = bool(text) and text == text.upper() and any(c.isalpha() for c in text)
     return style
+
+
+# Слова, по которым узнаётся назначение страницы шаблона. Роль решает, где
+# страницу уместно использовать: обложку — первой, «спасибо» — последней.
+ROLE_WORDS = {
+    "agenda": ("содержание", "оглавление", "повестка", "agenda", "contents"),
+    "closing": ("спасибо", "благодарю", "контакты", "вопросы", "thank", "contacts"),
+    "team": ("команда", "о нас", "участники", "спикер", "team", "about us"),
+    "section": ("раздел", "часть", "глава", "section", "chapter"),
+}
+
+
+def classify_pattern(pattern, index, total):
+    """Назначение страницы шаблона: обложка, содержание, раздел, команда, контент.
+
+    Шаблоны содержат образцы: титульный слайд с именем автора, страницу
+    содержания, разделители. Ставить контент на разделитель — то же, что печатать
+    текст на обложке книги, поэтому роль важна при подборе.
+    """
+    text = " ".join(shape["text"] for shape in pattern["shapes"]).lower()
+    for role, words in ROLE_WORDS.items():
+        if any(word in text for word in words):
+            return role
+    title = pattern.get("title_box") or {}
+    slots = pattern.get("text_slots", 0)
+    # Первые страницы шаблона с крупным заголовком и почти без текста — обложка.
+    if index <= max(2, total * 0.05) and slots <= 4 and title.get("h", 0) >= 0.1:
+        return "cover"
+    if slots <= 1:
+        return "section"
+    return "content"
 
 
 def preserved_shape(shape, width, height, branding=None):
@@ -583,6 +614,8 @@ def parse_template(data: bytes, name: str):
                 "text_slots": len(text_shapes),
             }
         )
+    for index, pattern in enumerate(patterns):
+        pattern["role"] = classify_pattern(pattern, index, len(patterns))
     geometry = derive_geometry(patterns)
     for layout in layouts:
         scan(layout.shapes)

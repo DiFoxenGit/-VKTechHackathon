@@ -336,6 +336,89 @@ def sources_for(store, request: Brief):
     return result
 
 
+def outline_overflow(outline, capacity, max_bullets=6):
+    """Слайды, где текста заметно больше, чем помещается."""
+    heavy = []
+    for index, slide in enumerate(outline["slides"]):
+        text = len(slide["title"]) + sum(len(b) for b in slide["bullets"])
+        # Визуализация занимает место: под текст остаётся примерно половина.
+        room = capacity if slide["visual"]["kind"] == "none" else capacity * 0.45
+        if text > room or len(slide["bullets"]) > max_bullets:
+            heavy.append((index, int(room)))
+    return heavy
+
+
+def trim_slide(slide, room, max_bullets=6):
+    """Детерминированный запас: подрезать по предложениям, не теряя первых мыслей."""
+    bullets = slide["bullets"][:max_bullets]
+    budget = max(40, int(room) - len(slide["title"]))
+    kept = []
+    for bullet in bullets:
+        if budget <= 0:
+            break
+        if len(bullet) > budget:
+            cut = bullet[:budget].rstrip()
+            cut = cut[: cut.rfind(" ")] if " " in cut else cut
+            if len(cut) >= 20:
+                kept.append(cut)
+            break
+        kept.append(bullet)
+        budget -= len(bullet)
+    slide["bullets"] = kept or bullets[:1]
+    return slide
+
+
+async def balance_outline(outline, template, capacity=None):
+    """Уложить тексты в то место, которое даёт шаблон.
+
+    Сначала считаем вместимость по дизайн-системе шаблона, затем просим модель
+    сократить перегруженные слайды, сохранив числа и факты. Если модель недоступна
+    или ответила негодно, подрезаем детерминированно: лучше короткий слайд, чем
+    текст, наползающий на соседний блок.
+    """
+    from .layout import slide_capacity
+
+    capacity = capacity or slide_capacity(template)
+    heavy = outline_overflow(outline, capacity)
+    if not heavy:
+        return outline
+    payload = {
+        "capacity_chars": capacity,
+        "slides": [
+            {
+                "index": index,
+                "title": outline["slides"][index]["title"],
+                "bullets": outline["slides"][index]["bullets"],
+                "limit_chars": room,
+                "max_bullets": 6,
+            }
+            for index, room in heavy
+        ],
+    }
+    rooms = dict(heavy)
+    try:
+        result = await completion("condense", payload)
+        for item in result.get("slides", []):
+            index = item.get("index")
+            if not isinstance(index, int) or index not in rooms:
+                continue
+            slide = outline["slides"][index]
+            bullets = [str(b).strip() for b in item.get("bullets", []) if str(b).strip()]
+            if bullets:
+                slide["bullets"] = bullets[:6]
+            title = str(item.get("title") or "").strip()
+            if title:
+                slide["title"] = title
+    except HTTPException as exc:
+        LOGGER.warning("Condense agent unavailable: %s", exc.detail)
+    for index, room in heavy:
+        slide = outline["slides"][index]
+        text = len(slide["title"]) + sum(len(b) for b in slide["bullets"])
+        if text > room * 1.15 or len(slide["bullets"]) > 6:
+            trim_slide(slide, room)
+    return outline
+
+
 async def generate_outline(request, sources):
     allowed = {s["id"] for s in sources}
 

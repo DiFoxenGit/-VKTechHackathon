@@ -11,9 +11,12 @@ TITLES. A title states the conclusion, not the topic: "Конверсия выр
 Put the number in the title when the source gives one. Never repeat the deck title on a slide.
 Keep every title under 70 characters: a longer one no longer fits the template's title band.
 
-BULLETS. Up to 6 per slide, up to 15 words each, but fewer and stronger is better: two bullets that
-carry a fact beat six that restate it. Never pad a slide to fill space, never repeat the same idea in
-different words, never add generic filler ("повышение эффективности", "положительный отклик").
+BULLETS. Aim for three to five bullets per slide when the sources support it, up to 6 maximum.
+A bullet is a finished thought of 6 to 14 words with a fact, a number or a consequence — not a
+two-word label and not a sentence that runs past 15 words. One slide holds one idea: do not split
+a single thought across two slides, and do not leave a slide with a single four-word line.
+Never pad to fill space, never repeat the same idea in different words, never add generic filler
+("повышение эффективности", "положительный отклик").
 
 FACTS. Never invent figures, facts, dates, quotations, names, units or causal claims. Only use
 information in the brief and source documents. Do not derive new numbers either: no percentages,
