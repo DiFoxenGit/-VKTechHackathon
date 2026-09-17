@@ -36,6 +36,21 @@ def workflow():
     return manifest
 
 
+def narrative(purpose):
+    """Каркас повествования для этого типа презентации.
+
+    Состав слайдов зависит от того, что за презентация: у продукта — рынок и
+    ценность, у проекта — статус и риски. Каркас лежит конфигом рядом с промптами
+    и версионируется вместе с ними.
+    """
+    manifest = workflow()
+    path = PROMPTS / manifest.get("narratives", "narratives.v1.json")
+    if not path.exists():
+        return None
+    frames = json.loads(path.read_text(encoding="utf-8"))
+    return frames.get(purpose)
+
+
 def provider():
     url = os.getenv("DESIGNER_LLM_BASE_URL", "").rstrip("/")
     model = os.getenv("DESIGNER_LLM_MODEL", "")
@@ -423,12 +438,30 @@ async def generate_outline(request, sources):
     allowed = {s["id"] for s in sources}
 
     known = known_numbers(sources)
+    # Счётчик попыток: на последней принимаем меньшее число слайдов, чем просили.
+    # Колода из трёх слайдов лучше, чем ошибка вместо презентации; расхождение
+    # видно в ответе и в интерфейсе.
+    attempt = {"n": 0}
 
     def validate(result):
+        attempt["n"] += 1
+        last_chance = attempt["n"] >= MAX_ATTEMPTS
         outline = Outline.model_validate(result)
-        if len(outline.slides) != request.slide_count:
+        count = len(outline.slides)
+        # Материала может не хватать на запрошенное число слайдов. Размазанный по
+        # трём страницам один факт хуже короткой колоды, поэтому недобор до 60%
+        # принимаем, а перебор — нет: пользователь задал верхнюю границу.
+        floor = min(request.slide_count, max(3, int(request.slide_count * 0.6)))
+        if not last_chance and not (floor <= count <= request.slide_count):
             raise ValueError(
-                f"Нужно ровно {request.slide_count} слайдов, получено {len(outline.slides)}"
+                f"Нужно от {floor} до {request.slide_count} слайдов, получено {count}. "
+                "Если материала мало — лучше меньше слайдов, но с содержанием."
+            )
+        if len(outline.slides) != request.slide_count:
+            LOGGER.warning(
+                "Model insisted on %s slides instead of %s",
+                len(outline.slides),
+                request.slide_count,
             )
         unknown = {ref for slide in outline.slides for ref in slide.source_refs} - allowed
         if unknown:
@@ -457,6 +490,16 @@ async def generate_outline(request, sources):
                 + ", ".join(strangers[:8])
                 + ". Переведи все подписи, названия серий и единицы на язык колоды."
             )
+        titles = [slide.title.strip().lower() for slide in outline.slides]
+        repeated = {title for title in titles if titles.count(title) > 1}
+        if repeated:
+            # Повтор заголовка — это два слайда об одном и том же: аудит потом
+            # отметит дубль, но лучше не доводить до готовой колоды.
+            raise ValueError(
+                "Заголовки повторяются: "
+                + ", ".join(sorted(repeated)[:4])
+                + ". Каждый слайд несёт свою мысль."
+            )
         invented = unsupported_numbers(
             "\n".join(
                 slide.title + "\n" + "\n".join(slide.bullets)
@@ -479,6 +522,7 @@ async def generate_outline(request, sources):
         "outline",
         {
             **request.model_dump(exclude={"outline", "template_id"}),
+            "narrative": narrative(request.purpose),
             "sources": select_context(sources, request.brief),
             "schema": Outline.model_json_schema(),
         },

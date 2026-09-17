@@ -329,10 +329,13 @@ def test_provider_contract_and_failures(client, monkeypatch):
     assert len(response.json()["slides"]) == 3
     assert captured[0]["model"] == "test-open-model"
     assert captured[0]["response_format"] == {"type": "json_object"}
+    # Модель отдаёт три слайда вместо четырёх: после трёх попыток берём что есть,
+    # но структура остаётся валидной.
     response = client.post(
         "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 4}
     )
-    assert response.status_code == 502
+    assert response.status_code == 200, response.text
+    assert len(response.json()["slides"]) == 3
 
     def bad_handler(request):
         return httpx.Response(
@@ -1234,6 +1237,7 @@ def test_sample_artwork_is_not_copied_into_the_result(tmp_path):
     import io
 
     from pptx import Presentation as Deck
+    from pptx.dml.color import RGBColor
     from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
     from pptx.util import Emu
 
@@ -1247,25 +1251,28 @@ def test_sample_artwork_is_not_copied_into_the_result(tmp_path):
         slide = source.slides.add_slide(source.slide_layouts[1])
         slide.shapes.title.text = "Образец заголовка"
         slide.placeholders[1].text = "Образец текста"
-        # Кружок-заглушка под фото: на каждом слайде в своём месте.
-        slide.shapes.add_shape(
+        # Серый кружок-заглушка под фото: на каждом слайде в своём месте.
+        stub = slide.shapes.add_shape(
             MSO_AUTO_SHAPE_TYPE.OVAL,
             Emu(900000 + index * 400000),
             Emu(3000000),
             Emu(700000),
             Emu(700000),
         )
-    # Плашка на одном и том же месте всех слайдов — это уже брендинг.
+        stub.fill.solid()
+        stub.fill.fore_color.rgb = RGBColor(0xD9, 0xD9, 0xD9)
+    # Цветная плашка — фирменный декор, он должен остаться на результате.
     for slide in source.slides:
-        slide.shapes.add_shape(
+        plate = slide.shapes.add_shape(
             MSO_AUTO_SHAPE_TYPE.RECTANGLE, Emu(100000), Emu(100000), Emu(400000), Emu(200000)
         )
+        plate.fill.solid()
+        plate.fill.fore_color.rgb = RGBColor(0x00, 0x77, 0xFF)
     buffer = io.BytesIO()
     source.save(buffer)
     data = buffer.getvalue()
 
     template = parse_template(data, "sample.pptx")
-    assert len(template["branding"]) == 1, template["branding"]
 
     plan = {
         "title": "Проверка",
@@ -1288,8 +1295,8 @@ def test_sample_artwork_is_not_copied_into_the_result(tmp_path):
     shapes = list(Deck(output).slides[0].shapes)
     ovals = [s for s in shapes if s.shape_type == 1 and s.width == Emu(700000)]
     plates = [s for s in shapes if s.shape_type == 1 and s.width == Emu(400000)]
-    assert not ovals, "заглушка под фото попала в результат"
-    assert plates, "повторяющаяся плашка шаблона потерялась"
+    assert not ovals, "серая заглушка под фото попала в результат"
+    assert plates, "фирменная плашка шаблона потерялась"
 
 
 def test_photo_backgrounds_are_avoided_and_flagged():
@@ -1592,3 +1599,62 @@ def test_without_a_model_overflow_is_trimmed_deterministically(monkeypatch):
     balanced = asyncio.run(balance_outline(plan, template))
     assert balanced["slides"][0]["bullets"], "текст не должен исчезать целиком"
     assert not outline_overflow(balanced, slide_capacity(template) * 1.2)
+
+
+def test_stubborn_model_still_gets_a_deck(client, monkeypatch):
+    """Модель настаивает на своём числе слайдов — лучше колода, чем ошибка."""
+    short = outline(1)
+    captured = mock_provider(monkeypatch, [json.dumps(short)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Пилот: 10 и 20 команд. Разделы 1, 2, 3.", "slide_count": 5},
+    )
+    assert response.status_code == 200, response.text
+    assert len(response.json()["slides"]) == 1
+    # Сначала переспросили столько раз, сколько положено.
+    assert len(captured) == 3
+
+
+def test_narrative_frame_depends_on_the_kind_of_deck(monkeypatch):
+    """У продукта и проекта разный состав слайдов; команда — не по умолчанию."""
+    from designer.generation import narrative
+
+    product = narrative("product")
+    project = narrative("project")
+    feature = narrative("feature")
+    assert product and project and feature
+    assert product["beats"] != project["beats"]
+    assert feature["team_slide"] == "no"
+    assert all("команд" not in beat.lower() for beat in product["beats"])
+
+
+def test_planner_receives_the_narrative(client, monkeypatch):
+    captured = mock_provider(monkeypatch, [json.dumps(outline(1))])
+    response = client.post(
+        "/api/v1/outlines",
+        json={
+            "brief": "Данные: 10 и 20. Разделы 1, 2, 3.",
+            "slide_count": 1,
+            "purpose": "feature",
+        },
+    )
+    assert response.status_code == 200, response.text
+    payload = json.loads(captured[0]["messages"][1]["content"])
+    assert payload["narrative"]["label"] == "Фича"
+    assert payload["narrative"]["beats"][0].startswith("Боль")
+
+
+def test_repeated_titles_are_sent_back_to_the_model(client, monkeypatch):
+    """Два слайда с одним заголовком — это один слайд, разрезанный пополам."""
+    doubled = outline(2)
+    doubled["slides"][1]["title"] = doubled["slides"][0]["title"]
+    good = outline(2)
+    captured = mock_provider(monkeypatch, [json.dumps(doubled), json.dumps(good)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 2},
+    )
+    assert response.status_code == 200, response.text
+    titles = [s["title"] for s in response.json()["slides"]]
+    assert len(set(titles)) == 2
+    assert "повторяются" in captured[-1]["messages"][-1]["content"].lower()

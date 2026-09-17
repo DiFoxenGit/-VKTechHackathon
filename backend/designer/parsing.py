@@ -21,7 +21,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 9
+PARSER_VERSION = 12
 
 
 def is_footer_placeholder(shape):
@@ -210,6 +210,35 @@ def classify_pattern(pattern, index, total):
     return "content"
 
 
+def fill_colour(shape):
+    """Цвет сплошной заливки фигуры, если он есть."""
+    try:
+        if shape.fill.type == 1 and shape.fill.fore_color.type == 1:
+            return str(shape.fill.fore_color.rgb)
+    except (AttributeError, ValueError, TypeError):
+        return None
+    return None
+
+
+def looks_like_placeholder_art(shape, width, height):
+    """Серая пустая фигура заметного размера — это рамка под фото или иконку.
+
+    Такие заглушки переезжают на готовый слайд пустыми пятнами. Фирменный декор
+    отличается цветом: он взят из палитры шаблона, а не из серой шкалы.
+    """
+    colour = fill_colour(shape)
+    if colour is None:
+        return False
+    try:
+        r, g, b = (int(colour[i : i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return False
+    grey = max(r, g, b) - min(r, g, b) <= 24
+    area = (shape.width / width) * (shape.height / height)
+    # От половины процента слайда: мельче — это точки и линии оформления.
+    return grey and 0.005 < area < 0.6
+
+
 def preserved_shape(shape, width, height, branding=None):
     """True when export keeps this template shape: artwork, footers, page numbers.
 
@@ -234,15 +263,12 @@ def preserved_shape(shape, width, height, branding=None):
     # Заполненный текст — всегда образец: его заменяет новый контент.
     if shape.has_text_frame and shape.text.strip():
         return False
-    # Остальное — фигуры без текста: фон, плашки, кружки-заглушки под фото.
-    # Автофигура тоже имеет текстовую рамку, поэтому решает не наличие рамки,
-    # а повторяемость по колоде.
-    if branding is not None:
-        # Фон во всю страницу остаётся всегда, остальное — только если
-        # повторяется по колоде.
-        return w * h >= 0.85 or shape_key(shape, width, height) in branding
-    # Без статистики по шаблону остаётся прежнее правило про рабочую область.
-    return not (w * h < 0.85 and inside)
+    # Дальше — фигуры без текста. Это и есть фирменное оформление страницы:
+    # плашки, рамки карточек, линии, иллюстрации. Выбрасывать их целиком значит
+    # оставить от шаблона только шрифт и палитру, поэтому убираем лишь заглушки.
+    if looks_like_placeholder_art(shape, width, height):
+        return False
+    return True
 
 
 def relative_luminance(value):
@@ -577,10 +603,14 @@ def parse_template(data: bytes, name: str):
                 0.0, min(box["x"] + box["w"], right) - max(box["x"], left)
             ) * max(0.0, min(box["y"] + box["h"], bottom) - max(box["y"], top))
             area = box["w"] * box["h"]
-            # Branding is what sits outside the content zone: logos, footers, edge
-            # decor. A panel that covers the content zone is a frame the new content
-            # is meant to sit on, so colliding with it is not a defect.
-            if area < 0.85 and covered < 0.5 * area:
+            # Рамка, в которую помещается текст, — это контейнер шаблона: карточка
+            # или плашка, на ней контенту и место. Всё остальное, что переживает
+            # клонирование, — декор: линии, стрелки, иконки, логотипы. Его текст
+            # обходит, а аудит ловит наезды.
+            container = box["w"] >= 0.15 and box["h"] >= 0.1 and area < 0.6
+            if container:
+                continue
+            if area < 0.6 or covered < 0.5 * area:
                 reserved.append(box)
         slots = []
         for item in text_shapes:

@@ -351,6 +351,10 @@ def audit(deck, template, sources):
                     )
                 )
             for box in reserved:
+                # Блок, стоящий в рамке шаблона, лежит внутри неё по замыслу:
+                # это карточка, а не наезд на декор.
+                if element.get("from_template"):
+                    break
                 overlap_area = intersection(element["box"], box)
                 if overlap_area > 0.12 * min(w * h, box[2] * box[3]):
                     issues.append(

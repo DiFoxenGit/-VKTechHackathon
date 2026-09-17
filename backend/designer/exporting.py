@@ -221,14 +221,22 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                 # Начертание и выравнивание — из шаблона: так новый слайд читается
                 # как страница той же презентации, а не как вставка.
                 bold = element.get("bold", element["role"] == "title")
-                for j, line in enumerate(element["text"].splitlines()):
+                # В карточке шаблона первая строка — подзаголовок, остальное текст:
+                # так карточка читается как в оригинале, а не как абзац.
+                card = element.get("from_template") and element["role"] == "body"
+                lines = element["text"].splitlines()
+                for j, line in enumerate(lines):
                     p = frame.paragraphs[0] if j == 0 else frame.add_paragraph()
                     p.text = line
                     p.space_after = Pt(3)
                     p.alignment = align
-                    _font(p.font, font, element["font_size"], text_color, bold)
+                    line_bold = bold or (card and j == 0 and len(lines) > 1)
+                    size = element["font_size"]
+                    if card and j > 0:
+                        size = max(10.0, size * 0.88)
+                    _font(p.font, font, size, text_color, line_bold)
                     for run in p.runs:
-                        _font(run.font, font, element["font_size"], text_color, bold)
+                        _font(run.font, font, size, text_color, line_bold)
             elif kind in ("bar", "line"):
                 visual = element["data"]
                 data = CategoryChartData()

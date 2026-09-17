@@ -75,7 +75,10 @@ def center_content(elements, top, bottom):
     недоделанный слайд. Если содержимое занимает меньше половины места, опускаем
     его на треть свободного пространства — так слайд выглядит собранным.
     """
-    body = [e for e in elements if e.get("role") != "title"]
+    # Блоки в рамках шаблона не двигаем: их положение — решение дизайнера.
+    body = [
+        e for e in elements if e.get("role") != "title" and not e.get("from_template")
+    ]
     if not body:
         return elements
     used_top = min(e["box"][1] for e in body)
@@ -124,6 +127,8 @@ def content_demand(content, position=1, total=1):
         # заголовком по центру и почти без текстовых блоков.
         "cover": position == 0,
         "closing": total > 2 and position == total - 1,
+        # Сколько карточек пригодилось бы этому слайду.
+        "cards": 0 if content["visual"]["kind"] != "none" else len(bullets),
     }
 
 
@@ -173,7 +178,11 @@ def candidate_patterns(patterns):
         found = [p for p in patterns if usable(p, *rule)]
         # Сначала страницы без украшений в рабочей области: заглушки под фото
         # наследуются от макета и остаются на готовом слайде пустыми кругами.
-        clean = [p for p in found if not p.get("decoration_count")]
+        clean = [
+            p
+            for p in found
+            if not p.get("decoration_count") and branding_in_band(p) < 0.02
+        ]
         if len(clean) >= 3:
             return clean
         if len(found) >= 3:
@@ -181,7 +190,7 @@ def candidate_patterns(patterns):
     return [p for p in patterns if p.get("title_box")] or patterns
 
 
-def score_pattern(pattern, demand, recent, uses=0):
+def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правила подбора
     """Rank a template pattern for one slide.
 
     Selection must be explainable on stage: a busy pattern loses points when the
@@ -199,7 +208,9 @@ def score_pattern(pattern, demand, recent, uses=0):
     # текста: контраст там непредсказуем.
     score -= 1.6 * pattern.get("image_cover", 0.0)
     score -= 1.2 * max(0.0, pattern.get("bg_spread", 0.0) - BUSY_BACKGROUND)
-    score -= branding_in_band(pattern) * 2.0
+    # Декор внутри рабочей зоны — главный источник наездов текста на графику.
+    # Дешевле взять другую страницу шаблона, чем воевать с ней геометрией.
+    score -= branding_in_band(pattern) * 5.0
     score += free_area(pattern) * (0.5 if demand["has_visual"] else 0.2)
     score += 0.05 * min(pattern.get("text_slots", 0), 4)
     title_box = pattern.get("title_box")
@@ -213,15 +224,26 @@ def score_pattern(pattern, demand, recent, uses=0):
         # Обложка шаблона — именно та страница, где дизайнер оставил место под
         # название и автора.
         score += 1.2 if role == "cover" else 0.0
-        score -= 0.8 if role in ("agenda", "team", "closing") else 0.0
+        score -= 1.6 if role in ("agenda", "team", "closing") else 0.0
     elif demand.get("closing"):
         score += 0.8 if role == "closing" else 0.0
         score -= 0.6 if role == "cover" else 0.0
     else:
-        # Контентные страницы: обложки и разделители сюда не годятся.
-        score -= {"cover": 0.9, "section": 0.5, "agenda": 0.4, "closing": 0.7}.get(
-            role, 0.0
-        )
+        # Контентные страницы: обложки, разделители и визитка команды сюда не годятся.
+        score -= {
+            "cover": 0.9,
+            "section": 0.5,
+            "agenda": 1.2,
+            "closing": 0.7,
+            "team": 1.5,
+        }.get(role, 0.0)
+    cards = demand.get("cards")
+    if cards:
+        grid = len(card_slots(pattern.get("slots") or [], 1.0, 1.0))
+        if grid:
+            # Сетка под число тезисов: пустые карточки читаются как недоделка,
+            # а тезисы, не поместившиеся в карточки, слипаются в последней.
+            score += 0.45 if grid == cards else -0.18 * abs(grid - cards)
     if demand.get("cover"):
         # Обложка шаблона: мало текстовых рамок, заголовок крупный и не у самого
         # верха. Обычная контентная страница на её месте выглядит как ошибка.
@@ -247,6 +269,35 @@ def choose_pattern(candidates, content, recent, usage=None, position=1, total=1)
     # Deterministic: equal scores resolve by the lowest pattern index.
     best = max(scored, key=lambda item: (item[0], item[1]))
     return best[2], best[0]
+
+
+def decor_free_band(reserved, top, bottom, left, right, minimum=0.45):
+    """Самая большая полоса без декора шаблона.
+
+    Нужна варианту «фокус»: он занимает почти весь слайд одной мыслью, и любая
+    линия шаблона проходит прямо по тексту. Если свободная полоса выходит слишком
+    узкой, оставляем как было — тесный текст хуже, чем замечание аудита.
+    """
+    blockers = [
+        b
+        for b in reserved
+        if b[1] < bottom and b[1] + b[3] > top and b[0] < right and b[0] + b[2] > left
+    ]
+    if not blockers:
+        return top, bottom
+    bands, cursor = [], top
+    for box in sorted(blockers, key=lambda b: b[1]):
+        if box[1] - cursor > 0:
+            bands.append((cursor, box[1]))
+        cursor = max(cursor, box[1] + box[3])
+    if bottom - cursor > 0:
+        bands.append((cursor, bottom))
+    if not bands:
+        return top, bottom
+    best = max(bands, key=lambda band: band[1] - band[0])
+    if best[1] - best[0] < (bottom - top) * minimum:
+        return top, bottom
+    return best
 
 
 def union_box(boxes):
@@ -399,6 +450,7 @@ def compose(outline, template, variant):
             margin = width * safe["x"]
             ty, tw = height * safe["y"], right - margin
         tx = margin
+        has_visual = content["visual"]["kind"] != "none"
         # Compose around branding the template keeps on every slide: narrow the
         # title away from a corner logo, and drop below a full-width wordmark.
         reserved = [
@@ -439,6 +491,10 @@ def compose(outline, template, variant):
                 # шаблона — так левые края блоков совпадают, и аудит это видит.
                 top = max(slot_top, ty + th + height * 0.02)
                 bottom = max(top + height * 0.2, slot_bottom)
+        if variant == "focus" or has_visual:
+            # Крупный блок — одна мысль или диаграмма — не должен ложиться на
+            # линии шаблона: ищем свободную полосу, если она достаточно широкая.
+            top, bottom = decor_free_band(reserved, top, bottom, margin, right)
         w, h, gap = right - margin, bottom - top, width * 0.03
         elements = [
             {
@@ -454,21 +510,22 @@ def compose(outline, template, variant):
         ]
         bullets = content["bullets"]
         visual = content["visual"]
-        has_visual = visual["kind"] != "none"
         cards = (
             card_slots(body_slots, width, height)
             if not has_visual and variant != "focus"
             else []
         )
 
-        def text_box(identifier, items, box, elements=elements):
+        def text_box(identifier, items, box, elements=elements, marker=True):
+            """marker=False — для карточек шаблона: маркер там уже нарисован
+            фигурой, и второй «•» читается как ошибка вёрстки."""
             if items:
                 elements.append(
                     {
                         "id": identifier,
                         "kind": "text",
                         "role": "body",
-                        "text": "\n".join("• " + s for s in items),
+                        "text": "\n".join(("• " + s if marker else s) for s in items),
                         "box": box,
                         "font_size": slide_body_size,
                         "bold": bool(body_style.get("bold")),
@@ -553,7 +610,14 @@ def compose(outline, template, variant):
             for extra in bullets[len(cards) :]:
                 groups[-1].append(extra)
             for index, (group, box) in enumerate(zip(groups, cards)):
-                text_box(f"card_{index}", group, list(box))
+                # Отступ внутри карточки: текст не липнет к её рамке.
+                pad = min(12.0, box[2] * 0.08, box[3] * 0.12)
+                text_box(
+                    f"card_{index}",
+                    group,
+                    [box[0] + pad, box[1] + pad, box[2] - pad * 2, box[3] - pad * 2],
+                    marker=False,
+                )
                 elements[-1]["from_template"] = True
         else:
             text_box("body", bullets, [margin, top, w, h])
@@ -570,25 +634,30 @@ def compose(outline, template, variant):
             elements,
             scale,
             width * height,
-            target=0.45 if variant == "focus" else 0.34,
+            target=0.4 if variant == "focus" else 0.3,
             maximum=(
-                60 if variant == "focus" else max(slide_body_size, body_size) * 2.2
+                max(slide_body_size, body_size) * 2.0
+                if variant == "focus"
+                else max(slide_body_size, body_size) * 1.25
             ),
         )
         center_content(elements, top, bottom)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         luma = pattern.get("bg_luma")
-        if luma is not None:
+        if luma is not None:  # noqa: SIM108 - читаемее развёрнуто
             # Измеренная светлота важнее XML: фон может прийти от мастера или от
             # полноэкранной фигуры, и тогда объявленный цвет ничего не значит.
             background = "FFFFFF" if luma >= 0.5 else "111111"
         # Пёстрый фон — фотография или градиент: точечный цвет неизвестен, поэтому
         # под текст кладётся подложка, а контраст считается против неё.
-        needs_scrim = (
-            pattern.get("bg_spread", 0) > BUSY_BACKGROUND
-            if pattern.get("bg_spread") is not None
-            else pattern.get("background_kind", "solid") != "solid"
-        )
+        # Подложка нужна там, где текст иначе не прочесть: тёмный или пёстрый
+        # фон. На светлой фирменной странице с декором она только портит вид.
+        spread = pattern.get("bg_spread")
+        if spread is None:
+            needs_scrim = pattern.get("background_kind", "solid") != "solid"
+        else:
+            dark = (luma if luma is not None else 1.0) < 0.62
+            needs_scrim = spread > BUSY_BACKGROUND and dark
         if needs_scrim:
             background = tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)

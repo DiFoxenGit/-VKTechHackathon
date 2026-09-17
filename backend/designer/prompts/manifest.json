@@ -1,12 +1,18 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "agents": {"outline": "outline.v3.txt", "audit": "audit.v1.txt", "audit_image": "audit.image.v1.txt", "condense": "condense.v1.txt"},
+  "narratives": "narratives.v1.json",
   "variants": [
     {"id": "classic", "description": "Вертикальный рассказ: текст сверху, визуализация снизу"},
     {"id": "split", "description": "Две колонки: текст слева, визуализация или тезисы справа"},
     {"id": "focus", "description": "Акцент: визуализация сверху, краткие выводы снизу"}
   ],
   "changelog": [
+    {
+      "version": "1.7.0",
+      "agents": {"outline": "v3 + каркасы повествования"},
+      "why": "Состав слайдов не должен быть одинаковым для продукта, проекта, фичи и инициативы. Добавлен конфиг narratives.v1.json: у каждого назначения свой каркас, а слайд про команду появляется только там, где он уместен и есть о ком рассказывать."
+    },
     {
       "version": "1.6.0",
       "agents": {"outline": "v3 (плотность слайда)"},
