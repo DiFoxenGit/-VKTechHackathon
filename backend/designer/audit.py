@@ -36,6 +36,8 @@ MAX_TABLE_COLUMNS = 5
 MAX_SERIES = 5
 # Больше элементов в схеме — подписи мельче кегля шаблона.
 MAX_STEPS = 6
+# Доля слайда под картинкой, после которой текст поверх неё считается риском.
+IMAGE_COVER_LIMIT = 0.5
 MAX_FONT_FAMILIES = 2
 MIN_FONT_SIZE = 12
 # A slide below the first value reads as empty, above the second as a wall of text.
@@ -267,6 +269,20 @@ def audit(deck, template, sources):
                     "fill_ratio",
                     f"Слайд заполнен на {round(fill * 100)}%; ориентир — от "
                     f"{round(FILL_RANGE[0] * 100)}% до {round(FILL_RANGE[1] * 100)}%",
+                )
+            )
+        if slide.get("needs_scrim") or slide.get("image_cover", 0) >= IMAGE_COVER_LIMIT:
+            kind = slide.get("background_kind", "solid")
+            source = {"image": "фотографии", "gradient": "градиенте"}.get(
+                kind, "изображении шаблона"
+            )
+            issues.append(
+                issue(
+                    index,
+                    None,
+                    "text_over_image",
+                    f"Текст лежит на {source}; под него добавлена подложка, "
+                    "проверьте читаемость",
                 )
             )
         background = slide.get("background") or template["tokens"]["theme"].get(

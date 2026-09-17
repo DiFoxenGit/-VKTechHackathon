@@ -10,7 +10,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, apiConfigured, waitForJob } from './services/api';
 import type {
   ApiAuditIssue,
+  ApiContentPack,
   ApiJob,
+  ApiOutline,
+  ApiSlideContent,
   ApiPresentation,
   ApiPurpose,
   ApiTemplateSummary,
@@ -51,6 +54,8 @@ export default function ServerStudio() {
   const [active, setActive] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [uploading, setUploading] = useState(false);
+  const [outline, setOutline] = useState<ApiOutline | null>(null);
+  const [packs, setPacks] = useState<ApiContentPack[]>([]);
 
   const loadTemplates = useCallback(async () => {
     try {
@@ -70,6 +75,72 @@ export default function ServerStudio() {
   const issues = deck?.audit.issues ?? [];
   const fixable = useMemo(() => issues.filter(i => i.fixable), [issues]);
 
+  /** Структура отдельно от вёрстки: ТЗ требует показать её и дать поправить. */
+  async function buildOutline() {
+    setBusy(true);
+    setError('');
+    setDecks([]);
+    try {
+      const result = await api.createOutline({
+        brief,
+        purpose,
+        language: 'ru',
+        slide_count: slideCount,
+        content_pack_ids: packs.map(pack => pack.id),
+      });
+      setOutline(result);
+    } catch (exc) {
+      setError(message(exc));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function editSlide(index: number, patch: Partial<ApiSlideContent>) {
+    setOutline(current =>
+      current
+        ? {
+            ...current,
+            slides: current.slides.map((slide, i) => (i === index ? { ...slide, ...patch } : slide)),
+          }
+        : current,
+    );
+  }
+
+  function moveSlide(index: number, delta: number) {
+    setOutline(current => {
+      if (!current) return current;
+      const target = index + delta;
+      if (target < 0 || target >= current.slides.length) return current;
+      const slides = [...current.slides];
+      [slides[index], slides[target]] = [slides[target], slides[index]];
+      return { ...current, slides };
+    });
+  }
+
+  function removeSlide(index: number) {
+    setOutline(current =>
+      current && current.slides.length > 1
+        ? { ...current, slides: current.slides.filter((_, i) => i !== index) }
+        : current,
+    );
+  }
+
+  async function uploadPack(file: File) {
+    setUploading(true);
+    setError('');
+    try {
+      const pack = await api.uploadContentPack(file, file.name);
+      setPacks(current =>
+        current.some(item => item.id === pack.id) ? current : [...current, pack],
+      );
+    } catch (exc) {
+      setError(message(exc));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function generate() {
     setBusy(true);
     setError('');
@@ -81,8 +152,9 @@ export default function ServerStudio() {
         brief,
         purpose,
         language: 'ru',
-        slide_count: slideCount,
-        content_pack_ids: [],
+        slide_count: outline ? outline.slides.length : slideCount,
+        content_pack_ids: packs.map(pack => pack.id),
+        outline: outline ?? undefined,
         contextual_audit: contextual,
       });
       const finished = await waitForJob(started.id, setJob);
@@ -245,11 +317,94 @@ export default function ServerStudio() {
               }}
             />
           </label>
+          <label className="studio-upload">
+            Добавить материалы
+            <input
+              type="file"
+              accept=".txt,.md,.csv,.json,.pdf,.docx,.pptx"
+              disabled={uploading}
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) void uploadPack(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          <button
+            className="studio-secondary"
+            disabled={busy || !brief.trim()}
+            onClick={() => void buildOutline()}
+          >
+            {busy ? 'Работаем…' : 'Собрать структуру'}
+          </button>
           <button className="studio-primary" disabled={busy || !templateId} onClick={() => void generate()}>
-            {busy ? 'Генерация…' : 'Сгенерировать три варианта'}
+            {busy ? 'Генерация…' : outline ? 'Сверстать три варианта' : 'Сгенерировать три варианта'}
           </button>
         </div>
       </section>
+
+      {packs.length > 0 && (
+        <p className="studio-muted studio-packs">
+          Материалы:{' '}
+          {packs.map(pack => (
+            <span key={pack.id} className="studio-chip">
+              {pack.name} · {Math.round(pack.text.length / 1000)}k символов
+              <button
+                type="button"
+                aria-label={`Убрать ${pack.name}`}
+                onClick={() => setPacks(list => list.filter(item => item.id !== pack.id))}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </p>
+      )}
+
+      {outline && (
+        <section className="studio-outline">
+          <header>
+            <h2>Структура до вёрстки</h2>
+            <p className="studio-muted">
+              {outline.slides.length} слайдов. Правьте заголовки и тезисы, меняйте порядок —
+              вёрстка соберётся по этой структуре.
+            </p>
+          </header>
+          <ol>
+            {outline.slides.map((slide, index) => (
+              <li key={index}>
+                <div className="studio-outline-head">
+                  <input
+                    value={slide.title}
+                    onChange={e => editSlide(index, { title: e.target.value })}
+                    aria-label={`Заголовок слайда ${index + 1}`}
+                  />
+                  <span className="studio-outline-kind">{slide.visual.kind}</span>
+                  <button type="button" onClick={() => moveSlide(index, -1)} aria-label="Выше">
+                    ↑
+                  </button>
+                  <button type="button" onClick={() => moveSlide(index, 1)} aria-label="Ниже">
+                    ↓
+                  </button>
+                  <button type="button" onClick={() => removeSlide(index)} aria-label="Удалить">
+                    ×
+                  </button>
+                </div>
+                <textarea
+                  rows={Math.max(2, slide.bullets.length)}
+                  value={slide.bullets.join('\n')}
+                  aria-label={`Тезисы слайда ${index + 1}`}
+                  onChange={e =>
+                    editSlide(index, {
+                      bullets: e.target.value.split('\n').filter(line => line.trim()),
+                    })
+                  }
+                />
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {busy && job && (
         <div className="studio-progress">

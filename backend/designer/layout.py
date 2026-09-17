@@ -9,6 +9,8 @@ DEFAULT_SAFE_AREA = {"x": 0.055, "y": 0.055, "w": 0.89, "h": 0.825}
 DEFAULT_MARGINS = {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9}
 # Below this a two-column split leaves both columns nearly empty.
 MIN_BULLETS_FOR_COLUMNS = 4
+# Разброс светлоты, после которого фон считается пёстрым: по нему текст не читается.
+BUSY_BACKGROUND = 0.12
 
 
 def estimated_text_height(element):
@@ -156,6 +158,10 @@ def score_pattern(pattern, demand, recent, uses=0):
     # Шаблон может держать в макете россыпь мелких украшений: на пустом слайде
     # они остаются висеть и читаются как забытые заглушки.
     score -= min(0.4, 0.05 * pattern.get("decoration_count", 0))
+    # Страница с фотографией во весь слайд — обложка или раздел, а не место для
+    # текста: контраст там непредсказуем.
+    score -= 1.6 * pattern.get("image_cover", 0.0)
+    score -= 1.2 * max(0.0, pattern.get("bg_spread", 0.0) - BUSY_BACKGROUND)
     score -= branding_in_band(pattern) * 2.0
     score += free_area(pattern) * (0.5 if demand["has_visual"] else 0.2)
     score += 0.05 * min(pattern.get("text_slots", 0), 4)
@@ -360,14 +366,32 @@ def compose(outline, template, variant):
         # слайд не выйдет из «пустой» зоны; в «фокусе» цель выше по стилю варианта.
         grow_text(elements, scale, width * height, target=0.45 if variant == "focus" else 0.28)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
+        luma = pattern.get("bg_luma")
+        if luma is not None:
+            # Измеренная светлота важнее XML: фон может прийти от мастера или от
+            # полноэкранной фигуры, и тогда объявленный цвет ничего не значит.
+            background = "FFFFFF" if luma >= 0.5 else "111111"
+        # Пёстрый фон — фотография или градиент: точечный цвет неизвестен, поэтому
+        # под текст кладётся подложка, а контраст считается против неё.
+        needs_scrim = (
+            pattern.get("bg_spread", 0) > BUSY_BACKGROUND
+            if pattern.get("bg_spread") is not None
+            else pattern.get("background_kind", "solid") != "solid"
+        )
+        if needs_scrim:
+            background = tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)
         for element in elements:
             element.update(font=font, color=text_color, accent=accent)
         slides.append(
             {
                 "background": background,
+                "bg_luma": pattern.get("bg_luma"),
                 "index": i,
                 "pattern_index": pattern["index"],
+                "image_cover": pattern.get("image_cover", 0.0),
+                "background_kind": pattern.get("background_kind", "solid"),
+                "needs_scrim": needs_scrim,
                 # Kept so the UI and the pitch can answer "why this layout?".
                 "pattern_choice": {
                     "score": pattern_score,

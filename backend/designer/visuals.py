@@ -162,8 +162,11 @@ def draw_process(shapes, box, data, style):
     steps = data["steps"]
     gap = w * 0.012
     cell = (w - gap * (len(steps) - 1)) / len(steps)
-    height = min(h, max(h * 0.45, h * 0.9 / 1))
+    # Стрелка шеврона вырезает по половине высоты с каждой стороны, поэтому
+    # высокий шеврон почти не оставляет места тексту. Держим его низким.
+    height = min(h, cell * 0.62)
     top = y + (h - height) / 2
+    usable = max(0.25, (cell - height * 0.9) / cell)
     for index, label in enumerate(steps):
         shape = shapes.add_shape(
             SHAPE.PENTAGON if index == 0 else SHAPE.CHEVRON,
@@ -173,8 +176,7 @@ def draw_process(shapes, box, data, style):
             int(height),
         )
         style["paint"](shape, "solid")
-        # У шеврона стрелка съедает края: текста помещается примерно половина ширины.
-        style["label"](shape, label, fit=0.5)
+        style["label"](shape, label, fit=usable)
 
 
 def draw_cycle(shapes, box, data, style):

@@ -1285,3 +1285,59 @@ def test_sample_artwork_is_not_copied_into_the_result(tmp_path):
     plates = [s for s in shapes if s.shape_type == 1 and s.width == Emu(400000)]
     assert not ovals, "заглушка под фото попала в результат"
     assert plates, "повторяющаяся плашка шаблона потерялась"
+
+
+def test_photo_backgrounds_are_avoided_and_flagged():
+    """Текст на фотографии не читается: такой прототип избегаем, а если взяли — помечаем."""
+    from designer.audit import audit
+    from designer.layout import compose
+    from designer.models import Outline
+
+    photo = dict(pattern(0), image_cover=0.95)
+    plain = dict(pattern(1), image_cover=0.0)
+    plan = Outline.model_validate(outline(1)).model_dump()
+
+    deck = compose(plan, synthetic_template([photo, plain]), "classic")
+    assert deck["slides"][0]["pattern_index"] == 1
+
+    only_photo = synthetic_template([photo])
+    forced = compose(plan, only_photo, "classic")
+    assert forced["slides"][0]["image_cover"] == 0.95
+    report = audit(forced, only_photo, [{"id": "brief", "text": "10 20 А Б Продажи"}])
+    assert [i for i in report["issues"] if i["code"] == "text_over_image"]
+
+
+def test_measured_background_decides_text_colour():
+    """Тёмный фон меняет цвет текста, пёстрый — включает подложку."""
+    from designer.layout import compose
+    from designer.models import Outline
+
+    plan = Outline.model_validate(outline(1)).model_dump()
+
+    dark = synthetic_template([dict(pattern(0), bg_luma=0.05, bg_spread=0.01)])
+    dark["tokens"]["colors"] = ["1C1D22", "FFFFFF"]
+    light_text = compose(plan, dark, "classic")["slides"][0]["elements"][0]["color"]
+    assert light_text == "FFFFFF"
+
+    light = synthetic_template([dict(pattern(1), bg_luma=0.95, bg_spread=0.01)])
+    light["tokens"]["colors"] = ["1C1D22", "FFFFFF"]
+    dark_text = compose(plan, light, "classic")["slides"][0]["elements"][0]["color"]
+    assert dark_text == "1C1D22"
+
+    busy = synthetic_template([dict(pattern(2), bg_luma=0.4, bg_spread=0.35)])
+    slide = compose(plan, busy, "classic")["slides"][0]
+    assert slide["needs_scrim"] is True
+
+
+def test_busy_backgrounds_lose_to_calm_ones():
+    from designer.layout import compose
+    from designer.models import Outline
+
+    busy = dict(pattern(0), bg_luma=0.4, bg_spread=0.4)
+    calm = dict(pattern(1), bg_luma=0.95, bg_spread=0.02)
+    deck = compose(
+        Outline.model_validate(outline(1)).model_dump(),
+        synthetic_template([busy, calm]),
+        "classic",
+    )
+    assert deck["slides"][0]["pattern_index"] == 1

@@ -13,12 +13,13 @@ from pptx import Presentation
 from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
-from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
+from .layout import estimated_text_height
 from .visuals import DIAGRAMS
 from .parsing import (
     background_color,
@@ -76,6 +77,54 @@ def _clone_slide(deck, source, branding=None):
                     node.set(key, mapping[value])
         target.shapes._spTree.insert_element_before(element, "p:extLst")
     return target
+
+
+def _translucent(shape, color, alpha=0.85):
+    """Полупрозрачная заливка: фон шаблона виден, но текст поверх читается."""
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor.from_string(color)
+    srgb = shape.fill.fore_color._xFill.find(qn("a:srgbClr"))
+    if srgb is not None:
+        value = OxmlElement("a:alpha")
+        value.set("val", str(int(alpha * 100000)))
+        srgb.append(value)
+    shape.line.fill.background()
+    shape.shadow.inherit = False
+
+
+def add_scrim(slide, elements, color):
+    """Подложка под текстовыми блоками на слайде с фотографией во весь экран.
+
+    Прототип-обложка иногда оказывается лучшим по остальным признакам. Вместо
+    того чтобы класть текст прямо на фотографию, кладём под него плашку цвета
+    фона шаблона: так слайд остаётся в стиле и остаётся читаемым.
+    """
+    if not elements:
+        return
+    # Подложка закрывает всё содержимое слайда: график и таблица на фотографии
+    # так же нечитаемы, как текст, а подписи осей рисуются тем же цветом.
+    def occupied(element):
+        x, y, w, h = element["box"]
+        if element["kind"] == "text":
+            # Рамка почти всегда выше содержимого: берём фактическую высоту,
+            # иначе подложка закрыла бы пол-слайда.
+            h = min(h, estimated_text_height(element))
+        return x, y, w, h
+
+    boxes = [occupied(e) for e in elements]
+    left = min(b[0] for b in boxes)
+    top = min(b[1] for b in boxes)
+    right = max(b[0] + b[2] for b in boxes)
+    bottom = max(b[1] + b[3] for b in boxes)
+    pad = 10
+    shape = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.ROUNDED_RECTANGLE,
+        Pt(left - pad),
+        Pt(top - pad),
+        Pt(right - left + pad * 2),
+        Pt(bottom - top + pad * 2),
+    )
+    _translucent(shape, color)
 
 
 def diagram_style(font, accent, background, text_color, palette):
@@ -151,6 +200,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
             ),
             best_text_color(background, palette),
         )
+        if slide_data.get("needs_scrim") or slide_data.get("image_cover", 0) >= 0.5:
+            add_scrim(slide, slide_data["elements"], background)
         for element in slide_data["elements"]:
             x, y, w, h = [Pt(v) for v in element["box"]]
             kind = element["kind"]
@@ -355,6 +406,48 @@ def render_slides(pdf_path: Path, width=1280):
             pixmap = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
             pages.append(pixmap.tobytes("png"))
     return pages
+
+
+def sample_backgrounds(pptx_path: Path, content_region=(0.05, 0.23, 0.95, 0.87)):
+    """Измерить фон каждого слайда шаблона по его реальному рендеру.
+
+    XML врёт: фон может прийти от мастера, от полноэкранной фигуры на макете или
+    от картинки. Единственный надёжный источник — то, что видно на странице.
+    Возвращает по слайду среднюю светлоту рабочей области и разброс: тёмный фон
+    требует светлого текста, пёстрый — подложки под текстом.
+    """
+    import pymupdf
+
+    with tempfile.TemporaryDirectory(prefix="designer-bg-") as temp:
+        pdf = Path(temp) / "template.pdf"
+        convert_pdf(pptx_path, pdf)
+        stats = []
+        with pymupdf.open(pdf) as document:
+            for page in document:
+                pixmap = page.get_pixmap(dpi=36)
+                left = int(pixmap.width * content_region[0])
+                right = int(pixmap.width * content_region[2])
+                top = int(pixmap.height * content_region[1])
+                bottom = int(pixmap.height * content_region[3])
+                total = 0.0
+                squares = 0.0
+                count = 0
+                for y in range(top, bottom, 2):
+                    for x in range(left, right, 2):
+                        r, g, b = pixmap.pixel(x, y)[:3]
+                        luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+                        total += luma
+                        squares += luma * luma
+                        count += 1
+                if not count:
+                    stats.append({"luma": 1.0, "spread": 0.0})
+                    continue
+                mean = total / count
+                variance = max(0.0, squares / count - mean * mean)
+                stats.append(
+                    {"luma": round(mean, 4), "spread": round(variance**0.5, 4)}
+                )
+    return stats
 
 
 def export_html(pdf_path: Path, destination: Path, title: str):

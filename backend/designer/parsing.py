@@ -20,7 +20,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 2
+PARSER_VERSION = 5
 
 
 def is_footer_placeholder(shape):
@@ -120,19 +120,38 @@ def best_text_color(background, palette):
     )
 
 
-def background_color(slide, theme):
-    """Resolved solid background of a slide, its layout or its master."""
+def background_info(slide, theme):
+    """Чем залит слайд: сплошной цвет, градиент или картинка.
+
+    Для сплошного цвета можно честно посчитать контраст текста. Для градиента и
+    фотографии цвет в конкретной точке неизвестен, поэтому вёрстка обязана
+    положить под текст подложку, а не надеяться на удачу.
+    """
     for owner in (slide, slide.slide_layout, slide.slide_layout.slide_master):
         bg = owner._element.cSld.bg
         if bg is None:
             continue
+        if bg.xpath(".//a:blipFill"):
+            return {"color": theme.get("lt1", "FFFFFF"), "kind": "image"}
         rgb = bg.xpath(".//a:solidFill/a:srgbClr/@val")
         if rgb:
-            return rgb[0]
+            return {"color": rgb[0], "kind": "solid"}
         scheme = bg.xpath(".//a:solidFill/a:schemeClr/@val")
         if scheme and scheme[0] in theme:
-            return theme[scheme[0]]
-    return theme.get("lt1", "FFFFFF")
+            return {"color": theme[scheme[0]], "kind": "solid"}
+        stops = bg.xpath(".//a:gsLst/a:gs//a:srgbClr/@val")
+        if stops:
+            # У градиента берём самый светлый край: подложка всё равно обязательна.
+            return {
+                "color": max(stops, key=relative_luminance),
+                "kind": "gradient",
+            }
+    return {"color": theme.get("lt1", "FFFFFF"), "kind": "solid"}
+
+
+def background_color(slide, theme):
+    """Цвет фона слайда; для картинки и градиента — приближение."""
+    return background_info(slide, theme)["color"]
 
 
 def check_zip(data: bytes):
@@ -338,6 +357,14 @@ def parse_template(data: bytes, name: str):
                 decoration_area += covered
                 if covered > 0:
                     decoration_count += 1
+        # Фотофон: на таком слайде обычный тёмный текст просто не читается.
+        background = background_info(slide, theme)
+        image_cover = 1.0 if background["kind"] != "solid" else 0.0
+        for sh in list(slide.shapes) + list(slide.slide_layout.shapes):
+            if sh.shape_type == 13:  # PICTURE
+                image_cover = max(
+                    image_cover, (sh.width / width) * (sh.height / height)
+                )
         # Shapes that survive cloning: artwork, footers, page numbers. Content must
         # not collide with them, so the audit needs their boxes.
         reserved = []
@@ -365,9 +392,11 @@ def parse_template(data: bytes, name: str):
                 reserved.append(box)
         patterns.append(
             {
-                "background": background_color(slide, theme),
+                "background": background["color"],
+                "background_kind": background["kind"],
                 "reserved": reserved,
                 "decoration_area": round(decoration_area, 5),
+                "image_cover": round(min(1.0, image_cover), 4),
                 "decoration_count": decoration_count,
                 "index": index,
                 "layout_index": layouts.index(slide.slide_layout)

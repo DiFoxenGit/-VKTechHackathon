@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Экспорт](https://img.shields.io/badge/Экспорт-PPTX%20·%20PDF%20·%20HTML-FF0053)](#-экспорт)
-[![Тесты](https://img.shields.io/badge/Тесты-47%20сценариев-520978)](#-тесты)
+[![Тесты](https://img.shields.io/badge/Тесты-50%20сценариев-520978)](#-тесты)
 [![Кейс](https://img.shields.io/badge/Кейс-VK%20Tech%20·%20ЛЦТ%202026-8A83D1)](#-о-кейсе)
 
 [Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md)
@@ -85,7 +85,7 @@ flowchart LR
     B[Бриф · назначение] --> G[Структура<br/>LLM со строгой схемой]
     P --> L[Вёрстка<br/>3 варианта на макетах шаблона]
     G --> L
-    L --> A[Аудит<br/>23 правила + проверка модели]
+    L --> A[Аудит<br/>26 правил + проверка модели]
     A -->|выбранные исправления| L
     A --> E[Экспорт<br/>PPTX · PDF · HTML]
 ```
@@ -126,7 +126,7 @@ flowchart LR
 ## 🧪 Тесты
 
 ```bash
-cd backend && pytest -q      # 47 сценариев: парсинг, вёрстка, аудит, фиксы, экспорт, API
+cd backend && pytest -q      # 50 сценариев: парсинг, вёрстка, аудит, фиксы, экспорт, API
 cd frontend && npm run build # tsc -b и сборка
 ```
 

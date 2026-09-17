@@ -21,6 +21,7 @@ from .exporting import (
     export_html,
     export_pptx,
     render_slides,
+    sample_backgrounds,
     verify_pptx,
 )
 from .generation import generate_outline, provider, sources_for, workflow
@@ -55,8 +56,23 @@ def register_template(store, data, name):
         except Exception as exc:
             raise HTTPException(422, "Invalid or unsupported PPTX template") from exc
         template.update(id=store.new_id(), sha256=digest)
-        (store.directory("templates", template["id"]) / "source.pptx").write_bytes(data)
+        source = store.directory("templates", template["id"]) / "source.pptx"
+        source.write_bytes(data)
+        measure_backgrounds(template, source)
         return store.put("templates", template)
+
+
+def measure_backgrounds(template, source: Path):
+    """Дописать в паттерны измеренный фон. Без LibreOffice остаётся разбор XML."""
+    try:
+        stats = sample_backgrounds(source)
+    except Exception:
+        LOGGER.warning("Background sampling unavailable for %s", template.get("name"))
+        return template
+    for pattern, measured in zip(template["patterns"], stats):
+        pattern["bg_luma"] = measured["luma"]
+        pattern["bg_spread"] = measured["spread"]
+    return template
 
 
 def refresh_templates(store):
@@ -77,6 +93,7 @@ def refresh_templates(store):
             LOGGER.exception("Cannot re-parse template %s", record["id"])
             continue
         template.update(id=record["id"], sha256=record["sha256"])
+        measure_backgrounds(template, source)
         store.put("templates", template)
         updated += 1
     if updated:

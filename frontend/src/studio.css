@@ -379,3 +379,111 @@
   border-color: var(--line);
   cursor: default;
 }
+
+.studio-packs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.studio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 4px 6px 4px 12px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.studio-chip button {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--ground);
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.studio-outline {
+  margin-top: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+.studio-outline h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.studio-outline ol {
+  list-style: decimal;
+  margin: 12px 0 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.studio-outline li::marker {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.studio-outline-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.studio-outline-head input {
+  font: inherit;
+  font-weight: 600;
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.studio-outline-kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--ground);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.studio-outline-head button {
+  font: inherit;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.studio-outline textarea {
+  font: inherit;
+  font-size: 14px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  resize: vertical;
+  box-sizing: border-box;
+}
