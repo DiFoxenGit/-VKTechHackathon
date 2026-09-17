@@ -57,7 +57,7 @@ def main(base):
     pack = upload(
         base,
         "/api/v1/content-packs",
-        OUT / "source" / "material.md",
+        OUT / "source" / "материал-инициатива.md",
         "text/markdown",
     )
     print("материал загружен:", pack["id"], len(pack["text"]), "символов")
