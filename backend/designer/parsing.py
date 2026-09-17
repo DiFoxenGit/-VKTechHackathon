@@ -286,12 +286,34 @@ def contrast_ratio(first, second):
     return (max(a, b) + 0.05) / (min(a, b) + 0.05)
 
 
-def best_text_color(background, palette):
-    """Most readable palette color on this background, so text stays inside the brand."""
-    return max(
-        palette or ["000000", "FFFFFF"],
-        key=lambda c: contrast_ratio(background, c),
-    )
+def best_text_color(background, palette, minimum=3.0):
+    """Читаемый цвет текста из палитры шаблона.
+
+    Одного WCAG мало: на фирменном синем чёрный формально контрастнее белого,
+    но так не верстает никто. Поэтому среди цветов, которые проходят порог,
+    выбирается тот, что уводит светлоту в сторону от фона: на тёмном — самый
+    светлый, на светлом — самый тёмный. Если порог не проходит никто, берём
+    максимальный контраст, какой есть.
+    """
+    options = palette or ["000000", "FFFFFF"]
+    fallback = max(options, key=lambda c: contrast_ratio(background, c))
+    try:
+        luma = relative_luminance(background)
+    except (ValueError, IndexError, TypeError):
+        return fallback
+    # Сторона, в которую уводим светлоту: на тёмном фоне — светлее, на светлом —
+    # темнее. Внутри стороны берём самый контрастный вариант палитры.
+    lighter = luma < 0.4
+    same_side = [
+        c
+        for c in options
+        if (relative_luminance(c) > luma) == lighter
+    ]
+    if same_side:
+        choice = max(same_side, key=lambda c: contrast_ratio(background, c))
+        if contrast_ratio(background, choice) >= minimum:
+            return choice
+    return fallback
 
 
 def background_info(slide, theme):
@@ -426,6 +448,37 @@ def derive_geometry(patterns):
                 guides.append([value, edges[value]])
         guides = [round(value, 4) for value, count in guides if count >= 3]
     return {"safe_area": safe_area, "margins": margins, "guides": guides}
+
+
+def accent_colors(counted, theme, limit=6):
+    """Фирменные акценты шаблона — по тому, чем он реально покрашен.
+
+    Тема нередко остаётся офисной по умолчанию (синий 4472C4), а бренд живёт в
+    заливках фигур. Поэтому акценты берутся из фактических цветов шаблона по
+    частоте: насыщенные, не серые, не почти чёрные и не почти белые. Тема —
+    запасной вариант, если красить нечем.
+    """
+    found = []
+    # Цвет, встреченный однажды, обычно пришёл из темы и на слайдах не
+    # использован: такой оставляем напоследок.
+    ordered = [v for v, n in counted if n > 1] + [v for v, n in counted if n <= 1]
+    for value in ordered:
+        try:
+            r, g, b = (int(value[i : i + 2], 16) for i in (0, 2, 4))
+        except (ValueError, IndexError):
+            continue
+        if max(r, g, b) - min(r, g, b) < 40:
+            continue
+        luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+        if not 0.08 < luma < 0.93:
+            continue
+        if value not in found:
+            found.append(value)
+    for key in ("accent1", "accent2", "accent3", "accent4"):
+        value = theme.get(key)
+        if value and value not in found:
+            found.append(value)
+    return found[:limit]
 
 
 def parse_template(data: bytes, name: str):
@@ -607,11 +660,17 @@ def parse_template(data: bytes, name: str):
             # или плашка, на ней контенту и место. Всё остальное, что переживает
             # клонирование, — декор: линии, стрелки, иконки, логотипы. Его текст
             # обходит, а аудит ловит наезды.
-            container = box["w"] >= 0.15 and box["h"] >= 0.1 and area < 0.6
+            # Картинка и группа — это иллюстрация, а не контейнер: текст поверх
+            # неё не кладут, даже если рамка большая.
+            artwork = sh.shape_type in (6, 13, 14)
+            container = (
+                not artwork and box["w"] >= 0.15 and box["h"] >= 0.1 and area < 0.6
+            )
             if container:
                 continue
-            if area < 0.6 or covered < 0.5 * area:
-                reserved.append(box)
+            if artwork or area < 0.6 or covered < 0.5 * area:
+                if box not in reserved:
+                    reserved.append(box)
         slots = []
         for item in text_shapes:
             role = "title" if title and item["id"] == title["id"] else "body"
@@ -659,6 +718,7 @@ def parse_template(data: bytes, name: str):
             "fonts": [f for f, _ in fonts.most_common()],
             "font_sizes": sorted(sizes),
             "colors": [c for c, _ in colors.most_common()],
+            "accents": accent_colors(colors.most_common(), theme),
             "theme": theme,
         },
         "parser": PARSER_VERSION,

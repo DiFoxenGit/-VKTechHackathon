@@ -17,6 +17,8 @@
   justify-content: space-between;
   gap: var(--step-4);
   padding: var(--step-3) var(--step-5);
+  /* Запасное значение для браузеров без color-mix (Safari < 16.2, Firefox < 113). */
+  background: var(--surface);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
@@ -413,6 +415,7 @@ input[type='text'] {
 
 .progress .bar {
   height: 100%;
+  background: var(--brand-100);
   background: color-mix(in srgb, var(--brand-500) 22%, transparent);
   transition: width 0.4s ease;
 }
@@ -450,6 +453,7 @@ input[type='text'] {
 
 .banner.error {
   background: var(--error-100);
+  border: 1px solid var(--error-500);
   border: 1px solid color-mix(in srgb, var(--error-500) 35%, transparent);
   color: var(--error-500);
 }

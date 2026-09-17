@@ -151,6 +151,10 @@ def branding_in_band(pattern):
     left, top, right, bottom = CONTENT_BAND
     total = 0.0
     for box in pattern.get("reserved", []):
+        if box["w"] * box["h"] >= 0.6:
+            # Иллюстрация во весь слайд — это фон страницы, а не препятствие:
+            # её учитывает image_cover, а читаемость — подложка под текстом.
+            continue
         overlap_w = max(0.0, min(box["x"] + box["w"], right) - max(box["x"], left))
         overlap_h = max(0.0, min(box["y"] + box["h"], bottom) - max(box["y"], top))
         total += overlap_w * overlap_h
@@ -174,6 +178,20 @@ def candidate_patterns(patterns):
             and box["w"] > min_title_w
         )
 
+    # Обложка и финал шаблона почти никогда не проходят по строгим признакам
+    # контентной страницы: заголовок стоит низко, текстовых рамок одна-две.
+    # Но именно там дизайнер оставил место под название и автора, поэтому они
+    # входят в пул отдельно, а штрафы по роли не дают взять их под тезисы.
+    special = [
+        p
+        for p in patterns
+        if p.get("role") in ("cover", "closing") and p.get("title_box")
+    ]
+
+    def widen(found):
+        extra = [p for p in special if p["index"] not in {f["index"] for f in found}]
+        return [*found, *extra]
+
     for rule in ((2, 0.2, 0.65), (2, 0.3, 0.45), (1, 0.45, 0.3)):
         found = [p for p in patterns if usable(p, *rule)]
         # Сначала страницы без украшений в рабочей области: заглушки под фото
@@ -181,13 +199,13 @@ def candidate_patterns(patterns):
         clean = [
             p
             for p in found
-            if not p.get("decoration_count") and branding_in_band(p) < 0.02
+            if not p.get("decoration_count") and branding_in_band(p) < 0.12
         ]
         if len(clean) >= 3:
-            return clean
+            return widen(clean)
         if len(found) >= 3:
-            return found
-    return [p for p in patterns if p.get("title_box")] or patterns
+            return widen(found)
+    return widen([p for p in patterns if p.get("title_box")]) or patterns
 
 
 def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правила подбора
@@ -199,6 +217,12 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
     printed twelve times.
     """
     dense = demand["has_visual"] or demand["lines"] > 4
+    role = pattern.get("role", "content")
+    # Страница, нарисованная ровно под эту задачу: обложка под обложку, финал
+    # под финал. Её фотофон и композиция — замысел дизайнера, а не помеха.
+    designed = (demand.get("cover") and role == "cover") or (
+        demand.get("closing") and role == "closing"
+    )
     score = 1.0
     score -= pattern.get("decoration_area", 0.0) * (2.4 if dense else 0.8)
     # Шаблон может держать в макете россыпь мелких украшений: на пустом слайде
@@ -206,11 +230,11 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
     score -= min(0.4, 0.05 * pattern.get("decoration_count", 0))
     # Страница с фотографией во весь слайд — обложка или раздел, а не место для
     # текста: контраст там непредсказуем.
-    score -= 1.6 * pattern.get("image_cover", 0.0)
+    score -= 0.0 if designed else 1.6 * pattern.get("image_cover", 0.0)
     score -= 1.2 * max(0.0, pattern.get("bg_spread", 0.0) - BUSY_BACKGROUND)
     # Декор внутри рабочей зоны — главный источник наездов текста на графику.
     # Дешевле взять другую страницу шаблона, чем воевать с ней геометрией.
-    score -= branding_in_band(pattern) * 5.0
+    score -= branding_in_band(pattern) * (0.8 if designed else 5.0)
     score += free_area(pattern) * (0.5 if demand["has_visual"] else 0.2)
     score += 0.05 * min(pattern.get("text_slots", 0), 4)
     title_box = pattern.get("title_box")
@@ -219,7 +243,6 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
         # A shallow title band cannot hold a long conclusion-style headline.
         if demand["title_length"] > 60 and title_box["h"] < 0.1:
             score -= 0.15
-    role = pattern.get("role", "content")
     if demand.get("cover"):
         # Обложка шаблона — именно та страница, где дизайнер оставил место под
         # название и автора.
@@ -420,7 +443,10 @@ def compose(outline, template, variant):
     scale = [s for s in tokens["font_sizes"] if 10 <= s <= 60]
     title_size = min(scale, key=lambda s: abs(s - height * 0.075)) if scale else 28
     body_size = min(scale, key=lambda s: abs(s - height * 0.045)) if scale else 18
-    accent = tokens["theme"].get("accent1", palette[0])
+    # Акцент берём из фактических цветов шаблона: офисная тема по умолчанию
+    # покрасила бы диаграммы чужим синим.
+    accents = tokens.get("accents") or []
+    accent = accents[0] if accents else tokens["theme"].get("accent1", palette[0])
     slides = []
     candidates = candidate_patterns(template["patterns"])
     # Prefer reusable content pages over covers, speaker cards, and icon catalogues.
@@ -449,7 +475,13 @@ def compose(outline, template, variant):
         # unseen template keeps its own rhythm.
         right = width * min(1.0, safe["x"] + safe["w"])
         title_box = pattern.get("title_box")
-        if title_box and title_box["y"] < 0.25 and title_box["w"] > 0.35:
+        # Заголовок встаёт туда, где его поставил дизайнер. Для обложек и
+        # разделов это середина страницы, а не верхняя полоса, поэтому по
+        # вертикали допускается почти половина слайда.
+        from_template_title = bool(
+            title_box and title_box["y"] < 0.45 and title_box["w"] > 0.3
+        )
+        if from_template_title:
             # Honour the template's title indent, but apply it to every block on the
             # slide: mismatched left edges are the misalignment the audit looks for.
             margin = min(max(width * safe["x"], width * title_box["x"]), width * 0.25)
@@ -465,10 +497,12 @@ def compose(outline, template, variant):
         reserved = [
             (width * b["x"], height * b["y"], width * b["w"], height * b["h"])
             for b in pattern.get("reserved", [])
+            if b["w"] * b["h"] < 0.6
         ]
-        for bx, by, _, bh in reserved:
-            if by < height * 0.3 and tx + tw * 0.35 < bx < tx + tw:
-                tw = max(width * 0.3, bx - width * 0.012 - tx)
+        if not from_template_title:
+            for bx, by, _, bh in reserved:
+                if by < height * 0.3 and tx + tw * 0.35 < bx < tx + tw:
+                    tw = max(width * 0.3, bx - width * 0.012 - tx)
         # Кегль заголовка — шаблонный, если он объявлен; шкала остаётся запасным
         # вариантом для файлов, где типографика не описана.
         current_title_size = slot_size(title_style, scale, title_size, minimum=18)
@@ -498,8 +532,18 @@ def compose(outline, template, variant):
                 # Берём вертикальный ритм прототипа: где у шаблона начинается и
                 # заканчивается контент. Горизонталь остаётся на направляющих
                 # шаблона — так левые края блоков совпадают, и аудит это видит.
+                # Вертикальный ритм шаблона — но без провала под заголовком:
+                # у страниц с мелкими подписями внизу верх контента уезжает
+                # к середине слайда, и колода читается как полупустая.
                 top = max(slot_top, ty + th + height * 0.02)
+                top = min(top, ty + th + height * 0.1)
                 bottom = max(top + height * 0.2, slot_bottom)
+            # Шаблон отдал правую часть страницы под иллюстрацию — текст идёт
+            # по ширине своего слота, а не на всю полосу: иначе он ложится
+            # поверх картинки, которую клонирование сохранило.
+            slot_right = width * (content_slot['x'] + content_slot['w'])
+            if slot_right < right - width * 0.08 and slot_right - margin >= width * 0.32:
+                right = slot_right
         if variant == "focus" or has_visual:
             # Крупный блок — одна мысль или диаграмма — не должен ложиться на
             # линии шаблона: ищем свободную полосу, если она достаточно широкая.
@@ -534,7 +578,12 @@ def compose(outline, template, variant):
                         "id": identifier,
                         "kind": "text",
                         "role": "body",
-                        "text": "\n".join(("• " + s if marker else s) for s in items),
+                        # Одинокий маркер читается как ошибка вёрстки: у одного
+                        # тезиса его не рисуем.
+                        "text": "\n".join(
+                            ("• " + s if marker and len(items) > 1 else s)
+                            for s in items
+                        ),
                         "box": box,
                         "font_size": slide_body_size,
                         "bold": bool(body_style.get("bold")),

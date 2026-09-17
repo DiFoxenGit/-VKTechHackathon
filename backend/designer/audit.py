@@ -301,8 +301,19 @@ def audit(deck, template, sources):
         reserved = [
             (width * b["x"], height * b["y"], width * b["w"], height * b["h"])
             for b in patterns.get(slide.get("pattern_index"), {}).get("reserved", [])
+            # Фоновая иллюстрация во весь слайд — страница шаблона, а не
+            # объект, который текст обязан обходить: читаемость на ней
+            # обеспечивают подложка и контраст.
+            if b["w"] * b["h"] < 0.6
         ]
         edges = [e["box"][0] for e in elements]
+        # Направляющие шаблона: левые и правые края текстовых рамок прототипа.
+        # Блок, вставший на такую линию, выровнен по дизайн-системе, даже если
+        # он не дотягивается до края рабочей области.
+        guides = []
+        for slot in patterns.get(slide.get("pattern_index"), {}).get("slots", []):
+            guides.append(width * slot["box"]["x"])
+            guides.append(width * (slot["box"]["x"] + slot["box"]["w"]))
         for element in elements:
             x, y, w, h = element["box"]
             if not inside(element["box"], slide_box, 0.1):
@@ -338,6 +349,8 @@ def audit(deck, template, sources):
                 or abs(x + w - width * (safe["x"] + safe["w"])) <= ALIGN_TOLERANCE
                 or abs(x + w / 2 - width / 2) <= ALIGN_TOLERANCE
                 or sum(abs(x - other) <= ALIGN_TOLERANCE for other in edges) > 1
+                or any(abs(x - g) <= ALIGN_TOLERANCE for g in guides)
+                or any(abs(x + w - g) <= ALIGN_TOLERANCE for g in guides)
             )
             if not aligned:
                 issues.append(
@@ -356,7 +369,13 @@ def audit(deck, template, sources):
                 if element.get("from_template"):
                     break
                 overlap_area = intersection(element["box"], box)
-                if overlap_area > 0.12 * min(w * h, box[2] * box[3]):
+                # Мелкий объект образца, целиком попавший под блок, экспорт не
+                # переносит на готовый слайд: он не деталь оформления, а остаток
+                # демонстрационного содержания. Проверять его нечего.
+                area = box[2] * box[3]
+                if overlap_area > 0.4 * area and area < 0.5 * (w * h):
+                    continue
+                if overlap_area > 0.12 * min(w * h, area):
                     issues.append(
                         issue(
                             index,

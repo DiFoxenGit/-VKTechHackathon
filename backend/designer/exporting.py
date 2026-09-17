@@ -26,6 +26,7 @@ from .parsing import (
     best_text_color,
     is_footer_placeholder,
     preserved_shape,
+    shape_key,
 )
 
 
@@ -40,7 +41,26 @@ def _font(font, name, size, color, bold=False):
         element.set("typeface", name)
 
 
-def _clone_slide(deck, source, branding=None):
+def _buried(shape, content):
+    """Мелкий объект прототипа, который окажется под нашим текстом.
+
+    Иконка, стрелка или точка, оставшаяся от образца содержания, попадает ровно
+    туда, куда ляжет новый блок, и читается как грязь. Рамку-контейнер это
+    правило не трогает: она больше блока и обрамляет его, а не лежит под ним.
+    """
+    left, top = shape.left, shape.top
+    right, bottom = left + shape.width, top + shape.height
+    area = max(1, shape.width * shape.height)
+    for bx, by, bw, bh in content:
+        overlap = max(0, min(right, bx + bw) - max(left, bx)) * max(
+            0, min(bottom, by + bh) - max(top, by)
+        )
+        if overlap > 0.4 * area and area < 0.5 * max(1, bw * bh):
+            return True
+    return False
+
+
+def _clone_slide(deck, source, branding=None, content=()):
     target = deck.slides.add_slide(source.slide_layout)
     for shape in list(target.shapes):
         shape._element.getparent().remove(shape._element)
@@ -60,6 +80,12 @@ def _clone_slide(deck, source, branding=None):
         # The audit reads the same predicate to know what is on the finished slide.
         if not preserved_shape(shape, deck.slide_width, deck.slide_height, branding):
             continue
+        # Повторяющийся брендинг остаётся всегда: это оформление страницы.
+        repeated = branding and shape_key(
+            shape, deck.slide_width, deck.slide_height
+        ) in branding
+        if not repeated and _buried(shape, content):
+            continue
         element = copy.deepcopy(shape._element)
         is_footer = is_footer_placeholder(shape)
         # Groups may contain sample text; do not copy their text into the result.
@@ -77,6 +103,13 @@ def _clone_slide(deck, source, branding=None):
                     node.set(key, mapping[value])
         target.shapes._spTree.insert_element_before(element, "p:extLst")
     return target
+
+
+def _mix(color, other, ratio):
+    """Смесь двух цветов: ratio — доля первого."""
+    a = [int(color[i : i + 2], 16) for i in (0, 2, 4)]
+    b = [int(other[i : i + 2], 16) for i in (0, 2, 4)]
+    return "".join(f"{round(x * ratio + y * (1 - ratio)):02X}" for x, y in zip(a, b))
 
 
 def _translucent(shape, color, alpha=0.85):
@@ -148,11 +181,19 @@ def diagram_style(font, accent, background, text_color, palette):
     def label(shape, text, outline=False, fit=0.82):
         """fit — доля ширины фигуры под текст: у шеврона внутри меньше места,
         чем по габаритам, и без поправки длинное слово рвётся по слогам."""
-        shape.text_frame.word_wrap = True
+        frame = shape.text_frame
+        frame.word_wrap = True
+        # Внутренние поля по умолчанию съедают у фигуры четверть дюйма: для
+        # подписи внутри шеврона это половина доступной ширины.
+        frame.margin_left = frame.margin_right = Pt(1)
+        frame.margin_top = frame.margin_bottom = Pt(1)
         shape.text = text
         longest = max((len(word) for word in text.split()), default=1)
-        usable = shape.width / 12700 * fit
-        size = max(6.0, min(13.0, usable / (longest * 0.55)))
+        # Запас в 15 % — на кернинг и на то, что ширина знака в разных
+        # гарнитурах отличается: без него длинное слово рвётся пополам.
+        usable = shape.width / 12700 * fit * 0.85 - 2
+        # Кириллица в этих гарнитурах шире латиницы: 0.62 кегля на знак.
+        size = max(6.0, min(13.0, usable / (longest * 0.62)))
         colour = text_color if outline else on_accent
         for paragraph in shape.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
@@ -187,7 +228,13 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
         else None
     )
     for slide_data in deck_data["slides"]:
-        slide = _clone_slide(deck, originals[slide_data["pattern_index"]], branding)
+        content_boxes = [
+            tuple(Pt(v) for v in element["box"])
+            for element in slide_data["elements"]
+        ]
+        slide = _clone_slide(
+            deck, originals[slide_data["pattern_index"]], branding, content_boxes
+        )
         background = slide_data.get("background") or background_color(
             slide, template["tokens"]["theme"]
         )
@@ -254,13 +301,19 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                     data,
                 ).chart
                 chart.has_title = False
-                chart.has_legend = True
-                chart.legend.position = XL_LEGEND_POSITION.BOTTOM
-                chart.legend.include_in_layout = False
+                # Легенда нужна, когда рядов несколько. Один ряд она только
+                # повторяет, забирая место у самой диаграммы.
+                chart.has_legend = len(visual["series"]) > 1
+                if chart.has_legend:
+                    chart.legend.position = XL_LEGEND_POSITION.BOTTOM
+                    chart.legend.include_in_layout = False
                 _font(chart.font, font, 12, text_color)
+                # Подпись оси значений — единица измерения из плана. Подписи
+                # категорий уже стоят под столбцами: слово «Категория» под ними
+                # ничего не добавляет и выдаёт шаблон офисной диаграммы.
                 for axis, label in (
                     (chart.value_axis, visual.get("unit", "")),
-                    (chart.category_axis, "Категория"),
+                    (chart.category_axis, ""),
                 ):
                     _font(axis.tick_labels.font, font, 11, text_color)
                     # An axis title is only truthful when the outline supplied a unit;
@@ -271,8 +324,20 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                     axis.axis_title.text_frame.text = label
                     for p in axis.axis_title.text_frame.paragraphs:
                         _font(p.font, font, 11, text_color)
+                accents = template["tokens"].get("accents") or []
+                # Сетка офисного серого спорит с палитрой шаблона: делаем её
+                # тише текста, а столбцы — шире промежутков.
+                grid = chart.value_axis.major_gridlines.format.line
+                grid.color.rgb = RGBColor.from_string(_mix(text_color, background, 0.18))
+                grid.width = Pt(0.75)
+                if kind == "bar":
+                    chart.plots[0].gap_width = 60
                 for i, series in enumerate(chart.series):
-                    color = template["tokens"]["theme"].get(f"accent{i + 1}", accent)
+                    color = (
+                        accents[i]
+                        if i < len(accents)
+                        else template["tokens"]["theme"].get(f"accent{i + 1}", accent)
+                    )
                     series.format.fill.solid()
                     series.format.fill.fore_color.rgb = RGBColor.from_string(color)
                     series.format.line.color.rgb = RGBColor.from_string(color)
