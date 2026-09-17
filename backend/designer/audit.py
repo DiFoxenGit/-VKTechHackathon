@@ -143,7 +143,16 @@ def audit(deck, template, sources):
                 )
             )
         seen.add(title_key)
-        if not content["bullets"] and content["visual"]["kind"] == "none":
+        cover_page = (
+            index == 0
+            and patterns.get(slide.get("pattern_index"), {}).get("role") == "cover"
+        )
+        # Титульная страница из одного названия — это не пустой слайд, а обложка.
+        if (
+            not cover_page
+            and not content["bullets"]
+            and content["visual"]["kind"] == "none"
+        ):
             issues.append(
                 issue(index, None, "empty_content", "На слайде только заголовок")
             )

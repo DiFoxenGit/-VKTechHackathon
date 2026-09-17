@@ -10,6 +10,7 @@ import type {
   ApiPresentation,
   ApiSlideContent,
   ApiTemplateSummary,
+  ApiWorkflow,
 } from './apiTypes';
 
 const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
@@ -73,6 +74,9 @@ function upload(file: File | Blob, name: string): RequestInit {
 
 export const api = {
   health: () => requestAt(ROOT, '/health'),
+
+  /** Версия воркфлоу, файлы агентов и их sha256 — этим сделана колода. */
+  workflow: () => request<ApiWorkflow>('/workflow'),
 
   listTemplates: () => request<{ items: ApiTemplateSummary[] }>('/templates').then(r => r.items ?? []),
   getTemplate: (id: string) => request<ApiTemplateSummary>(`/templates/${id}`),

@@ -9,6 +9,11 @@ label inside a visual — chart categories, series names, table columns and cell
 the unit. A Russian deck with English chart labels is a defect. Keep only proper nouns and units
 that are normally written in Latin script (KPI, IT, Q1, %).
 
+COVER. The first slide is the title page: a short deck name up to 60 characters and at most
+one line under it — the team, the author or the date, and only if the sources state it. No
+bullet list on the first slide: the template gives that page a large headline and little else.
+The narrative beats below start from the second slide.
+
 NARRATIVE. The payload carries a narrative frame for this kind of deck: an ordered list of
 beats. Follow it as the backbone, drop a beat the sources say nothing about, and merge two beats
 into one slide rather than inventing filler. A slide about the team appears only when the frame
@@ -24,6 +29,7 @@ two-word label and not a sentence that runs past 15 words. One slide holds one i
 a single thought across two slides, and do not leave a slide with a single four-word line.
 Never pad to fill space, never repeat the same idea in different words, never add generic filler
 ("повышение эффективности", "положительный отклик").
+Write a bullet as it appears on a slide: start with a capital letter and no full stop at the end.
 
 FACTS. Never invent figures, facts, dates, quotations, names, units or causal claims. Only use
 information in the brief and source documents. Do not derive new numbers either: no percentages,

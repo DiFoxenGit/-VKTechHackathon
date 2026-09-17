@@ -11,7 +11,7 @@ import httpx
 from fastapi import HTTPException
 
 from .language import CYRILLIC, LATIN, foreign_labels, visual_labels
-from .models import Brief, Outline
+from .models import Brief, Outline, Visual
 
 PROMPTS = Path(__file__).parent / "prompts"
 LOGGER = logging.getLogger("designer.generation")
@@ -323,22 +323,54 @@ def select_context(sources, query, budget=CONTEXT_BUDGET):
 NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 
 
+# Разряды в русском тексте разделяются пробелом: «1 400 рублей» — то же число,
+# что и «1400» на слайде.
+THOUSANDS = re.compile(r"(?<=\d)[\s  ](?=\d{3}(?!\d))")
+
+
 def numbers_in(text):
-    """Numbers as written, with the decimal separator normalised."""
-    return {value.replace(",", ".") for value in NUMBER.findall(text)}
+    """Numbers as written, with digit grouping and decimal separator normalised."""
+    joined = THOUSANDS.sub("", text)
+    return {value.replace(",", ".") for value in NUMBER.findall(joined)}
 
 
 def known_numbers(sources):
     return numbers_in("\n".join(source["text"] for source in sources))
 
 
-def unsupported_numbers(text, known):
+def tidy_line(text):
+    """Тезис так, как его пишут в презентациях: с заглавной и без точки.
+
+    Модель возвращает то строчную букву, то точку в конце, то и другое в одной
+    колоде. Это не вопрос вкуса: разнобой сразу виден на слайде, а чинить его
+    правилом дешевле, чем просить модель ещё раз.
+    """
+    value = " ".join(text.split())
+    if not value:
+        return value
+    if value[0].islower():
+        value = value[0].upper() + value[1:]
+    while value.endswith(".") and not value.endswith(".."):
+        value = value[:-1].rstrip()
+    return value
+
+
+def unsupported_numbers(text, known, minimum=10):
     """Numbers on a slide that no source states literally.
 
     The brief demands that every figure on a slide exists in the materials, so a
     derived percentage is as wrong as an invented one.
+
+    Однозначные числа не в счёт: «три команды» в материалах и «3 команды» на
+    слайде — одно и то же, а ловить такое по цифрам значит заваливать генерацию
+    на ровном месте. Их всё равно перепроверит детерминированный аудит.
     """
-    return sorted(numbers_in(text) - known)
+    found = numbers_in(text) - known
+    return sorted(
+        value
+        for value in found
+        if "." in value or float(value) >= minimum
+    )
 
 
 def sources_for(store, request: Brief):
@@ -484,12 +516,20 @@ async def generate_outline(request, sources):
                 )
             }
         )
-        if strangers:
+        if strangers and not last_chance:
             raise ValueError(
                 "Подписи в визуализациях на другом языке: "
                 + ", ".join(strangers[:8])
                 + ". Переведи все подписи, названия серий и единицы на язык колоды."
             )
+        if strangers:
+            # Последняя попытка: колода без одной диаграммы лучше, чем ошибка
+            # вместо колоды. Снимаем визуализации с чужими подписями и говорим
+            # об этом в логе — аудит потом отметит слайд без визуализации.
+            LOGGER.warning("Dropped visuals with foreign labels: %s", strangers[:8])
+            for slide in outline.slides:
+                if foreign_labels(visual_labels(slide.visual.model_dump()), cyrillic):
+                    slide.visual = Visual()
         titles = [slide.title.strip().lower() for slide in outline.slides]
         repeated = {title for title in titles if titles.count(title) > 1}
         if repeated:
@@ -507,7 +547,12 @@ async def generate_outline(request, sources):
             ),
             known,
         )
-        if invented:
+        if invented and last_chance:
+            # Последняя попытка: колода с помеченным числом полезнее, чем ошибка
+            # вместо колоды. Детерминированный аудит покажет это число
+            # пользователю как неподтверждённое — там его и видно.
+            LOGGER.warning("Shipping outline with unverified numbers: %s", invented[:8])
+        elif invented:
             # Ask again instead of shipping the figure: the audit would flag it and
             # the user would have to rewrite the slide by hand.
             raise ValueError(
@@ -516,6 +561,10 @@ async def generate_outline(request, sources):
                 + ". Используй только те цифры, что есть в материалах дословно, "
                 "и не вычисляй проценты, кратности и суммы."
             )
+        outline.title = tidy_line(outline.title)
+        for slide in outline.slides:
+            slide.title = tidy_line(slide.title)
+            slide.bullets = [tidy_line(b) for b in slide.bullets if b.strip()]
         return outline
 
     return await completion(

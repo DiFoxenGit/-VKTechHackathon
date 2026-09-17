@@ -3,6 +3,7 @@
 import copy
 import html
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -372,6 +373,85 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
         deck.part.drop_rel(identifier.rId)
         deck.slides._sldIdLst.remove(identifier)
     deck.save(output)
+    prune_package(output)
+
+
+def _rel_targets(folder, data):
+    """Куда ведут ссылки одной .rels: пути внутри пакета, без внешних."""
+    targets = {}
+    for rid, value in re.findall(rb'Id="([^"]+)"[^>]*Target="([^"]+)"', data):
+        target = value.decode("utf-8")
+        if target.startswith(("http:", "https:", "mailto:")):
+            continue
+        resolved = os.path.normpath(os.path.join(folder, target)).replace("\\", "/")
+        targets[rid.decode("utf-8")] = resolved.lstrip("/")
+    return targets
+
+
+def prune_package(path: Path):
+    """Убрать из готового файла то, чем колода не пользуется.
+
+    Клонирование тянет за собой весь шаблон: сорок макетов и иллюстрации всех
+    его страниц. Колода из десяти слайдов весила шестнадцать мегабайт, из
+    которых пятнадцать — чужие картинки. Выбрасываем макеты, на которые не
+    ссылается ни один слайд, и медиа, на которые после этого не осталось ссылок;
+    записи в [Content_Types].xml убираются вместе с частями, иначе PowerPoint
+    считает файл повреждённым.
+    """
+    with zipfile.ZipFile(path) as archive:
+        names = archive.namelist()
+        payload = {name: archive.read(name) for name in names}
+    keep_layouts = set()
+    for name, data in payload.items():
+        if name.startswith("ppt/slides/_rels/"):
+            folder = name.rsplit("/_rels/", 1)[0]
+            keep_layouts.update(
+                target
+                for target in _rel_targets(folder, data).values()
+                if target.startswith("ppt/slideLayouts/")
+            )
+    drop = {
+        name
+        for name in payload
+        if name.startswith("ppt/slideLayouts/slideLayout") and name not in keep_layouts
+    }
+    for name in list(payload):
+        # Мастер перечисляет свои макеты дважды: в XML и в .rels. Правим оба.
+        if not re.fullmatch(r"ppt/slideMasters/_rels/slideMaster\d+\.xml\.rels", name):
+            continue
+        folder = name.rsplit("/_rels/", 1)[0]
+        targets = _rel_targets(folder, payload[name])
+        gone = {rid for rid, target in targets.items() if target in drop}
+        if not gone:
+            continue
+        data = payload[name].decode("utf-8")
+        for rid in gone:
+            data = re.sub(rf'<Relationship Id="{rid}"[^>]*/>', "", data)
+        payload[name] = data.encode("utf-8")
+        master = name.replace("/_rels/", "/").removesuffix(".rels")
+        xml = payload[master].decode("utf-8")
+        for rid in gone:
+            xml = re.sub(rf'<p:sldLayoutId[^>]*r:id="{rid}"[^>]*/>', "", xml)
+        payload[master] = xml.encode("utf-8")
+    for name in drop:
+        payload.pop(name, None)
+        payload.pop(name.replace("ppt/slideLayouts/", "ppt/slideLayouts/_rels/") + ".rels", None)
+    used = set()
+    for name, data in payload.items():
+        if name.endswith(".rels"):
+            used.update(_rel_targets(name.rsplit("/_rels/", 1)[0], data).values())
+    for name in [n for n in payload if n.startswith("ppt/media/") and n not in used]:
+        payload.pop(name)
+    types = "[Content_Types].xml"
+    xml = payload[types].decode("utf-8")
+    for name in [n for n in names if n not in payload]:
+        xml = re.sub(rf'<Override PartName="/{re.escape(name)}"[^>]*/>', "", xml)
+    payload[types] = xml.encode("utf-8")
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name in names:
+            if name in payload:
+                archive.writestr(name, payload[name])
+    return len(names) - len(payload)
 
 
 def verify_pptx(path: Path, expected_slides: int):

@@ -35,6 +35,7 @@ import type {
   ApiPurpose,
   ApiSlideContent,
   ApiTemplateSummary,
+  ApiWorkflow,
 } from './services/apiTypes';
 
 const PURPOSES: { id: ApiPurpose; label: string; hint: string }[] = [
@@ -79,6 +80,45 @@ function ThemeSwitch() {
       {theme === 'dark' ? <Moon size={17} /> : theme === 'light' ? <Sun size={17} /> : <Layers size={17} />}
       <span className="only-wide">{label}</span>
     </button>
+  );
+}
+
+function WorkflowBadge() {
+  const [workflow, setWorkflow] = useState<ApiWorkflow | null>(null);
+
+  useEffect(() => {
+    api.workflow().then(setWorkflow).catch(() => setWorkflow(null));
+  }, []);
+
+  if (!workflow) return null;
+  const agents = Object.entries(workflow.agents ?? {});
+  return (
+    <details className="workflow">
+      <summary title="Чем собрана колода: версия воркфлоу и агенты">
+        воркфлоу {workflow.version}
+      </summary>
+      <div className="workflow-body">
+        <p>Версия набора агентов и промптов. Она пишется в каждую задачу и в каждую презентацию.</p>
+        <dl>
+          {agents.map(([role, file]) => (
+            <div key={role}>
+              <dt>{role}</dt>
+              <dd>
+                {file}
+                {workflow.sha256?.[file] && (
+                  <code>{workflow.sha256[file].slice(0, 8)}</code>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        {workflow.changelog?.[0] && (
+          <p className="workflow-why">
+            <b>{workflow.changelog[0].version}:</b> {workflow.changelog[0].why}
+          </p>
+        )}
+      </div>
+    </details>
   );
 }
 
@@ -271,6 +311,7 @@ export default function Studio() {
       <header className="topbar">
         <Wordmark />
         <nav className="topbar-actions">
+          <WorkflowBadge />
           <ThemeSwitch />
         </nav>
       </header>

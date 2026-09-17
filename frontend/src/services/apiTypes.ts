@@ -113,4 +113,13 @@ export type ApiPresentation = {
   generation?: { mode: string; model?: string; purpose?: string; language?: string };
 };
 
+export type ApiWorkflow = {
+  version: string;
+  agents: Record<string, string>;
+  narratives?: string;
+  sha256?: Record<string, string>;
+  variants?: { id: string; description: string }[];
+  changelog?: { version: string; agents?: Record<string, string>; why: string }[];
+};
+
 export type ApiHealth = { status?: string; llm?: unknown; pdf?: unknown };

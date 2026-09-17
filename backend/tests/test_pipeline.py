@@ -1418,6 +1418,9 @@ def test_first_slide_uses_a_cover_page_of_the_template():
     cover["title_box"] = {"x": 0.1, "y": 0.35, "w": 0.8, "h": 0.22}
     content = dict(pattern(1, text_slots=5))
     plan = outline(3)
+    # Титульный слайд — название и одна строка под ним, без списка тезисов.
+    plan["slides"][0]["bullets"] = ["Отдел дизайна, сентябрь 2026"]
+    plan["slides"][0]["visual"] = {"kind": "none"}
     deck = compose(
         Outline.model_validate(plan).model_dump(),
         synthetic_template([cover, content]),
@@ -1452,8 +1455,11 @@ def test_template_roles_drive_slide_placement():
     cover = dict(pattern(0, text_slots=2), role="cover")
     content = dict(pattern(1, text_slots=4), role="content")
     closing = dict(pattern(2, text_slots=2), role="closing")
+    plan = outline(3)
+    plan["slides"][0]["bullets"] = ["Отдел дизайна, сентябрь 2026"]
+    plan["slides"][0]["visual"] = {"kind": "none"}
     deck = compose(
-        Outline.model_validate(outline(3)).model_dump(),
+        Outline.model_validate(plan).model_dump(),
         synthetic_template([cover, content, closing]),
         "classic",
     )
@@ -1658,3 +1664,112 @@ def test_repeated_titles_are_sent_back_to_the_model(client, monkeypatch):
     titles = [s["title"] for s in response.json()["slides"]]
     assert len(set(titles)) == 2
     assert "повторяются" in captured[-1]["messages"][-1]["content"].lower()
+
+
+def test_thousands_separator_counts_as_the_same_number():
+    """«1 400 рублей» в материалах и «1400» на слайде — одно и то же число."""
+    from designer.generation import known_numbers, unsupported_numbers
+
+    known = known_numbers([{"text": "Стоимость пилота — 1 400 рублей за 68 колод."}])
+    assert unsupported_numbers("1400 рублей, 68 колод", known) == []
+    assert unsupported_numbers("2100 рублей", known) == ["2100"]
+
+
+def test_single_digits_do_not_fail_generation():
+    """«три команды» и «3 команды» — не повод заваливать всю колоду."""
+    from designer.generation import known_numbers, unsupported_numbers
+
+    known = known_numbers([{"text": "Пилот шёл на двух командах, собрано 68 колод."}])
+    assert unsupported_numbers("3 команды", known) == []
+    assert unsupported_numbers("186 минут", known) == ["186"]
+
+
+def test_foreign_labels_drop_the_visual_on_the_last_attempt(client, monkeypatch):
+    """Колода без одной диаграммы лучше, чем 502 вместо колоды."""
+    stubborn = outline(2)
+    stubborn["slides"][0]["visual"] = {
+        "kind": "bar",
+        "categories": ["Auto", "Manual"],
+        "series": [{"name": "Speed", "values": [10, 20]}],
+        "unit": "minutes",
+    }
+    answers = [json.dumps(stubborn)] * 3
+    mock_provider(monkeypatch, answers)
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 2},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][0]["visual"]["kind"] == "none"
+
+
+def test_bullets_are_tidied_before_layout():
+    """Строчная буква и точка в конце тезиса — разнобой, видимый на слайде."""
+    from designer.generation import tidy_line
+
+    assert tidy_line(" принимает шаблон pptx.") == "Принимает шаблон pptx"
+    assert tidy_line("Сроки  и   ресурсы") == "Сроки и ресурсы"
+    assert tidy_line("Что дальше...") == "Что дальше..."
+
+
+def test_export_drops_media_nobody_references(tmp_path):
+    """Колода не должна таскать иллюстрации всех страниц шаблона."""
+    import zipfile
+
+    from designer.exporting import export_pptx, verify_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+
+    for path in sample_templates() or pytest.skip("нет шаблонов"):
+        template = parse_template(path.read_bytes(), path.name)
+        deck = compose(Outline.model_validate(outline(3)).model_dump(), template, "classic")
+        result = tmp_path / "deck.pptx"
+        export_pptx(path, template, deck, result)
+        with zipfile.ZipFile(path) as source, zipfile.ZipFile(result) as made:
+            before = len([n for n in source.namelist() if n.startswith("ppt/media/")])
+            after = len([n for n in made.namelist() if n.startswith("ppt/media/")])
+        assert after <= before
+        assert verify_pptx(result, len(deck["slides"]))["opens"]
+
+
+def test_dense_first_slide_does_not_take_the_cover_page():
+    """Четыре тезиса поверх фонового фото — не титул, а испорченная обложка."""
+    from designer.layout import compose
+    from designer.models import Outline
+
+    cover = dict(pattern(0, text_slots=2), role="cover")
+    content = dict(pattern(1, text_slots=5), role="content")
+    plan = outline(3)
+    plan["slides"][0]["bullets"] = ["Раз", "Два", "Три", "Четыре"]
+    deck = compose(
+        Outline.model_validate(plan).model_dump(),
+        synthetic_template([cover, content]),
+        "classic",
+    )
+    assert deck["slides"][0]["pattern_index"] == 1
+
+
+def test_parked_shapes_never_become_a_card_grid():
+    """Блоки за краем страницы — заготовки дизайнера, а не карточки."""
+    from designer.layout import card_slots
+
+    parked = [
+        {"role": "body", "box": {"x": 0.68, "y": 0.33, "w": 0.42, "h": 0.12}},
+        {"role": "body", "box": {"x": 0.68, "y": 0.48, "w": 0.42, "h": 0.12}},
+        {"role": "body", "box": {"x": 0.68, "y": 0.63, "w": 0.42, "h": 0.12}},
+    ]
+    assert card_slots(parked, 960, 540) == []
+
+
+def test_invented_number_is_shipped_flagged_on_the_last_attempt(client, monkeypatch):
+    """Упрямая модель не должна оставлять пользователя без колоды."""
+    stubborn = outline(2)
+    stubborn["slides"][0]["bullets"] = ["Рост составил 95 процентов"]
+    mock_provider(monkeypatch, [json.dumps(stubborn)] * 3)
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 2},
+    )
+    assert response.status_code == 200, response.text
+    assert "95" in response.json()["slides"][0]["bullets"][0]

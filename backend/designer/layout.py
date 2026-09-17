@@ -124,8 +124,10 @@ def content_demand(content, position=1, total=1):
         "has_visual": content["visual"]["kind"] != "none",
         "title_length": len(content["title"]),
         # Первый слайд — обложка: у шаблона для неё свои страницы, с крупным
-        # заголовком по центру и почти без текстовых блоков.
-        "cover": position == 0,
+        # заголовком по центру и почти без текстовых блоков. Но если модель
+        # начала колоду сразу с содержания, обложечная страница ему не подходит:
+        # четыре тезиса поверх фонового фото — не титул.
+        "cover": position == 0 and len(bullets) <= 1,
         "closing": total > 2 and position == total - 1,
         # Сколько карточек пригодилось бы этому слайду.
         "cards": 0 if content["visual"]["kind"] != "none" else len(bullets),
@@ -360,10 +362,16 @@ def card_slots(body_slots, width, height, minimum=2, maximum=6):
     # Мелкие подписи тоже повторяются рядами, но это не карточки: текст в них
     # окажется микроскопическим, а слайд — пустым. Берём только крупную сетку
     # внутри рабочей области.
+    # Дизайнеры паркуют запасные блоки за краем страницы: в сетку они не
+    # годятся, текст в них уедет со слайда.
     boxes = [
         s["box"]
         for s in body_slots
-        if s.get("role", "body") == "body" and s["box"]["y"] >= 0.18
+        if s.get("role", "body") == "body"
+        and s["box"]["y"] >= 0.18
+        and s["box"]["x"] >= -0.01
+        and s["box"]["x"] + s["box"]["w"] <= 1.01
+        and s["box"]["y"] + s["box"]["h"] <= 1.01
     ]
     if len(boxes) < minimum:
         return []
@@ -467,7 +475,16 @@ def compose(outline, template, variant):
         # выведенной статистикой, поэтому берём их, когда они есть.
         slots = pattern.get("slots") or []
         title_slot = next((s for s in slots if s["role"] == "title"), None)
-        body_slots = [s for s in slots if s["role"] == "body"]
+        # Слот за краем страницы — заготовка дизайнера: в композицию он не идёт,
+        # иначе тянет за собой границы контентной области.
+        body_slots = [
+            s
+            for s in slots
+            if s["role"] == "body"
+            and s["box"]["x"] + s["box"]["w"] <= 1.01
+            and s["box"]["y"] + s["box"]["h"] <= 1.01
+            and s["box"]["x"] >= -0.01
+        ]
         content_slot = union_box([s["box"] for s in body_slots])
         title_style = (title_slot or {}).get("style") or {}
         body_style = (body_slots[0] if body_slots else {}).get("style") or {}
@@ -716,7 +733,9 @@ def compose(outline, template, variant):
         else:
             dark = (luma if luma is not None else 1.0) < 0.62
             needs_scrim = spread > BUSY_BACKGROUND and dark
-        if needs_scrim:
+        if needs_scrim and luma is None:
+            # Фон не измерен: о его светлоте ничего не известно, поэтому под
+            # текст кладётся светлая подложка — самый безопасный вариант.
             background = tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)
         slide_font = title_style.get("font") or body_style.get("font") or font
