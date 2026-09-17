@@ -13,7 +13,9 @@ from .generation import (
     ask_vision,
     vision_completion,
     completion,
+    fabricated_chart,
     known_numbers,
+    repeated_items,
     unsupported_numbers,
     workflow,
 )
@@ -128,6 +130,16 @@ def audit(deck, template, sources):
     # The script the deck is written in decides what counts as a foreign label.
     cyrillic_deck = len(CYRILLIC.findall(deck_text)) > len(LATIN.findall(deck_text))
     source_numbers = known_numbers(sources)
+    # Повтор между слайдами виден только на всей колоде, поэтому считается до цикла.
+    for index, item in repeated_items([s["content"] for s in deck["slides"]]):
+        issues.append(
+            issue(
+                index,
+                None,
+                "repeated_content",
+                f"«{item}» уже сказано в заголовке или на другом слайде",
+            )
+        )
     for slide in deck["slides"]:
         index = slide["index"]
         content = slide["content"]
@@ -246,6 +258,17 @@ def audit(deck, template, sources):
                         "visual",
                         "chart_single_value",
                         "В диаграмме одно значение: число на слайде читается лучше графика",
+                    )
+                )
+            reason = fabricated_chart(visual, source_numbers)
+            if reason:
+                issues.append(
+                    issue(
+                        index,
+                        "visual",
+                        "chart_without_data",
+                        "Диаграмма построена не по данным материалов: " + reason,
+                        severity="error",
                     )
                 )
             if not visual.get("unit", "").strip():
@@ -396,6 +419,27 @@ def audit(deck, template, sources):
                     break
             if element["kind"] == "text":
                 families.add(element["font"])
+                title_size = next(
+                    (e["font_size"] for e in elements if e.get("role") == "title"), None
+                )
+                # Крупная ведущая мысль фокуса — замысел варианта, не нарушение.
+                if (
+                    title_size
+                    and element.get("role") == "body"
+                    and element["id"] != "lead"
+                    and element["font_size"] >= title_size
+                ):
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "body_over_title",
+                            f"Кегль текста {element['font_size']:g} pt не меньше "
+                            f"кегля заголовка {title_size:g} pt: нарушена иерархия",
+                            element["box"],
+                            True,
+                        )
+                    )
                 if scale and not any(
                     abs(element["font_size"] - size) < 0.6 for size in scale
                 ):
@@ -623,6 +667,13 @@ def apply_fixes(deck, report, issue_ids, template):
             element["font_size"] = min(
                 scale, key=lambda s: abs(s - element["font_size"])
             )
+        elif finding["code"] == "body_over_title":
+            title_size = next(
+                e["font_size"] for e in slide["elements"] if e.get("role") == "title"
+            )
+            smaller = [s for s in scale if s < title_size]
+            if smaller:
+                element["font_size"] = max(smaller)
         elif finding["code"] == "color_not_in_palette" and palette:
             background = slide.get("background") or template["tokens"]["theme"].get(
                 "lt1", "FFFFFF"

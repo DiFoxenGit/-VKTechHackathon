@@ -11,6 +11,15 @@ DEFAULT_MARGINS = {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9}
 MIN_BULLETS_FOR_COLUMNS = 4
 # Разброс светлоты, после которого фон считается пёстрым: по нему текст не читается.
 BUSY_BACKGROUND = 0.12
+# Кегль рамки образца, начиная с которого это место под крупную цифру, а не под текст.
+DISPLAY_SIZE = 60
+# Допуск совпадения краёв карточек в сетке, доля слайда.
+GRID_TOLERANCE = 0.012
+# Линия шаблона: не толще этой доли высоты слайда и не короче этой доли ширины.
+RULE_THICKNESS = 0.012
+RULE_LENGTH = 0.25
+# Диаграмма ниже этой доли высоты слайда нечитаема: подписи осей слипаются.
+MIN_VISUAL_HEIGHT = 0.4
 
 
 def estimated_text_height(element):
@@ -29,6 +38,33 @@ def estimated_text_height(element):
         * 1.3
         + 8
     )
+
+
+def table_font_size(visual):
+    """Кегль таблицы: маленькая таблица читается крупно, большая — плотнее."""
+    rows = len(visual.get("rows", [])) + 1
+    return 18.0 if rows <= 4 else 16.0 if rows <= 6 else 13.0
+
+
+def table_row_heights(visual, width):
+    """Высота каждой строки таблицы по её тексту.
+
+    Без этого PowerPoint делит рамку поровну: три строки на полслайда дают
+    ячейки высотой в ладонь с мелким текстом, прижатым к верху. Одна формула
+    для вёрстки и экспорта — иначе рамка на слайде не совпадёт с таблицей.
+    """
+    size = table_font_size(visual)
+    columns = max(1, len(visual.get("columns", [])))
+    chars = max(1, (width / columns - 14) / (size * 0.55))
+    return [
+        max(
+            max(1, math.ceil(len(str(cell)) / chars)) for cell in (row or [""])
+        )
+        * size
+        * 1.25
+        + 16
+        for row in [visual.get("columns", []), *visual.get("rows", [])]
+    ]
 
 
 def ink_area(element):
@@ -201,6 +237,25 @@ def branding_in_band(pattern):
     return round(total, 5)
 
 
+def rules_in_band(pattern):
+    """Горизонтальные линии шаблона, пересекающие рабочую область.
+
+    По площади линия — ноль, и branding_in_band её не видит. Но именно она
+    режет список пополам или проходит сквозь диаграмму: такие страницы
+    нарисованы под свою раскладку, а не под произвольный текст.
+    """
+    left, top, right, bottom = CONTENT_BAND
+    return sum(
+        1
+        for box in pattern.get("reserved", [])
+        if box["h"] <= RULE_THICKNESS
+        and box["w"] >= RULE_LENGTH
+        and top < box["y"] < bottom
+        and box["x"] < right
+        and box["x"] + box["w"] > left
+    )
+
+
 def candidate_patterns(patterns):
     """Content pages a new slide can be built on, best first.
 
@@ -301,12 +356,14 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
             "team": 1.5,
         }.get(role, 0.0)
     cards = demand.get("cards")
-    if cards:
-        grid = len(card_slots(pattern.get("slots") or [], 1.0, 1.0))
-        if grid:
-            # Сетка под число тезисов: пустые карточки читаются как недоделка,
-            # а тезисы, не поместившиеся в карточки, слипаются в последней.
-            score += 0.45 if grid == cards else -0.18 * abs(grid - cards)
+    grid = len(card_slots(pattern.get("slots") or [], 1.0, 1.0)) if cards else 0
+    if grid:
+        # Сетка под число тезисов: пустые карточки читаются как недоделка,
+        # а тезисы, не поместившиеся в карточки, слипаются в последней.
+        score += 0.45 if grid == cards else -0.18 * abs(grid - cards)
+    if not designed and not (grid and grid == cards):
+        # Линия поперёк рабочей области пройдёт по списку или диаграмме.
+        score -= 0.4 * min(2, rules_in_band(pattern))
     if demand.get("cover"):
         # Обложка шаблона: мало текстовых рамок, заголовок крупный и не у самого
         # верха. Обычная контентная страница на её месте выглядит как ошибка.
@@ -402,10 +459,13 @@ def card_slots(body_slots, width, height, minimum=2, maximum=6):
     # внутри рабочей области.
     # Дизайнеры паркуют запасные блоки за краем страницы: в сетку они не
     # годятся, текст в них уедет со слайда.
+    # Рамка под крупную цифру (кегль 60+ в образце) — место для числа, а не
+    # карточка: тезис в ней висит мелким текстом в огромной пустой рамке.
     boxes = [
         s["box"]
         for s in body_slots
         if s.get("role", "body") == "body"
+        and ((s.get("style") or {}).get("size") or 0) < DISPLAY_SIZE
         and s["box"]["y"] >= 0.18
         and s["box"]["x"] >= -0.01
         and s["box"]["x"] + s["box"]["w"] <= 1.01
@@ -427,6 +487,18 @@ def card_slots(body_slots, width, height, minimum=2, maximum=6):
         for b in boxes
         if abs(b["w"] - median_w) <= median_w * 0.25
         and abs(b["h"] - median_h) <= max(median_h * 0.6, 0.03)
+    ]
+    # Сетка — это ряды и колонки: каждая карточка делит верхний или левый край
+    # хотя бы с одной соседней. Рамки, разбросанные по странице, дают слайд
+    # с блоками разной ширины и съехавшими краями.
+    cards = [
+        b
+        for b in cards
+        if any(
+            other is not b
+            and (abs(other["y"] - b["y"]) <= GRID_TOLERANCE or abs(other["x"] - b["x"]) <= GRID_TOLERANCE)
+            for other in cards
+        )
     ]
     if len(cards) < minimum:
         return []
@@ -581,6 +653,11 @@ def compose(outline, template, variant):
             if title_height(size) <= height * 0.24:
                 break
         th = max(height * 0.12, title_height(current_title_size))
+        # Тезис крупнее заголовка ломает иерархию: слайд читается с середины.
+        body_limit = max(
+            [s for s in scale if s < current_title_size] or [current_title_size]
+        )
+        slide_body_size = min(slide_body_size, body_limit)
         if cards:
             limit = min(box[1] for box in cards) - ty - height * 0.025
             if limit >= height * 0.08:
@@ -619,7 +696,9 @@ def compose(outline, template, variant):
         if variant == "focus" or has_visual:
             # Крупный блок — одна мысль или диаграмма — не должен ложиться на
             # линии шаблона: ищем свободную полосу, если она достаточно широкая.
-            top, bottom = decor_free_band(reserved, top, bottom, margin, right)
+            band = decor_free_band(reserved, top, bottom, margin, right)
+            if not has_visual or band[1] - band[0] >= height * MIN_VISUAL_HEIGHT:
+                top, bottom = band
         w, h, gap = right - margin, bottom - top, width * 0.03
         elements = [
             {
@@ -751,6 +830,12 @@ def compose(outline, template, variant):
                 elements[-1]["from_template"] = True
         else:
             text_box("body", bullets, [margin, top, w, h])
+        for element in elements:
+            if element["kind"] == "table":
+                # Рамка таблицы — по её строкам, а не на всю оставшуюся высоту.
+                element["box"][3] = min(
+                    element["box"][3], sum(table_row_heights(visual, element["box"][2]))
+                )
         # Resolve the text color once, against this slide's real background, so
         # layout, export and the contrast audit all agree on what will be rendered.
         # Подогнать текст до аудита: пользователь не должен чинить руками то,
@@ -768,9 +853,14 @@ def compose(outline, template, variant):
             maximum=(
                 max(slide_body_size, body_size) * 2.0
                 if variant == "focus"
-                else max(slide_body_size, body_size) * 1.25
+                else min(body_limit, max(slide_body_size, body_size) * 1.25)
             ),
         )
+        if variant == "focus":
+            # В фокусе крупной может быть одна мысль, но не второстепенный список.
+            for element in elements:
+                if element["id"] == "body":
+                    element["font_size"] = min(element["font_size"], body_limit)
         center_content(elements, top, bottom)
         dodge_decor(elements, reserved, bottom, height * 0.015)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")

@@ -15,12 +15,12 @@ from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
-from .layout import estimated_text_height
+from .layout import estimated_text_height, table_font_size, table_row_heights
 from .visuals import DIAGRAMS
 from .parsing import (
     background_color,
@@ -378,9 +378,16 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
             elif kind == "table":
                 visual = element["data"]
                 rows = [visual["columns"], *visual["rows"]]
+                heights = table_row_heights(visual, element["box"][2])
+                size = table_font_size(visual)
                 table = slide.shapes.add_table(
                     len(rows), len(rows[0]), x, y, w, h
                 ).table
+                # Строки по тексту, а не поровну на всю рамку; излишек высоты
+                # (рамку могли растянуть правкой) делится пропорционально.
+                stretch = max(1.0, element["box"][3] / sum(heights))
+                for r, row_height in enumerate(heights):
+                    table.rows[r].height = Pt(row_height * stretch)
                 for r, values in enumerate(rows):
                     for c, value in enumerate(values):
                         cell = table.cell(r, c)
@@ -392,8 +399,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                         color = (
                             best_text_color(accent, palette) if r == 0 else text_color
                         )
+                        cell.vertical_anchor = MSO_ANCHOR.MIDDLE
                         for p in cell.text_frame.paragraphs:
-                            _font(p.font, font, 13, color, r == 0)
+                            _font(p.font, font, size, color, r == 0)
             elif kind in DIAGRAMS:
                 DIAGRAMS[kind](
                     slide.shapes,

@@ -1,0 +1,226 @@
+{
+ "title": "Внедрение сервиса автоматической вёрстки презентаций",
+ "slides": [
+  {
+   "title": "Внедрение сервиса автоматической вёрстки презентаций",
+   "bullets": [],
+   "notes": "",
+   "source_refs": [],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "Экономия 4 часа дизайнера на колоду",
+   "bullets": [
+    "Экономия 4 часа дизайнера на колоду",
+    "200 презентаций в квартал"
+   ],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "Сервис автоматической вёрстки",
+   "bullets": [
+    "Анализ шаблонов",
+    "Пилот на 10 командах",
+    "Запуск на 20 командах",
+    "Масштабирование на компанию"
+   ],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "Ожидаемый эффект",
+   "bullets": [
+    "Экономия 4 часа дизайнера на колоду",
+    "200 презентаций в квартал"
+   ],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "Что потребуется: ресурсы и сроки",
+   "bullets": [
+    "Анализ шаблонов",
+    "Пилот на 10 командах",
+    "Запуск на 20 командах",
+    "Масштабирование на компанию"
+   ],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "План пилота",
+   "bullets": [
+    "Пилот на 10 командах",
+    "Оценка эффективности"
+   ],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "Что мы просим решить",
+   "bullets": [
+    "Подтвердить бюджет",
+    "Назначить ответственных"
+   ],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "Сравнение показателей",
+   "bullets": [],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "table",
+    "categories": [],
+    "series": [],
+    "columns": [
+     "Показатель",
+     "Значение"
+    ],
+    "rows": [
+     [
+      "Кол-во презентаций в квартал",
+      "200"
+     ],
+     [
+      "Экономия часов на колоду",
+      "4"
+     ]
+    ],
+    "steps": [],
+    "unit": ""
+   }
+  },
+  {
+   "title": "График реализации",
+   "bullets": [],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "bar",
+    "categories": [
+     "Анализ",
+     "Пилот",
+     "Запуск",
+     "Масштабирование"
+    ],
+    "series": [
+     {
+      "name": "Этап",
+      "values": [
+       1.0,
+       2.0,
+       3.0,
+       4.0
+      ]
+     }
+    ],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": "Этап"
+   }
+  },
+  {
+   "title": "Следующие шаги",
+   "bullets": [
+    "Подтвердить бюджет",
+    "Назначить ответственных",
+    "Запустить пилот"
+   ],
+   "notes": "",
+   "source_refs": [
+    "brief"
+   ],
+   "visual": {
+    "kind": "none",
+    "categories": [],
+    "series": [],
+    "columns": [],
+    "rows": [],
+    "steps": [],
+    "unit": ""
+   }
+  }
+ ]
+}

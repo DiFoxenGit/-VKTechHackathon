@@ -3,6 +3,7 @@ import base64
 import hashlib
 import json
 import logging
+import math
 import os
 import re
 from pathlib import Path
@@ -373,6 +374,80 @@ def unsupported_numbers(text, known, minimum=10):
     )
 
 
+def same_text(text):
+    """Ключ для сравнения фраз: регистр, «ё», пунктуация и пробелы не в счёт."""
+    value = text.lower().replace("ё", "е")
+    return " ".join(re.sub(r"[^\w%]+", " ", value).split())
+
+
+def number_label(value):
+    """Число так, как его пишут в тексте: 4.0 → «4», 1.5 → «1.5»."""
+    return str(int(value)) if float(value).is_integer() else str(value)
+
+
+def fabricated_chart(visual, known):
+    """Диаграмма, чьи значения не взяты из материалов.
+
+    Модель, которой нечего рисовать, нумерует этапы — 1, 2, 3, 4 — и строит по
+    номерам столбики. Однозначные числа проверка тезисов пропускает, поэтому
+    значения диаграммы сверяются с источниками все, а порядковый ряд
+    отклоняется даже тогда, когда такие цифры в тексте случайно встречаются.
+    """
+    kind = visual["kind"] if isinstance(visual, dict) else visual.kind
+    if kind not in ("bar", "line"):
+        return ""
+    data = visual if isinstance(visual, dict) else visual.model_dump()
+    for series in data["series"]:
+        values = series["values"]
+        if len(values) >= 3 and values == [float(i + 1) for i in range(len(values))]:
+            return f"ряд «{series['name']}» — порядковые номера 1…{len(values)}, а не данные"
+        missing = sorted({number_label(v) for v in values} - known)
+        if missing:
+            return f"ряд «{series['name']}»: значений {', '.join(missing[:5])} нет в материалах"
+    return ""
+
+
+def repeated_items(slides):
+    """Повторы внутри колоды: тезис, уже сказанный на другом слайде или в заголовке.
+
+    Короткий бриф, растянутый на десять слайдов, выдаёт себя именно так: одна и
+    та же строка стоит заголовком на одном слайде и тезисом на двух других.
+    Возвращает пары (номер слайда, текст) для каждого повтора после первого.
+    """
+    seen, repeats = {}, []
+    titles = {same_text(s["title"]): i for i, s in enumerate(slides)}
+    for index, slide in enumerate(slides):
+        visual = slide["visual"]
+        items = [*slide["bullets"], *visual.get("steps", [])]
+        for item in items:
+            key = same_text(item)
+            if not key:
+                continue
+            if titles.get(key, index) != index or key == same_text(slide["title"]):
+                repeats.append((index, item))
+            elif key in seen and seen[key] != index:
+                repeats.append((index, item))
+            else:
+                seen.setdefault(key, index)
+    return repeats
+
+
+def material_slides(sources):
+    """Сколько слайдов материал выдерживает без повторов.
+
+    Считаем самостоятельные утверждения: предложения и пункты перечислений.
+    Два утверждения на слайд плюс обложка — грубая, но честная граница: из трёх
+    строк брифа не выйдет десяти слайдов, не повторив каждую строку трижды.
+    """
+    text = "\n".join(source["text"] for source in sources)
+    parts = [
+        part
+        for part in re.split(r"[.!?;:\n]+|,\s+", text)
+        if len(WORD.findall(part)) >= 2
+    ]
+    return 1 + math.ceil(len(parts) / 2)
+
+
 def sources_for(store, request: Brief):
     result = [{"id": "brief", "text": request.brief}]
     for identifier in request.content_pack_ids:
@@ -466,10 +541,63 @@ async def balance_outline(outline, template, capacity=None):
     return outline
 
 
+def deck_defects(outline, known, beats):
+    """Что в плане выдаёт растянутый материал, а не рассказ.
+
+    Проверки детерминированные и дешёвые, поэтому идут до вёрстки: повторы
+    тезисов, заголовок из названия шага каркаса, диаграмма без данных.
+    """
+    slides = [slide.model_dump() for slide in outline.slides]
+    problems = [
+        f"слайд {index + 1}: «{item}» уже есть на другом слайде или в заголовке"
+        for index, item in repeated_items(slides)
+    ]
+    for index, slide in enumerate(outline.slides):
+        if index and same_text(slide.title) in beats:
+            problems.append(
+                f"слайд {index + 1}: заголовок «{slide.title}» — название шага "
+                "каркаса, а не вывод"
+            )
+        reason = fabricated_chart(slide.visual, known)
+        if reason:
+            problems.append(f"слайд {index + 1}: диаграмма без данных, {reason}")
+    return problems
+
+
+def repair_outline(outline, known):
+    """Последняя попытка: убрать повторы и выдуманные диаграммы, а не ронять колоду.
+
+    Слайд, у которого после чистки не осталось ни тезисов, ни визуализации,
+    уходит целиком — это и был повтор.
+    """
+    for slide in outline.slides:
+        if fabricated_chart(slide.visual, known):
+            slide.visual = Visual()
+    repeats = {}
+    for index, item in repeated_items([s.model_dump() for s in outline.slides]):
+        repeats.setdefault(index, set()).add(item)
+    for index, items in repeats.items():
+        slide = outline.slides[index]
+        slide.bullets = [b for b in slide.bullets if b not in items]
+        if slide.visual.kind in ("process", "icon", "cycle", "pyramid", "timeline"):
+            steps = [step for step in slide.visual.steps if step not in items]
+            slide.visual = slide.visual.model_copy(update={"steps": steps}) if steps else Visual()
+    kept = [
+        slide
+        for index, slide in enumerate(outline.slides)
+        if index == 0 or slide.bullets or slide.visual.kind != "none"
+    ]
+    outline.slides = kept or outline.slides[:1]
+    return outline
+
+
 async def generate_outline(request, sources):
     allowed = {s["id"] for s in sources}
 
     known = known_numbers(sources)
+    frame = narrative(request.purpose) or {}
+    beats = {same_text(beat) for beat in frame.get("beats", [])}
+    supported = material_slides(sources)
     # Счётчик попыток: на последней принимаем меньшее число слайдов, чем просили.
     # Колода из трёх слайдов лучше, чем ошибка вместо презентации; расхождение
     # видно в ответе и в интерфейсе.
@@ -483,7 +611,12 @@ async def generate_outline(request, sources):
         # Материала может не хватать на запрошенное число слайдов. Размазанный по
         # трём страницам один факт хуже короткой колоды, поэтому недобор до 60%
         # принимаем, а перебор — нет: пользователь задал верхнюю границу.
-        floor = min(request.slide_count, max(3, int(request.slide_count * 0.6)))
+        # Нижняя граница — ещё и по объёму материала: требовать шесть слайдов
+        # из трёх строк брифа значит заказать повторы.
+        floor = min(
+            request.slide_count,
+            max(3, min(int(request.slide_count * 0.6), supported)),
+        )
         if not last_chance and not (floor <= count <= request.slide_count):
             raise ValueError(
                 f"Нужно от {floor} до {request.slide_count} слайдов, получено {count}. "
@@ -540,9 +673,27 @@ async def generate_outline(request, sources):
                 + ", ".join(sorted(repeated)[:4])
                 + ". Каждый слайд несёт свою мысль."
             )
+        problems = deck_defects(outline, known, beats)
+        if problems and not last_chance:
+            raise ValueError(
+                "; ".join(problems[:6])
+                + ". Каждый факт звучит в колоде один раз, заголовок — вывод, "
+                "а если материала мало, слайдов должно быть меньше."
+            )
+        if problems:
+            LOGGER.warning("Repairing outline on the last attempt: %s", problems[:6])
+            repair_outline(outline, known)
         invented = unsupported_numbers(
             "\n".join(
-                slide.title + "\n" + "\n".join(slide.bullets)
+                slide.title
+                + "\n"
+                + "\n".join(slide.bullets)
+                + "\n"
+                + "\n".join(
+                    label
+                    for label in visual_labels(slide.visual.model_dump())
+                    if slide.visual.kind not in ("bar", "line")
+                )
                 for slide in outline.slides
             ),
             known,
@@ -571,7 +722,10 @@ async def generate_outline(request, sources):
         "outline",
         {
             **request.model_dump(exclude={"outline", "template_id"}),
-            "narrative": narrative(request.purpose),
+            # Сколько слайдов материал выдерживает без повторов: подсказка
+            # модели, а не приказ — проверка выше держит ту же границу.
+            "slides_supported_by_sources": min(request.slide_count, supported),
+            "narrative": frame or None,
             "sources": select_context(sources, request.brief),
             "schema": Outline.model_json_schema(),
         },

@@ -53,7 +53,7 @@ def outline(count=3):
         "slides": [
             {
                 "title": f"Вывод {i + 1}",
-                "bullets": ["Первый тезис", "Второй тезис"],
+                "bullets": [f"Первый тезис раздела {i + 1}", f"Второй тезис раздела {i + 1}"],
                 "source_refs": ["brief"],
                 "visual": visual,
             }
@@ -1773,3 +1773,179 @@ def test_invented_number_is_shipped_flagged_on_the_last_attempt(client, monkeypa
     )
     assert response.status_code == 200, response.text
     assert "95" in response.json()["slides"][0]["bullets"][0]
+
+
+# Живой прогон 17 сентября: бриф в три строки, растянутый gpt-oss-20b на десять
+# слайдов. Колода из этого плана прошла аудит без единой ошибки.
+STRETCHED_BRIEF = (
+    "Внедряем сервис автоматической вёрстки презентаций. Этапы: анализ шаблонов, "
+    "пилот на 10 командах, запуск на 20 команд, масштабирование на компанию. "
+    "Экономия 4 часа дизайнера на колоду, 200 презентаций в квартал."
+)
+
+
+def stretched_outline():
+    path = Path(__file__).parent / "data" / "stretched_outline.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def honest_outline():
+    return {
+        "title": "Внедрение сервиса автоматической вёрстки презентаций",
+        "slides": [
+            {"title": "Внедрение сервиса автоматической вёрстки презентаций", "source_refs": ["brief"]},
+            {
+                "title": "Четыре этапа от анализа шаблонов до всей компании",
+                "source_refs": ["brief"],
+                "visual": {
+                    "kind": "process",
+                    "steps": ["Анализ шаблонов", "Пилот: 10 команд", "Запуск: 20 команд", "Вся компания"],
+                },
+            },
+            {
+                "title": "4 часа дизайнера экономим на каждой колоде",
+                "bullets": ["200 презентаций в квартал проходят через сервис"],
+                "source_refs": ["brief"],
+            },
+        ],
+    }
+
+
+def test_material_limits_how_many_slides_are_demanded():
+    from designer.generation import material_slides
+
+    assert material_slides([{"id": "brief", "text": STRETCHED_BRIEF}]) == 5
+
+
+def test_stretched_brief_is_sent_back_to_the_model(client, monkeypatch):
+    """Повторы, заголовки из каркаса и график по номерам этапов — повод переспросить."""
+    captured = mock_provider(
+        monkeypatch, [json.dumps(stretched_outline()), json.dumps(honest_outline())]
+    )
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": STRETCHED_BRIEF, "slide_count": 10, "purpose": "initiative"},
+    )
+    assert response.status_code == 200, response.text
+    assert len(response.json()["slides"]) == 3
+    assert len(captured) == 2
+    payload = json.loads(captured[0]["messages"][1]["content"])
+    assert payload["slides_supported_by_sources"] == 5
+    feedback = captured[1]["messages"][-1]["content"]
+    assert "уже есть на другом слайде" in feedback
+    assert "название шага каркаса" in feedback
+    assert "порядковые номера" in feedback
+
+
+def test_last_attempt_strips_repeats_and_fake_charts(client, monkeypatch):
+    mock_provider(monkeypatch, [json.dumps(stretched_outline())] * 3)
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": STRETCHED_BRIEF, "slide_count": 10, "purpose": "initiative"},
+    )
+    assert response.status_code == 200, response.text
+    slides = response.json()["slides"]
+    assert all(s["visual"]["kind"] != "bar" for s in slides)
+    from designer.generation import repeated_items
+
+    assert repeated_items(slides) == []
+    assert 3 <= len(slides) < 10
+
+
+def test_content_audit_catches_the_stretched_deck():
+    from designer.models import Outline
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    plan = Outline.model_validate(stretched_outline()).model_dump()
+    deck = compose(plan, template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": STRETCHED_BRIEF}])
+    by_code = {}
+    for item in report["issues"]:
+        by_code.setdefault(item["code"], set()).add(item["slide_index"])
+    # Слайд 2 повторяет свой заголовок, слайды 4, 5, 10 — чужие тезисы.
+    assert {1, 3, 4, 9} <= by_code["repeated_content"]
+    assert by_code["chart_without_data"] == {8}
+    assert report["counts"]["errors"] >= 1
+
+
+def test_measured_chart_is_not_called_fabricated():
+    from designer.generation import fabricated_chart
+
+    chart = {
+        "kind": "bar",
+        "categories": ["Пилот", "Запуск"],
+        "series": [{"name": "Команды", "values": [10, 20]}],
+    }
+    assert fabricated_chart(chart, {"10", "20"}) == ""
+    assert "нет в материалах" in fabricated_chart(chart, {"10"})
+
+
+def test_body_type_stays_below_the_title():
+    from designer.models import Outline
+
+    template = synthetic_template([pattern(0, text_slots=2)])
+    template["tokens"]["font_sizes"] = [18, 24, 32, 40, 44]
+    plan = outline(1)
+    plan["slides"][0]["visual"] = {"kind": "none"}
+    plan["slides"][0]["bullets"] = ["Подтвердить сроки", "Назначить владельца"]
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    elements = deck["slides"][0]["elements"]
+    title = next(e for e in elements if e["role"] == "title")
+    assert all(e["font_size"] < title["font_size"] for e in elements if e["role"] == "body")
+    report = audit(deck, template, [{"id": "brief", "text": "Подтвердить сроки"}])
+    assert "body_over_title" not in {i["code"] for i in report["issues"]}
+    elements[1]["font_size"] = title["font_size"] + 4
+    report = audit(deck, template, [{"id": "brief", "text": "Подтвердить сроки"}])
+    found = next(i for i in report["issues"] if i["code"] == "body_over_title")
+    from designer.audit import apply_fixes
+
+    fixed = apply_fixes(deck, report, [found["id"]], template)
+    assert fixed["slides"][0]["elements"][1]["font_size"] < title["font_size"]
+
+
+def test_display_number_frames_are_not_cards():
+    """Страница «крупная цифра + подпись» не карточная сетка: рамки разного размера."""
+    from designer.layout import card_slots
+
+    stat_page = [
+        {"role": "body", "box": {"x": 0.084, "y": 0.4, "w": 0.444, "h": 0.355}, "style": {"size": 239}},
+        {"role": "body", "box": {"x": 0.093, "y": 0.76, "w": 0.444, "h": 0.168}, "style": {"size": 24}},
+        {"role": "body", "box": {"x": 0.665, "y": 0.467, "w": 0.3, "h": 0.11}, "style": {"size": 16}},
+    ]
+    assert card_slots(stat_page, 960, 540) == []
+    grid = [
+        {"role": "body", "box": {"x": x, "y": y, "w": 0.44, "h": 0.31}, "style": {"size": 18}}
+        for y in (0.26, 0.59)
+        for x in (0.055, 0.505)
+    ]
+    assert len(card_slots(grid, 960, 540)) == 4
+
+
+def test_rule_across_the_content_band_costs_the_pattern():
+    from designer.models import Outline
+
+    ruled = pattern(0, reserved=[(0.0, 0.52, 1.0, 0.0)])
+    plain = pattern(1)
+    deck = compose(
+        Outline.model_validate(outline(1)).model_dump(),
+        synthetic_template([ruled, plain]),
+        "classic",
+    )
+    assert deck["slides"][0]["pattern_index"] == 1
+
+
+def test_table_frame_follows_its_rows():
+    from designer.layout import table_row_heights
+    from designer.models import Outline
+
+    plan = outline(2)
+    plan["slides"] = plan["slides"][1:]
+    deck = compose(
+        Outline.model_validate(plan).model_dump(),
+        synthetic_template([pattern(0)]),
+        "classic",
+    )
+    table = next(e for e in deck["slides"][0]["elements"] if e["kind"] == "table")
+    rows = table_row_heights(table["data"], table["box"][2])
+    assert len(rows) == 3
+    assert table["box"][3] <= sum(rows) + 0.01
