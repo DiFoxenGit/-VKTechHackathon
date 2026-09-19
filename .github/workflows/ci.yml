@@ -46,3 +46,41 @@ jobs:
         run: docker build -t designer-backend ./backend
       - name: Build frontend image
         run: docker build -t designer-frontend ./frontend
+
+  # Доставка на сервер: только push в master и только после зелёных проверок.
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [backend, frontend, images]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: http://${{ vars.DEPLOY_HOST }}
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Ship release and rebuild
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+        # Образцы колод серверу не нужны, без них архив в разы меньше.
+        run: |
+          git archive --format=tar HEAD -- . ':(exclude)samples' | gzip -9 \
+            | ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+                  -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+                  "$DEPLOY_USER@$DEPLOY_HOST" "deploy $GITHUB_SHA"
+      - name: Check public health
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "http://$DEPLOY_HOST/health"
