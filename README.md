@@ -132,7 +132,17 @@ cd backend && pytest -q      # 69 сценариев: парсинг, вёрст
 cd frontend && npm run build # tsc -b и сборка
 ```
 
-CI прогоняет оба набора и сборку Docker-образов на каждый push и pull request.
+Регресс вёрстки без модели — 12 слайдов со всеми видами визуализаций на любом наборе
+шаблонов, с контакт-листами и метриками по записанному PPTX ([docs/regression.md](docs/regression.md)):
+
+```bash
+python tools/bench_templates.py <папка с .pptx> --outline tools/regress_outline.json --sheets out/
+```
+
+CI на каждый push и pull request: этап **Tests** из трёх параллельных джоб — `pytest`,
+`frontend` (типы, сборка, образ) и `Integration` (тот же регресс в боевом образе на
+синтетических шаблонах), — и только после них **Deploy** на сервер при push в `master`.
+Журнал всех работ — [docs/worklog/](docs/worklog/).
 
 Тестам нужны реальные шаблоны в `templates/` или в папке из `DESIGNER_TEMPLATE_DIR`; без них сценарии с шаблонами пропускаются.
 
