@@ -70,7 +70,32 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 
 Ключ выдаётся сервисному аккаунту с ролью `ai.languageModels.user`, область действия ключа — `yc.ai.foundationModels.execute`.
 
-## Обновление и откат
+## Автодеплой из GitHub Actions
+
+Каждый push в `master` после зелёных `backend`, `frontend` и `images` запускает job `deploy` в [ci.yml](../.github/workflows/ci.yml):
+
+1. Actions собирает архив коммита (`git archive`, без `samples/`) и передаёт его по SSH командой `deploy <sha>`.
+2. На сервере deploy-ключ привязан в `authorized_keys` к приёмнику [`deploy/ci-receive.sh`](../deploy/ci-receive.sh) через `restrict,command=...`: по этому ключу нельзя получить shell, можно только передать релиз.
+3. Приёмник распаковывает релиз в `~/vk-designer-ci/releases/<sha>`, синхронизирует код в `~/vk-designer` (не трогая `.env`, `templates/`, `out/`), запускает `deploy/deploy.sh` и пишет коммит в `.deployed-sha`.
+4. Если сборка или `/health` не прошли, приёмник возвращает образы `:prev` и код прошлого релиза. Job падает, в логе видно почему.
+
+Параллельные деплои исключены: `concurrency: production` в Actions и `flock` на сервере.
+
+| Где | Имя | Что |
+|---|---|---|
+| Secrets | `DEPLOY_SSH_KEY` | приватный deploy-ключ ed25519 |
+| Secrets | `DEPLOY_KNOWN_HOSTS` | `ssh-keyscan -t ed25519 <хост>`, чтобы не доверять хосту вслепую |
+| Variables | `DEPLOY_HOST`, `DEPLOY_USER` | адрес сервера и пользователь |
+
+Приёмник на сервере лежит вне каталога проекта (`~/vk-designer-ci/receive.sh`), поэтому коммит не может его подменить. После правки `deploy/ci-receive.sh` его переустанавливают вручную:
+
+```bash
+ssh <сервер> 'cat > ~/vk-designer-ci/receive.sh' < deploy/ci-receive.sh
+```
+
+> На сервере fail2ban банит IP после трёх неудачных входов. Подключайтесь с `-o IdentitiesOnly=yes`, иначе ssh перебирает все ключи из агента и быстро набирает эти три попытки.
+
+## Ручное обновление и откат
 
 ```bash
 git pull                                   # или залить архив
