@@ -72,7 +72,7 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 
 ## Автодеплой из GitHub Actions
 
-Каждый push в `master` после зелёных `backend`, `frontend` и `images` запускает job `deploy` в [ci.yml](../.github/workflows/ci.yml). Job передаёт серверу по SSH только команду `deploy <sha>`, код сервер забирает сам.
+Каждый push в `master` после зелёного этапа **Tests** (`pytest`, `frontend`, `Integration`; см. [tests.yml](../.github/workflows/tests.yml) и [regression.md](regression.md)) запускает job `deploy` в [ci.yml](../.github/workflows/ci.yml). Job передаёт серверу по SSH только команду `deploy <sha>`, код сервер забирает сам.
 
 1. `~/vk-designer` на сервере — git-клон с read-only deploy-ключом GitHub (`~/.ssh/github_deploy`, прописан в `core.sshCommand`).
 2. Ключ Actions привязан в `authorized_keys` к приёмнику [`deploy/ci-receive.sh`](../deploy/ci-receive.sh) через `restrict,command=...`: по этому ключу нельзя получить shell, можно только попросить выкатить коммит.
