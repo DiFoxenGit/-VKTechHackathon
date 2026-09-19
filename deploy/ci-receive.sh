@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-# Приёмник релизов от GitHub Actions. Ставится на сервер вне каталога проекта
+# Приёмник деплоя от GitHub Actions. Ставится на сервер вне каталога проекта
 # и привязывается к deploy-ключу через command= в authorized_keys:
-# по этому ключу нельзя получить shell, можно только передать релиз.
+# по этому ключу нельзя получить shell, можно только попросить выкатить коммит.
 #
-#   ssh <сервер> deploy <sha>  < release.tar.gz
+#   ssh <сервер> deploy <sha>
 #
-# Шаги: распаковать релиз, синхронизировать код (.env, templates и рабочие
-# файлы сервера не трогаются), запустить deploy/deploy.sh. Если сборка или
-# проверка /health не прошли — вернуть прошлые образы и код.
+# Каталог проекта — git-клон с доступом на чтение к репозиторию. Приёмник
+# забирает свежий master, принимает только коммиты из него, переключает
+# рабочую копию (.env и templates в .gitignore и не трогаются) и запускает
+# deploy/deploy.sh. Если сборка или /health не прошли — возвращает прошлый
+# коммит и прошлые образы.
 set -euo pipefail
 
 APP="${APP_DIR:-$HOME/vk-designer}"
 CI="${CI_DIR:-$HOME/vk-designer-ci}"
-KEEP_RELEASES=3
+BRANCH="${DEPLOY_BRANCH:-master}"
+COMPOSE=(docker compose -f docker-compose.yml -f deploy/compose.server.yml)
 
 read -r cmd sha rest <<<"${SSH_ORIGINAL_COMMAND:-}"
 if [ "$cmd" != deploy ] || ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || [ -n "${rest:-}" ]; then
@@ -20,48 +23,45 @@ if [ "$cmd" != deploy ] || ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || [ -n "${rest:-}" 
   exit 2
 fi
 
-mkdir -p "$CI/releases"
+mkdir -p "$CI"
 exec 9>"$CI/deploy.lock"
 flock -w 1800 9 || { echo "предыдущий деплой не завершился за 30 минут" >&2; exit 1; }
 
-rel="$CI/releases/$sha"
-rm -rf "$rel" && mkdir -p "$rel"
-tar -xzf - -C "$rel"
-[ -f "$rel/deploy/deploy.sh" ] || { echo "в релизе нет deploy/deploy.sh" >&2; exit 1; }
+cd "$APP"
+# Связь сервера с GitHub временами рвётся: три попытки с таймаутом.
+for attempt in 1 2 3; do
+  timeout 90 git fetch --quiet origin "$BRANCH" && break
+  [ "$attempt" = 3 ] && { echo "не удалось забрать origin/$BRANCH" >&2; exit 1; }
+  echo "fetch не прошёл, повтор через 10 с" >&2
+  sleep 10
+done
+if ! git merge-base --is-ancestor "$sha" "origin/$BRANCH"; then
+  echo "коммит $sha не входит в origin/$BRANCH" >&2
+  exit 1
+fi
 
-prev_sha="$(cat "$APP/.deployed-sha" 2>/dev/null || true)"
-echo "деплой $sha (было: ${prev_sha:-неизвестно})"
-
-sync_code() {
-  rsync -a --delete \
-    --exclude=/.env --exclude=/templates/ --exclude=/out/ --exclude=/tmp_upload/ \
-    --exclude=/bench.py --exclude=/.deployed-sha \
-    "$1/" "$APP/"
-}
+prev_sha="$(git rev-parse HEAD)"
+echo "деплой $sha (было: $prev_sha)"
 
 for s in backend frontend; do
   docker image inspect "vk-designer-$s:latest" >/dev/null 2>&1 \
     && docker tag "vk-designer-$s:latest" "vk-designer-$s:prev"
 done
 
-sync_code "$rel"
-cd "$APP"
+git checkout --quiet -B "$BRANCH" "$sha"
+git reset --quiet --hard "$sha"
 
 if bash deploy/deploy.sh; then
-  echo "$sha" > .deployed-sha
-  ls -1dt "$CI"/releases/*/ | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf
   docker image prune -f >/dev/null
   echo "готово: $sha"
   exit 0
 fi
 
-echo "деплой не прошёл, откат на ${prev_sha:-прошлые образы}" >&2
+echo "деплой не прошёл, откат на $prev_sha" >&2
+git reset --quiet --hard "$prev_sha"
 for s in backend frontend; do
   docker image inspect "vk-designer-$s:prev" >/dev/null 2>&1 \
     && docker tag "vk-designer-$s:prev" "vk-designer-$s:latest"
 done
-if [ -n "$prev_sha" ] && [ -d "$CI/releases/$prev_sha" ]; then
-  sync_code "$CI/releases/$prev_sha"
-fi
-docker compose -f docker-compose.yml -f deploy/compose.server.yml up -d --no-build
+"${COMPOSE[@]}" up -d --no-build
 exit 1

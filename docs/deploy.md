@@ -72,12 +72,12 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 
 ## Автодеплой из GitHub Actions
 
-Каждый push в `master` после зелёных `backend`, `frontend` и `images` запускает job `deploy` в [ci.yml](../.github/workflows/ci.yml):
+Каждый push в `master` после зелёных `backend`, `frontend` и `images` запускает job `deploy` в [ci.yml](../.github/workflows/ci.yml). Job передаёт серверу по SSH только команду `deploy <sha>`, код сервер забирает сам.
 
-1. Actions собирает архив коммита (`git archive`, без `samples/`) и передаёт его по SSH командой `deploy <sha>`.
-2. На сервере deploy-ключ привязан в `authorized_keys` к приёмнику [`deploy/ci-receive.sh`](../deploy/ci-receive.sh) через `restrict,command=...`: по этому ключу нельзя получить shell, можно только передать релиз.
-3. Приёмник распаковывает релиз в `~/vk-designer-ci/releases/<sha>`, синхронизирует код в `~/vk-designer` (не трогая `.env`, `templates/`, `out/`), запускает `deploy/deploy.sh` и пишет коммит в `.deployed-sha`.
-4. Если сборка или `/health` не прошли, приёмник возвращает образы `:prev` и код прошлого релиза. Job падает, в логе видно почему.
+1. `~/vk-designer` на сервере — git-клон с read-only deploy-ключом GitHub (`~/.ssh/github_deploy`, прописан в `core.sshCommand`).
+2. Ключ Actions привязан в `authorized_keys` к приёмнику [`deploy/ci-receive.sh`](../deploy/ci-receive.sh) через `restrict,command=...`: по этому ключу нельзя получить shell, можно только попросить выкатить коммит.
+3. Приёмник делает `git fetch` (три попытки), принимает коммит, только если он входит в `origin/master`, переключает на него рабочую копию и запускает `deploy/deploy.sh`. `.env` и `templates/` лежат в `.gitignore`, их это не задевает.
+4. Если сборка или `/health` не прошли, приёмник возвращает прошлый коммит и образы `:prev`. Job падает, в логе видно почему.
 
 Параллельные деплои исключены: `concurrency: production` в Actions и `flock` на сервере.
 
@@ -93,7 +93,9 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 ssh <сервер> 'cat > ~/vk-designer-ci/receive.sh' < deploy/ci-receive.sh
 ```
 
-> На сервере fail2ban банит IP после трёх неудачных входов. Подключайтесь с `-o IdentitiesOnly=yes`, иначе ssh перебирает все ключи из агента и быстро набирает эти три попытки.
+Пользователь, от которого идёт деплой, должен быть в группе `docker`, а на машине с 2 ГБ RAM нужен swap: без него сборка фронтенда падает по OOM.
+
+> Если на сервере включён fail2ban, подключайтесь с `-o IdentitiesOnly=yes`. Иначе ssh перебирает все ключи из агента и быстро набирает три неудачные попытки, после которых IP банится.
 
 ## Ручное обновление и откат
 
