@@ -748,17 +748,25 @@ def sample_backgrounds(pptx_path: Path, content_region=(0.05, 0.23, 0.95, 0.87))
     return stats
 
 
-def export_html(pdf_path: Path, destination: Path, title: str):
+HTML_EXPORT_MARKER = '<!-- designer-html:live-text-v1 -->'
+
+
+def export_html(pdf_path: Path, destination: Path, title: str, language: str = "ru"):
     import pymupdf
+    from lxml import etree
 
     with pymupdf.open(pdf_path) as pdf:
         pages = []
         for page in pdf:
-            # Paths preserve exact appearance even if the browser lacks corporate fonts.
-            svg = page.get_svg_image(text_as_path=True)
+            # Keep selectable/searchable SVG text. Serialize numeric character
+            # references as UTF-8 too, so Russian phrases can be found in the file.
+            svg = page.get_svg_image(text_as_path=False)
+            root = etree.fromstring(svg.encode('utf-8'), etree.XMLParser(resolve_entities=False, no_network=True))
+            svg = etree.tostring(root, encoding='unicode')
             pages.append('<section class="slide">' + svg + "</section>")
     destination.write_text(
-        '<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>'
+        '<!doctype html>' + HTML_EXPORT_MARKER + '<html lang="' + html.escape(language or 'ru', quote=True)
+        + '"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>'
         + html.escape(title)
         + "</title><style>body{margin:0;background:#222}.slide{margin:24px auto;width:min(96vw,1280px);background:white}.slide svg{width:100%;height:auto;display:block}@media print{body{background:white}.slide{margin:0;width:100%;break-after:page}}</style>"
         + "".join(pages)
