@@ -17,6 +17,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .audit import apply_fixes, audit, contextual_audit, visual_audit
 from .exporting import (
+    HTML_EXPORT_MARKER,
     convert_pdf,
     export_html,
     export_pptx,
@@ -535,13 +536,18 @@ def create_app(data_dir=None, seed_dir=None):
         output = folder / f"r{rev}.{format}"
         # The standalone server deliberately runs one worker. Lock protects concurrent conversions.
         with store.lock:
-            if not output.exists():
+            cached = output.exists()
+            if cached and format == 'html':
+                with output.open(encoding='utf-8') as saved:
+                    cached = HTML_EXPORT_MARKER in saved.read(256)
+            if not cached:
                 try:
                     pdf = folder / f"r{rev}.pdf"
                     if not pdf.exists():
                         convert_pdf(source, pdf)
                     if format == "html":
-                        export_html(pdf, output, record["title"])
+                        export_html(pdf, output, record["title"],
+                                    language=(record.get("generation") or {}).get("language", "ru"))
                 except (RuntimeError, TimeoutError, subprocess.TimeoutExpired) as exc:
                     raise HTTPException(503, str(exc)) from exc
         return FileResponse(
