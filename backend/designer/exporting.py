@@ -88,7 +88,26 @@ def _orphan_icon_row(source, width, height, branding):
     return orphans
 
 
-def _clone_slide(deck, source, branding=None, content=(), orphans=frozenset()):
+def _resize(element, box, width, height):
+    """Переставить скопированную фигуру по исправленной рамке (доли слайда)."""
+    transform = element.find(f"{qn('p:spPr')}/{qn('a:xfrm')}")
+    if transform is None:
+        transform = element.find(f".//{qn('a:xfrm')}")
+    if transform is None:
+        return
+    offset = transform.find(qn("a:off"))
+    extent = transform.find(qn("a:ext"))
+    if offset is None or extent is None:
+        return
+    offset.set("x", str(int(box["x"] * width)))
+    offset.set("y", str(int(box["y"] * height)))
+    extent.set("cx", str(max(1, int(box["w"] * width))))
+    extent.set("cy", str(max(1, int(box["h"] * height))))
+
+
+def _clone_slide(
+    deck, source, branding=None, content=(), orphans=frozenset(), fixes=None
+):
     target = deck.slides.add_slide(source.slide_layout)
     for shape in list(target.shapes):
         shape._element.getparent().remove(shape._element)
@@ -131,6 +150,11 @@ def _clone_slide(deck, source, branding=None, content=(), orphans=frozenset()):
                     and value in mapping
                 ):
                     node.set(key, mapping[value])
+        fix = (fixes or {}).get(str(shape.shape_id))
+        if fix:
+            # Аудит уже посчитал честную рамку: применяем её к копии, чтобы
+            # картинка перестала быть растянутой и в файле, и в отчёте.
+            _resize(element, fix["box"], deck.slide_width, deck.slide_height)
         target.shapes._spTree.insert_element_before(element, "p:extLst")
     return target
 
@@ -347,7 +371,14 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
             if any(e.get("from_template") for e in slide_data["elements"])
             else _orphan_icon_row(source, deck.slide_width, deck.slide_height, branding)
         )
-        slide = _clone_slide(deck, source, branding, content_boxes, orphans)
+        slide = _clone_slide(
+            deck,
+            source,
+            branding,
+            content_boxes,
+            orphans,
+            slide_data.get("shape_fixes"),
+        )
         background = slide_data.get("background") or background_color(
             slide, template["tokens"]["theme"]
         )

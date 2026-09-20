@@ -9,6 +9,7 @@ from pathlib import Path
 
 from lxml import etree
 from pptx import Presentation
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 from pypdf import PdfReader
 
@@ -21,7 +22,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 15
+PARSER_VERSION = 16
 
 
 def is_footer_placeholder(shape):
@@ -546,6 +547,29 @@ def accent_colors(counted, theme, limit=6):
     return found[:limit]
 
 
+def picture_ratio(shape):
+    """Пропорции картинки: своя и та, в которую её поставил шаблон.
+
+    Приложение 1 требует ловить растянутую картинку. Сравнивать можно только с
+    исходным изображением, причём с учётом обрезки: обрезанная наполовину
+    фотография в квадратной рамке не растянута, а кадрирована.
+    """
+    try:
+        if shape.shape_type != MSO_SHAPE_TYPE.PICTURE:
+            return None
+        width, height = shape.image.size
+    except (AttributeError, ValueError, KeyError, OSError):
+        return None
+    if not width or not height or not shape.width or not shape.height:
+        return None
+    visible_w = max(0.01, 1 - (shape.crop_left or 0) - (shape.crop_right or 0))
+    visible_h = max(0.01, 1 - (shape.crop_top or 0) - (shape.crop_bottom or 0))
+    return {
+        "native": round((width * visible_w) / (height * visible_h), 5),
+        "frame": round(shape.width / shape.height, 5),
+    }
+
+
 def parse_template(data: bytes, name: str):
     check_zip(data)
     deck = Presentation(io.BytesIO(data))
@@ -620,6 +644,9 @@ def parse_template(data: bytes, name: str):
                             colors[value] += 1
                 except (AttributeError, ValueError):
                     pass
+            native = picture_ratio(shape)
+            if native:
+                item["picture"] = native
             if shape.shape_type == 6:
                 item["children"] = scan(shape.shapes)
             if shape.is_placeholder:

@@ -3,6 +3,7 @@ import hashlib
 import logging
 import math
 import re
+from collections import Counter
 
 import httpx
 from fastapi import HTTPException
@@ -17,7 +18,7 @@ from .generation import (
     unsupported_numbers,
     workflow,
 )
-from .language import CYRILLIC, LATIN, foreign_labels, visual_labels
+from .language import CYRILLIC, LATIN, foreign_labels, script_of, visual_labels
 from .layout import (
     DEFAULT_MARGINS,
     DEFAULT_SAFE_AREA,
@@ -44,6 +45,11 @@ MAX_FONT_FAMILIES = 2
 # короткий столбец рядом с длинным превращается в полоску у оси.
 MIN_CHART_HEIGHT = 0.25
 MIN_FONT_SIZE = 12
+# Расхождение пропорций рамки и самой картинки, после которого она «растянута».
+MAX_ASPECT_DRIFT = 0.03
+# Доля слайда, ниже которой картинка — значок, а не иллюстрация: искажение там
+# не читается, зато находок набирается на сотню.
+MIN_PICTURE_AREA = 0.01
 # A slide below the first value reads as empty, above the second as a wall of text.
 FILL_RANGE = (0.25, 0.75)
 ALIGN_TOLERANCE = 2.0
@@ -104,7 +110,58 @@ def issue(
     }
 
 
-def audit(deck, template, sources):
+def deck_language_strays(deck, language=None):
+    """Слайды, выпадающие из языка колоды.
+
+    `foreign_language` ловит только смешение языков внутри одного слайда:
+    целиком английский слайд, вставленный в русскую колоду через PATCH, для неё
+    однороден и находки не даёт. Здесь язык каждого слайда сравнивается с
+    запрошенным или, если его не передали, с языком большинства.
+    """
+    scripts = {}
+    for slide in deck["slides"]:
+        content = slide["content"]
+        text = content["title"] + "\n" + "\n".join(content["bullets"])
+        script = script_of(text)
+        if script:
+            scripts[slide["index"]] = script
+    if not scripts:
+        return None
+    requested = (language or "").strip().lower()[:2] or None
+    if requested not in ("ru", "en"):
+        requested = None
+    counts = Counter(scripts.values())
+    expected = requested or counts.most_common(1)[0][0]
+    strays = sorted(index + 1 for index, script in scripts.items() if script != expected)
+    return (expected, strays) if strays else None
+
+
+def stretched_pictures(pattern, fixes=None):
+    """Картинки страницы шаблона, у которых рамка не совпадает с пропорциями.
+
+    Мелкий значок-битмап в пару пикселей растянутым не считаем: там разница
+    пропорций не читается, а находок набирается на сотню. Проверяем то, что
+    зритель видит как картинку.
+    """
+    fixes = fixes or {}
+    found = []
+    for shape in (pattern or {}).get("shapes") or []:
+        picture = shape.get("picture")
+        box = shape.get("box") or {}
+        if not picture or box.get("w", 0) * box.get("h", 0) < MIN_PICTURE_AREA:
+            continue
+        frame = fixes.get(str(shape["id"]), {}).get("ratio", picture["frame"])
+        native = picture["native"]
+        if not native:
+            continue
+        if abs(frame - native) / native > MAX_ASPECT_DRIFT:
+            found.append({**picture, "frame": frame, "id": shape["id"], "box": box})
+    return found
+
+
+def audit(deck, template, sources, language=None):
+    """language — язык, который запросил пользователь; без него берётся язык
+    большинства слайдов колоды."""
     issues = []
     seen = set()
     width, height = deck["width"], deck["height"]
@@ -342,6 +399,30 @@ def audit(deck, template, sources):
             # когда раскладывать по нему нечего, — проверять его не по чему.
             if b["w"] * b["h"] < 0.6 and not b.get("icons")
         ]
+        # Приложение 1: «картинка растянута». Наши слайды картинок не вставляют,
+        # но страница шаблона приходит на слайд вместе со своими: клонирование
+        # переносит их как есть, и зритель видит именно их пропорции.
+        fixes = slide.get("shape_fixes") or {}
+        for shape in stretched_pictures(
+            patterns.get(slide.get("pattern_index")), fixes
+        ):
+            issues.append(
+                issue(
+                    index,
+                    f"picture_{shape['id']}",
+                    "image_stretched",
+                    f"Картинка шаблона растянута: рамка {shape['frame']:g} к 1 "
+                    f"при собственных пропорциях {shape['native']:g} к 1",
+                    [
+                        width * shape["box"]["x"],
+                        height * shape["box"]["y"],
+                        width * shape["box"]["w"],
+                        height * shape["box"]["h"],
+                    ],
+                    True,
+                    severity="error",
+                )
+            )
         edges = [e["box"][0] for e in elements]
         # Направляющие шаблона: левые и правые края текстовых рамок прототипа.
         # Блок, вставший на такую линию, выровнен по дизайн-системе, даже если
@@ -514,14 +595,18 @@ def audit(deck, template, sources):
                         )
                     )
                 if estimated_text_height(element) > h:
+                    # Попытка автоисправления уже была и ничего не дала: не
+                    # обещаем починку второй раз, а называем причину.
+                    reason = (element.get("unfixable") or {}).get("text_overflow")
                     issues.append(
                         issue(
                             index,
                             element["id"],
                             "text_overflow",
-                            "Оценка: текст может не поместиться в рамку",
+                            "Оценка: текст может не поместиться в рамку"
+                            + (f"; автоисправление невозможно — {reason}" if reason else ""),
                             element["box"],
-                            True,
+                            not reason,
                         )
                     )
                 if (
@@ -554,6 +639,21 @@ def audit(deck, template, sources):
                             element["box"],
                         )
                     )
+    strays = deck_language_strays(deck, language)
+    if strays:
+        expected, slides = strays
+        issues.append(
+            issue(
+                None,
+                None,
+                "deck_language",
+                "Колода на языке «"
+                + expected
+                + "», а слайды "
+                + ", ".join(str(number) for number in slides)
+                + " написаны на другом. ТЗ требует одного языка на всю колоду",
+            )
+        )
     if len(families) > MAX_FONT_FAMILIES:
         # Deck-level findings carry no slide index; the preview endpoint skips them.
         issues.append(
@@ -671,6 +771,34 @@ async def contextual_audit(deck, sources):
     return issues
 
 
+def restore_picture(slide, pattern, finding):
+    """Вернуть картинке её пропорции, не трогая короткую сторону.
+
+    Растянутая картинка чинится обрезанием длинной стороны: так кадр остаётся
+    на месте и не наезжает на соседей. Правка хранится на слайде и применяется
+    при экспорте, потому что сама фигура приходит со страницы шаблона.
+    """
+    shape_id = str(finding["element_id"]).removeprefix("picture_")
+    shape = next(
+        (s for s in (pattern or {}).get("shapes") or [] if str(s["id"]) == shape_id),
+        None,
+    )
+    if not shape or not shape.get("picture"):
+        return slide
+    native = shape["picture"]["native"]
+    frame = shape["picture"]["frame"]
+    box = dict(shape["box"])
+    if frame > native:
+        box["w"] = box["w"] * native / frame
+    else:
+        box["h"] = box["h"] * frame / native
+    slide.setdefault("shape_fixes", {})[shape_id] = {
+        "ratio": native,
+        "box": box,
+    }
+    return slide
+
+
 def apply_fixes(deck, report, issue_ids, template):
     known = {i["id"]: i for i in report["issues"]}
     if any(i not in known or not known[i]["fixable"] for i in issue_ids):
@@ -687,9 +815,15 @@ def apply_fixes(deck, report, issue_ids, template):
     )
     palette = template["tokens"]["colors"]
     scale = [s for s in template["tokens"]["font_sizes"] if s >= MIN_FONT_SIZE]
+    patterns = {p["index"]: p for p in template["patterns"]}
     for identifier in issue_ids:
         finding = known[identifier]
         slide = deck["slides"][finding["slide_index"]]
+        if finding["code"] == "image_stretched":
+            # Картинка принадлежит странице шаблона, а не нашей модели слайда:
+            # правку кладём рядом с ней, экспорт применит её при клонировании.
+            restore_picture(slide, patterns.get(slide.get("pattern_index")), finding)
+            continue
         element = next(e for e in slide["elements"] if e["id"] == finding["element_id"])
         if finding["code"] == "out_of_bounds":
             element["box"] = clamp_box(element["box"], (0.0, 0.0, width, height))
@@ -730,16 +864,54 @@ def apply_fixes(deck, report, issue_ids, template):
             y = min(max(ceiling, limit - h), y)
             element["box"] = [x, y, w, h]
         elif finding["code"] == "text_overflow":
-            sizes = sorted(
-                {
-                    s
-                    for s in template["tokens"]["font_sizes"]
-                    if 12 <= s < element["font_size"]
-                },
-                reverse=True,
-            )
-            for size in sizes:
-                element["font_size"] = size
-                if estimated_text_height(element) <= element["box"][3]:
-                    break
+            fix_overflow(slide, element, template, margin_box)
     return deck
+
+
+def fix_overflow(slide, element, template, margin_box):
+    """Убрать переполнение рамки или честно сказать, что убрать его нечем.
+
+    Прежний фикс перебирал только ступени шкалы мельче текущей и не ниже 12 pt.
+    У шаблона с короткой шкалой таких ступеней не оказывалось вовсе, фикс молча
+    ничего не менял, а POST /fixes плодил ревизии с теми же находками. Теперь
+    сначала уменьшается кегль — до 10 pt, ориентира читаемости, — потом растёт
+    сама рамка в пределах полей, и только если не помогло ни то, ни другое,
+    находка помечается неисправимой с причиной.
+    """
+    sizes = sorted(
+        {
+            s
+            for s in template["tokens"]["font_sizes"]
+            if MIN_LABEL_SIZE <= s < element["font_size"]
+        },
+        reverse=True,
+    )
+    for size in sizes:
+        element["font_size"] = size
+        if estimated_text_height(element) <= element["box"][3]:
+            return element
+    # Мельче нельзя. Тогда рамке отдаётся место до нижнего поля — но не за счёт
+    # блока, который стоит ниже: наезд хуже переполнения.
+    needed = estimated_text_height(element) + 0.5
+    x, y, w, _ = element["box"]
+    floor = min(
+        [margin_box[1] + margin_box[3]]
+        + [
+            other["box"][1]
+            for other in slide["elements"]
+            if other is not element
+            and other["box"][1] >= y + 1
+            and other["box"][0] < x + w
+            and other["box"][0] + other["box"][2] > x
+        ]
+    )
+    element["box"][3] = max(element["box"][3], min(needed, floor - y))
+    if estimated_text_height(element) <= element["box"][3]:
+        return element
+    # Ни кегля мельче, ни места под рамку: сообщаем причину, а не выпускаем
+    # ревизию с той же находкой.
+    element["unfixable"] = {
+        "text_overflow": "нет ступени шкалы мельче "
+        f"{element['font_size']:g} pt и нет места расширить рамку"
+    }
+    return element
