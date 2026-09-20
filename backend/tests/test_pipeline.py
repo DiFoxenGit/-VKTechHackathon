@@ -2093,3 +2093,66 @@ def test_small_text_and_word_breaks_are_reported_and_fixable():
         slide["elements"][1]["box"][2] = 60.0
 
     assert "word_break" in audited(template, squeeze)[2]
+
+
+def test_focus_variant_keeps_one_accent_and_equal_bullets():
+    """В focus акцент крупнее, остальные тезисы одинаковы и не вылезают."""
+    from designer.layout import compose, estimated_text_height
+    from designer.models import Outline
+
+    plan = {
+        "title": "Фокус",
+        "slides": [
+            {
+                "title": "Три риска и как мы их закрываем",
+                "bullets": [
+                    "Выдуманные цифры: аудит сверяет каждое число с материалом",
+                    "Слабый шаблон: вёрстка опирается на рабочую область файла",
+                    "Долгий рендер: колода собирается за четыре минуты",
+                ],
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": {"kind": "none"},
+            }
+        ],
+    }
+    template = parse_template(template_bytes(), "unknown.pptx")
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "focus")
+    elements = deck["slides"][0]["elements"]
+    lead = next(e for e in elements if e["id"] == "lead")
+    bullets = [
+        e
+        for e in elements
+        if e["kind"] == "text" and e["role"] == "body" and e["id"] != "lead"
+    ]
+    assert bullets, "тезисы под акцентом должны остаться"
+    # Акцент — самый крупный блок содержания, а не самый мелкий.
+    assert lead["font_size"] >= max(e["font_size"] for e in bullets)
+    # Все обычные тезисы набраны одинаково: и кеглем, и маркером.
+    assert len({e["font_size"] for e in bullets}) == 1
+    assert len({e["text"].lstrip().startswith("•") for e in bullets}) == 1
+    # Ничего не выходит за свою рамку.
+    for element in [lead, *bullets]:
+        assert estimated_text_height(element) <= element["box"][3] + 0.01, element["id"]
+
+
+def test_focus_bullets_do_not_leave_their_box_on_supplied_templates():
+    """На шаблонах кейса вариант focus не выпускает текст за рамку."""
+    from designer.layout import compose, estimated_text_height
+    from designer.models import Outline
+
+    for name in ("VK Tech", "Education", "WorkSpace"):
+        path = require_template(name)
+        template = parse_template(path.read_bytes(), path.name)
+        deck = compose(
+            Outline.model_validate(outline(6)).model_dump(), template, "focus"
+        )
+        for slide in deck["slides"]:
+            for element in slide["elements"]:
+                if element["kind"] != "text" or element.get("from_template"):
+                    continue
+                assert estimated_text_height(element) <= element["box"][3] + 0.01, (
+                    path.name,
+                    slide["index"],
+                    element["id"],
+                )
