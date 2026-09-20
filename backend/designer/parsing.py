@@ -426,7 +426,7 @@ def background_color(slide, theme):
     return background_info(slide, theme)["color"]
 
 
-def title_background(slide, box):
+def title_background(slide, box, width, height, base_color):
     """Sample a raster background at the designer's title slot, without Office.
 
     A photographic cover's entire canvas can be bright while its text area is
@@ -436,22 +436,17 @@ def title_background(slide, box):
         return None
     from PIL import Image, ImageStat
 
-    for owner in (slide, slide.slide_layout, slide.slide_layout.slide_master):
-        bg = owner._element.cSld.bg
-        if bg is None:
-            continue
-        blips = bg.xpath('.//a:blip')
-        if not blips:
-            return None
-        reference = blips[0].get(qn('r:embed'))
-        if not reference:
-            return None
+    def sample(blob, region_box):
         try:
-            with Image.open(io.BytesIO(owner.part.related_part(reference).blob)) as image:
-                image = image.convert('RGB')
+            with Image.open(io.BytesIO(blob)) as image:
+                # Transparent PNG artwork is composited over the slide fill;
+                # discarding alpha would measure bright hidden RGB pixels.
+                canvas = Image.new('RGBA', image.size, '#' + base_color)
+                image = Image.alpha_composite(canvas, image.convert('RGBA')).convert('RGB')
                 image.thumbnail((240, 240))
-                left, top = max(0, box['x']), max(0, box['y'])
-                right, bottom = min(1, box['x'] + box['w']), min(1, box['y'] + box['h'])
+                left, top = max(0, region_box['x']), max(0, region_box['y'])
+                right = min(1, region_box['x'] + region_box['w'])
+                bottom = min(1, region_box['y'] + region_box['h'])
                 if right <= left or bottom <= top:
                     return None
                 region = image.crop((int(left * image.width), int(top * image.height),
@@ -461,6 +456,35 @@ def title_background(slide, box):
                 return {'color': ''.join(f'{round(c):02X}' for c in stats.mean),
                         'spread': round(ImageStat.Stat(region.convert('L')).stddev[0] / 255, 4)}
         except (OSError, ValueError, KeyError):
+            return None
+    owners = (slide, slide.slide_layout, slide.slide_layout.slide_master)
+    # A full-slide picture can supply the background while p:bg stays solid.
+    for owner in owners:
+        for shape in reversed(list(owner.shapes)):
+            if shape.shape_type != MSO_SHAPE_TYPE.PICTURE:
+                continue
+            x, y, w, h = shape_key(shape, width, height)
+            if w * h < .85 or not (x <= box['x'] and y <= box['y']
+                                   and x + w >= box['x'] + box['w']
+                                   and y + h >= box['y'] + box['h']):
+                continue
+            cw, ch = 1 - shape.crop_left - shape.crop_right, 1 - shape.crop_top - shape.crop_bottom
+            return sample(shape.image.blob, {
+                'x': shape.crop_left + (box['x'] - x) / w * cw,
+                'y': shape.crop_top + (box['y'] - y) / h * ch,
+                'w': box['w'] / w * cw, 'h': box['h'] / h * ch,
+            })
+    for owner in owners:
+        bg = owner._element.cSld.bg
+        if bg is None:
+            continue
+        blips = bg.xpath('.//a:blip')
+        reference = blips[0].get(qn('r:embed')) if blips else None
+        if not reference:
+            return None
+        try:
+            return sample(owner.part.related_part(reference).blob, box)
+        except KeyError:
             return None
     return None
 
@@ -981,7 +1005,8 @@ def parse_template(data: bytes, name: str):
                 "shapes": shapes,
                 "text_slots": len(text_shapes),
                 "branding_score": branding_score(slide, width, height, background),
-                "title_background": title_background(slide, title['box'] if title else None),
+                "title_background": title_background(slide, title['box'] if title else None,
+                                                     width, height, background['color']),
             }
         )
     classify_patterns(patterns)

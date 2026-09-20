@@ -47,7 +47,10 @@ def cover_template(layout_only=False, image_background=False):
     slide.background.fill.fore_color.rgb = RGBColor.from_string('41006B')
     if image_background:
         image = io.BytesIO()
-        Image.new('RGB', (160, 90), '#41006B').save(image, format='PNG')
+        Image.new('RGB', (160, 120), '#41006B').save(image, format='PNG')
+        if image_background == 'picture':
+            slide.shapes.add_picture(io.BytesIO(image.getvalue()), 0, 0, deck.slide_width, deck.slide_height)
+            return deck
         _, rid = slide.part.get_or_add_image_part(io.BytesIO(image.getvalue()))
         bg = slide._element.cSld.bg
         for node in list(bg):
@@ -123,6 +126,16 @@ def test_two_slide_deck_uses_cover_and_closing():
     assert [s['pattern_index'] for s in compose(outline, template, 'classic')['slides']] == [0, 1]
 
 
+def test_transparent_art_is_sampled_over_the_slide_fill():
+    source = cover_template()
+    pixels = io.BytesIO()
+    Image.new('RGBA', (160, 120), (255, 255, 255, 0)).save(pixels, format='PNG')
+    source.slides[0].shapes.add_picture(io.BytesIO(pixels.getvalue()), 0, 0, source.slide_width, source.slide_height)
+    template = parse_template(save(source), 'anything.pptx')
+    assert template['patterns'][0]['title_background']['color'] == '41006B'
+    assert compose(plan(), template, 'classic')['slides'][0]['elements'][0]['color'] == 'FFFFFF'
+
+
 def test_branding_ignores_empty_frames_and_off_canvas_art():
     deck = Presentation()
     slide = deck.slides.add_slide(deck.slide_layouts[6])
@@ -137,8 +150,9 @@ def test_branding_ignores_empty_frames_and_off_canvas_art():
 
 
 @pytest.mark.parametrize('variant', ['classic', 'split', 'focus'])
-def test_image_cover_keeps_native_art_and_editable_title(tmp_path, variant):
-    data = save(cover_template(layout_only=True, image_background=True))
+@pytest.mark.parametrize('image_background', [True, 'picture'])
+def test_image_cover_keeps_native_art_and_editable_title(tmp_path, variant, image_background):
+    data = save(cover_template(layout_only=True, image_background=image_background))
     template = parse_template(data, 'unknown.pptx')
     deck = compose(plan(), template, variant)
     slide = deck['slides'][0]
@@ -151,9 +165,9 @@ def test_image_cover_keeps_native_art_and_editable_title(tmp_path, variant):
     source.write_bytes(data)
     export_pptx(source, template, deck, output)
     result = Presentation(output).slides[0]
-    assert result._element.cSld.bg.xpath('.//a:blip')
-    assert len(result.shapes) == len(slide['elements'])  # no covering scrim
-    assert result.shapes[0].text == plan()['slides'][0]['title']
+    assert result._element.cSld.bg.xpath('.//a:blip') or image_background == 'picture'
+    assert len(result.shapes) == len(slide['elements']) + (image_background == 'picture')  # no scrim
+    assert any(s.has_text_frame and s.text == plan()['slides'][0]['title'] for s in result.shapes)
     assert len(result.slide_layout.shapes) == len(cover_template().slide_layouts[0].shapes)
 
 
