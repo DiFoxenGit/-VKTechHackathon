@@ -2270,3 +2270,30 @@ def test_text_overflow_fix_either_repairs_or_explains_itself():
     for item in repeat:
         assert not item["fixable"], item["message"]
         assert "автоисправление невозможно" in item["message"]
+
+
+def test_model_typography_is_normalised_before_layout(client, monkeypatch):
+    """Неразрывный дефис и узкий пробел модели — пустые прямоугольники на слайде."""
+    plan = outline(2)
+    plan["title"] = "Дизайн‑система"
+    plan["slides"][0]["title"] = "Пилот стоил 1 400 рублей"
+    plan["slides"][0]["bullets"] = ["дизайн‑система за 1 400 рублей."]
+    plan["slides"][0]["visual"] = {
+        "kind": "bar",
+        "categories": ["Было‑раньше", "Стало"],
+        "series": [{"name": "Сборка колоды", "values": [10, 20]}],
+        "unit": "мин на колоду",
+    }
+    mock_provider(monkeypatch, [json.dumps(plan)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 2},
+    )
+    assert response.status_code == 200, response.text
+    body = json.dumps(response.json(), ensure_ascii=False)
+    for char in ("‑", " ", " "):
+        assert char not in body, f"в ответе остался {char!r}"
+    slide = response.json()["slides"][0]
+    assert slide["bullets"][0] == "Дизайн-система за 1 400 рублей"
+    assert slide["visual"]["categories"][0] == "Было-раньше"
+    assert slide["visual"]["series"][0]["name"] == "Сборка колоды"
