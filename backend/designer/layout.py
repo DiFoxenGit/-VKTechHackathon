@@ -394,7 +394,10 @@ def slot_size(style, scale, fallback, minimum=12, maximum=96):
     # Заметно мельче расчётного — признак умолчания, а не решения дизайнера.
     if size < fallback * 0.55:
         return fallback
-    return size
+    # Шкала шаблона — кластеры близких кеглей, и объявленные 24 pt могут жить в
+    # ней как 24.38. Прижимаем к ближайшей ступени: иначе вёрстка встаёт между
+    # ступенями и её же аудит сообщает font_size_off_scale.
+    return min(scale, key=lambda s: abs(s - size)) if scale else size
 
 
 def card_slots(body_slots, width, height, minimum=2, maximum=6):
