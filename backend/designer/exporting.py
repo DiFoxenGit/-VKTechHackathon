@@ -21,7 +21,7 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
 from .layout import estimated_text_height
-from .visuals import DIAGRAMS
+from .visuals import DIAGRAMS, MIN_LABEL_SIZE
 from .parsing import (
     background_color,
     best_text_color,
@@ -208,9 +208,13 @@ def diagram_style(font, accent, background, text_color, palette):
             shape.fill.solid()
             shape.fill.fore_color.rgb = RGBColor.from_string(accent)
 
-    def label(shape, text, outline=False, fit=0.82):
-        """fit — доля ширины фигуры под текст: у шеврона внутри меньше места,
-        чем по габаритам, и без поправки длинное слово рвётся по слогам."""
+    def label(shape, text, size, outline=False):
+        """Подпись внутри фигуры схемы.
+
+        Кегль приходит снаружи и один на всю схему: раньше он считался для
+        каждой фигуры отдельно, и в одном ряду шевронов «Аудит» оказывался
+        крупнее соседей, а на узкой колонке подписи падали до 6 pt.
+        """
         frame = shape.text_frame
         frame.word_wrap = True
         # Внутренние поля по умолчанию съедают у фигуры четверть дюйма: для
@@ -218,12 +222,6 @@ def diagram_style(font, accent, background, text_color, palette):
         frame.margin_left = frame.margin_right = Pt(1)
         frame.margin_top = frame.margin_bottom = Pt(1)
         shape.text = text
-        longest = max((len(word) for word in text.split()), default=1)
-        # Запас в 15 % — на кернинг и на то, что ширина знака в разных
-        # гарнитурах отличается: без него длинное слово рвётся пополам.
-        usable = shape.width / 12700 * fit * 0.85 - 2
-        # Кириллица в этих гарнитурах шире латиницы: 0.62 кегля на знак.
-        size = max(6.0, min(13.0, usable / (longest * 0.62)))
         colour = text_color if outline else on_accent
         for paragraph in shape.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
@@ -231,16 +229,20 @@ def diagram_style(font, accent, background, text_color, palette):
             for run in paragraph.runs:
                 _font(run.font, font, size, colour)
 
-    def caption(shapes, box, text):
+    def caption(shapes, box, text, size=MIN_LABEL_SIZE):
         left, top, width, height = box
         frame = shapes.add_textbox(left, top, width, max(height, Pt(12)))
         frame.text_frame.word_wrap = True
+        # Поля текстовой рамки по умолчанию — по 7.2 pt с каждой стороны: на
+        # подписи под значком это пятая часть ширины, и слово всё-таки рвалось.
+        frame.text_frame.margin_left = frame.text_frame.margin_right = Pt(1)
+        frame.text_frame.margin_top = frame.text_frame.margin_bottom = Pt(1)
         frame.text_frame.text = text
         for paragraph in frame.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
-            _font(paragraph.font, font, 12, text_color)
+            _font(paragraph.font, font, size, text_color)
             for run in paragraph.runs:
-                _font(run.font, font, 12, text_color)
+                _font(run.font, font, size, text_color)
 
     return {"paint": paint, "label": label, "caption": caption}
 

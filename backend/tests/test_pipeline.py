@@ -1990,3 +1990,106 @@ def test_layout_font_sizes_stay_on_the_template_scale():
             assert not [
                 i for i in report["issues"] if i["code"] == "font_size_off_scale"
             ], (path.name, variant, scale)
+
+
+def test_icons_are_drawn_not_left_as_empty_circles(tmp_path):
+    """У каждого значка внутри круга есть рисунок, а не пустая заливка."""
+    from pptx import Presentation as Deck
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    from designer.exporting import export_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+    from designer.visuals import ICONS, pick_icon
+
+    # Подпись, которая не попадает ни в одно ключевое слово: раньше такой значок
+    # рисовался одним закрашенным кругом.
+    assert pick_icon("Квазар") == "пункт"
+    assert len(ICONS["пункт"]) >= 3
+
+    plan = {
+        "title": "Схема",
+        "slides": [
+            {
+                "title": "Шаблон разбирается в дизайн-систему",
+                "bullets": ["Имён макетов в коде нет"],
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": {"kind": "icon", "steps": ["Квазар", "Пульсар", "Гарнитуры"]},
+            }
+        ],
+    }
+    source = template_bytes()
+    template = parse_template(source, "unknown.pptx")
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    source_path = tmp_path / "template.pptx"
+    source_path.write_bytes(source)
+    output = tmp_path / "deck.pptx"
+    export_pptx(source_path, template, deck, output)
+    glyphs = [
+        s
+        for s in Deck(output).slides[0].shapes
+        if s.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE and not s.text.strip()
+    ]
+    # Три значка по три фигуры в каждом: пустых кругов не осталось.
+    assert len(glyphs) >= 9
+
+
+def test_diagram_labels_share_one_size_and_never_break_a_word():
+    """Единый кегль на схему, не мельче 10 pt, и слово целиком."""
+    from designer.visuals import (
+        EMU_PER_PT,
+        MIN_LABEL_SIZE,
+        icon_grid,
+        label_plan,
+        label_size,
+        word_fits,
+    )
+
+    steps = ["Гарнитуры", "Шкала кеглей", "Палитра", "Поля", "Страницы"]
+    # Узкая колонка варианта split: пять значков в ряд не помещаются целыми
+    # словами, поэтому рядов становится два.
+    rows, per_row = icon_grid(steps, 318.0)
+    assert (rows, per_row) == (2, 3)
+    plan = label_plan("icon", [0, 0, 318.0 * EMU_PER_PT, 132.0 * EMU_PER_PT], {"steps": steps})
+    assert plan["size"] >= MIN_LABEL_SIZE
+    assert not plan["word_break"]
+
+    # Кегль не опускается ниже ориентира даже на совсем узкой схеме.
+    assert label_size(["Непереносимоедлинноеслово"], 20.0) == MIN_LABEL_SIZE
+    assert not word_fits(["Непереносимоедлинноеслово"], 20.0)
+
+
+def test_process_stacks_vertically_when_labels_do_not_fit_in_a_row():
+    """Схема получает другую раскладку, а не кегль 6 pt."""
+    from designer.visuals import EMU_PER_PT, MIN_LABEL_SIZE, label_plan
+
+    steps = ["Шаблон", "Материалы", "План колоды", "Вёрстка", "Аудит"]
+    narrow = [0, 0, 300.0 * EMU_PER_PT, 250.0 * EMU_PER_PT]
+    plan = label_plan("process", narrow, {"steps": steps})
+    assert plan["size"] >= MIN_LABEL_SIZE
+    assert not plan["word_break"]
+
+
+def test_small_text_and_word_breaks_are_reported_and_fixable():
+    """Новые коды ловят мелкий кегль и перенос внутри слова."""
+    from designer.audit import apply_fixes
+    from designer.visuals import MIN_LABEL_SIZE
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+
+    def shrink(slide):
+        slide["elements"][1]["font_size"] = 7.5
+
+    deck, report, codes = audited(template, shrink)
+    assert "text_too_small" in codes
+    finding = next(i for i in report["issues"] if i["code"] == "text_too_small")
+    apply_fixes(deck, report, [finding["id"]], template)
+    assert deck["slides"][0]["elements"][1]["font_size"] >= MIN_LABEL_SIZE
+
+    def squeeze(slide):
+        slide["elements"][1]["text"] = "Непереносимоедлинноесловонастраницу"
+        slide["elements"][1]["box"][2] = 60.0
+
+    assert "word_break" in audited(template, squeeze)[2]
