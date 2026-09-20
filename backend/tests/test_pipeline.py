@@ -1901,3 +1901,258 @@ def test_bullets_move_beside_a_chart_instead_of_squeezing_it():
     assert visual["box"][3] >= deck["height"] * MIN_VISUAL_SHARE * 0.9
     # Блоки стоят рядом, а не друг под другом.
     assert body["box"][0] + body["box"][2] <= visual["box"][0] + 1
+
+
+def test_type_scale_is_clustered_and_bounded():
+    """Шкала кеглей — ступени дизайнера, а не список всех встреченных значений."""
+    from collections import Counter
+
+    from designer.parsing import MAX_SCALE_STEPS, MIN_SCALE_SIZE, type_scale
+
+    # Так выглядит реальный шаблон: основной текст весит много, декоративная
+    # цифра во весь экран — три знака, сноски набраны 4–8 pt.
+    counted = Counter(
+        {
+            4.14: 40, 6.0: 30, 8.0: 20,
+            9.0: 2650, 9.92: 308, 10.13: 95, 10.5: 214, 11.0: 45,
+            12.0: 1148, 12.25: 263, 13.22: 84, 14.0: 299, 14.06: 263,
+            16.0: 225, 16.88: 98, 18.0: 96, 18.03: 24,
+            24.0: 22, 24.38: 48, 27.05: 18, 32.0: 11, 48.0: 3,
+            96.0: 3, 166.0: 3,
+        }
+    )
+    scale = type_scale(counted, height_pt=540.0)
+    assert 5 <= len(scale) <= MAX_SCALE_STEPS
+    assert min(scale) >= MIN_SCALE_SIZE
+    # Декоративные 96 и 166 pt — не ступень для текста.
+    assert max(scale) <= 540.0 * 0.11
+    # Близкие значения слились: 14.0 и 14.06 не могут быть двумя ступенями.
+    assert not any(
+        b - a <= a * 0.05 for a, b in zip(scale, scale[1:])
+    ), scale
+    # Мелкие кегли не пропали, но живут отдельно.
+    from designer.parsing import caption_sizes
+
+    assert caption_sizes(counted) == [4.14, 6.0, 8.0]
+
+
+def test_palette_drops_office_theme_colours_nobody_uses():
+    """В палитру идут цвета, которыми в шаблоне что-то покрашено."""
+    import io
+
+    from pptx import Presentation as Deck
+    from pptx.dml.color import RGBColor
+    from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
+    from pptx.util import Pt
+
+    from designer.parsing import parse_template
+
+    deck = Deck()
+    slide = deck.slides.add_slide(deck.slide_layouts[1])
+    slide.shapes.title.text = "Заголовок"
+    slide.placeholders[1].text = "Текст"
+    shape = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.RECTANGLE, Pt(10), Pt(10), Pt(80), Pt(40)
+    )
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor.from_string("0077FF")
+    out = io.BytesIO()
+    deck.save(out)
+
+    palette = parse_template(out.getvalue(), "brand.pptx")["tokens"]["colors"]
+    assert "0077FF" in palette
+    # Офисная тема по умолчанию: эти цвета объявлены в clrScheme, но ими в
+    # шаблоне ничего не покрашено.
+    assert not {"ED7D31", "A5A5A5", "FFC000", "70AD47"} & set(palette)
+
+
+def test_a_template_without_explicit_colour_keeps_its_theme_palette():
+    """Если явных цветов нет вовсе, палитрой становится тема: другого нет."""
+    from designer.parsing import parse_template
+
+    tokens = parse_template(template_bytes(), "unknown.pptx")["tokens"]
+    assert tokens["colors"], "палитра не может быть пустой"
+
+
+def test_layout_font_sizes_stay_on_the_template_scale():
+    """Вёрстка не встаёт между ступенями, иначе её же аудит это находит."""
+    from designer.models import Outline
+
+    for name in ("VK Tech", "Education", "WorkSpace"):
+        path = require_template(name)
+        template = parse_template(path.read_bytes(), path.name)
+        scale = template["tokens"]["font_sizes"]
+        for variant in ("classic", "split", "focus"):
+            deck = compose(
+                Outline.model_validate(outline(4)).model_dump(), template, variant
+            )
+            report = audit(deck, template, [{"id": "brief", "text": "Первый тезис"}])
+            assert not [
+                i for i in report["issues"] if i["code"] == "font_size_off_scale"
+            ], (path.name, variant, scale)
+
+
+def test_icons_are_drawn_not_left_as_empty_circles(tmp_path):
+    """У каждого значка внутри круга есть рисунок, а не пустая заливка."""
+    from pptx import Presentation as Deck
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    from designer.exporting import export_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+    from designer.visuals import ICONS, pick_icon
+
+    # Подпись, которая не попадает ни в одно ключевое слово: раньше такой значок
+    # рисовался одним закрашенным кругом.
+    assert pick_icon("Квазар") == "пункт"
+    assert len(ICONS["пункт"]) >= 3
+
+    plan = {
+        "title": "Схема",
+        "slides": [
+            {
+                "title": "Шаблон разбирается в дизайн-систему",
+                "bullets": ["Имён макетов в коде нет"],
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": {"kind": "icon", "steps": ["Квазар", "Пульсар", "Гарнитуры"]},
+            }
+        ],
+    }
+    source = template_bytes()
+    template = parse_template(source, "unknown.pptx")
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    source_path = tmp_path / "template.pptx"
+    source_path.write_bytes(source)
+    output = tmp_path / "deck.pptx"
+    export_pptx(source_path, template, deck, output)
+    glyphs = [
+        s
+        for s in Deck(output).slides[0].shapes
+        if s.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE and not s.text.strip()
+    ]
+    # Три значка по три фигуры в каждом: пустых кругов не осталось.
+    assert len(glyphs) >= 9
+
+
+def test_diagram_labels_share_one_size_and_never_break_a_word():
+    """Единый кегль на схему, не мельче 10 pt, и слово целиком."""
+    from designer.visuals import (
+        EMU_PER_PT,
+        MIN_LABEL_SIZE,
+        icon_grid,
+        label_plan,
+        label_size,
+        word_fits,
+    )
+
+    steps = ["Гарнитуры", "Шкала кеглей", "Палитра", "Поля", "Страницы"]
+    # Узкая колонка варианта split: пять значков в ряд не помещаются целыми
+    # словами, поэтому рядов становится два.
+    rows, per_row = icon_grid(steps, 318.0)
+    assert (rows, per_row) == (2, 3)
+    plan = label_plan("icon", [0, 0, 318.0 * EMU_PER_PT, 132.0 * EMU_PER_PT], {"steps": steps})
+    assert plan["size"] >= MIN_LABEL_SIZE
+    assert not plan["word_break"]
+
+    # Кегль не опускается ниже ориентира даже на совсем узкой схеме.
+    assert label_size(["Непереносимоедлинноеслово"], 20.0) == MIN_LABEL_SIZE
+    assert not word_fits(["Непереносимоедлинноеслово"], 20.0)
+
+
+def test_process_stacks_vertically_when_labels_do_not_fit_in_a_row():
+    """Схема получает другую раскладку, а не кегль 6 pt."""
+    from designer.visuals import EMU_PER_PT, MIN_LABEL_SIZE, label_plan
+
+    steps = ["Шаблон", "Материалы", "План колоды", "Вёрстка", "Аудит"]
+    narrow = [0, 0, 300.0 * EMU_PER_PT, 250.0 * EMU_PER_PT]
+    plan = label_plan("process", narrow, {"steps": steps})
+    assert plan["size"] >= MIN_LABEL_SIZE
+    assert not plan["word_break"]
+
+
+def test_small_text_and_word_breaks_are_reported_and_fixable():
+    """Новые коды ловят мелкий кегль и перенос внутри слова."""
+    from designer.audit import apply_fixes
+    from designer.visuals import MIN_LABEL_SIZE
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+
+    def shrink(slide):
+        slide["elements"][1]["font_size"] = 7.5
+
+    deck, report, codes = audited(template, shrink)
+    assert "text_too_small" in codes
+    finding = next(i for i in report["issues"] if i["code"] == "text_too_small")
+    apply_fixes(deck, report, [finding["id"]], template)
+    assert deck["slides"][0]["elements"][1]["font_size"] >= MIN_LABEL_SIZE
+
+    def squeeze(slide):
+        slide["elements"][1]["text"] = "Непереносимоедлинноесловонастраницу"
+        slide["elements"][1]["box"][2] = 60.0
+
+    assert "word_break" in audited(template, squeeze)[2]
+
+
+def test_focus_variant_keeps_one_accent_and_equal_bullets():
+    """В focus акцент крупнее, остальные тезисы одинаковы и не вылезают."""
+    from designer.layout import compose, estimated_text_height
+    from designer.models import Outline
+
+    plan = {
+        "title": "Фокус",
+        "slides": [
+            {
+                "title": "Три риска и как мы их закрываем",
+                "bullets": [
+                    "Выдуманные цифры: аудит сверяет каждое число с материалом",
+                    "Слабый шаблон: вёрстка опирается на рабочую область файла",
+                    "Долгий рендер: колода собирается за четыре минуты",
+                ],
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": {"kind": "none"},
+            }
+        ],
+    }
+    template = parse_template(template_bytes(), "unknown.pptx")
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "focus")
+    elements = deck["slides"][0]["elements"]
+    lead = next(e for e in elements if e["id"] == "lead")
+    bullets = [
+        e
+        for e in elements
+        if e["kind"] == "text" and e["role"] == "body" and e["id"] != "lead"
+    ]
+    assert bullets, "тезисы под акцентом должны остаться"
+    # Акцент — самый крупный блок содержания, а не самый мелкий.
+    assert lead["font_size"] >= max(e["font_size"] for e in bullets)
+    # Все обычные тезисы набраны одинаково: и кеглем, и маркером.
+    assert len({e["font_size"] for e in bullets}) == 1
+    assert len({e["text"].lstrip().startswith("•") for e in bullets}) == 1
+    # Ничего не выходит за свою рамку.
+    for element in [lead, *bullets]:
+        assert estimated_text_height(element) <= element["box"][3] + 0.01, element["id"]
+
+
+def test_focus_bullets_do_not_leave_their_box_on_supplied_templates():
+    """На шаблонах кейса вариант focus не выпускает текст за рамку."""
+    from designer.layout import compose, estimated_text_height
+    from designer.models import Outline
+
+    for name in ("VK Tech", "Education", "WorkSpace"):
+        path = require_template(name)
+        template = parse_template(path.read_bytes(), path.name)
+        deck = compose(
+            Outline.model_validate(outline(6)).model_dump(), template, "focus"
+        )
+        for slide in deck["slides"]:
+            for element in slide["elements"]:
+                if element["kind"] != "text" or element.get("from_template"):
+                    continue
+                assert estimated_text_height(element) <= element["box"][3] + 0.01, (
+                    path.name,
+                    slide["index"],
+                    element["id"],
+                )

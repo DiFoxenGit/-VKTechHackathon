@@ -18,6 +18,16 @@ MIN_VISUAL_SHARE = 0.35
 MIN_VISUAL_BAND = 0.42
 # Ширина текстовой колонки рядом с диаграммой, когда вместе по высоте не влезают.
 SIDE_COLUMN_SHARE = 0.4
+# Доля рабочей области под акцентный блок варианта focus: от трети до половины,
+# по объёму его текста. Ниже нижней границы акценту негде вырасти, выше верхней
+# остальным тезисам не остаётся места.
+LEAD_SHARE_RANGE = (0.34, 0.52)
+LEAD_SHARE_BONUS = 0.12
+# Ниже этого кегля текст на слайде не читается: тот же ориентир, что у подписей
+# схем и у проверки text_too_small.
+MIN_BODY_SIZE = 10.0
+# Запасная типографическая лестница для шаблонов, которые не объявляют кегли.
+DEFAULT_SCALE = [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 40.0, 48.0]
 
 
 def estimated_text_height(element):
@@ -72,6 +82,42 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
                 grew = True
         if not grew:
             break
+    return elements
+
+
+def focus_accent(elements, scale):
+    """Вариант focus: акцент — один блок, остальные тезисы равны между собой.
+
+    Кегль растился поэлементно, и у блока с большей рамкой он выходил крупнее.
+    На слайде получалось наоборот задуманному: акцент мельче обычных тезисов, а
+    следующий буллет набран почти как заголовок. Здесь порядок восстанавливается
+    и не зависит от того, какие слоты нашлись у прототипа.
+    """
+    lead = next((e for e in elements if e["id"] == "lead"), None)
+    body = [
+        e
+        for e in elements
+        if e["kind"] == "text" and e.get("role") == "body" and e is not lead
+    ]
+    if body:
+        # Одинаковый кегль у всех тезисов: берём наименьший из подобранных, он
+        # заведомо помещается в свою рамку.
+        size = min(e["font_size"] for e in body)
+        for element in body:
+            element["font_size"] = size
+    if not lead or not body:
+        return elements
+    floor = max(e["font_size"] for e in body)
+    for size in sorted(s for s in scale if s >= floor):
+        candidate = dict(lead, font_size=size)
+        if estimated_text_height(candidate) > lead["box"][3]:
+            break
+        lead["font_size"] = size
+    # Акцент не может быть мельче обычного тезиса, даже если рамка тесная:
+    # тогда рамка и растёт — иначе слайд читается задом наперёд.
+    if lead["font_size"] < floor:
+        lead["font_size"] = floor
+        lead["box"][3] = max(lead["box"][3], estimated_text_height(lead))
     return elements
 
 
@@ -394,7 +440,10 @@ def slot_size(style, scale, fallback, minimum=12, maximum=96):
     # Заметно мельче расчётного — признак умолчания, а не решения дизайнера.
     if size < fallback * 0.55:
         return fallback
-    return size
+    # Шкала шаблона — кластеры близких кеглей, и объявленные 24 pt могут жить в
+    # ней как 24.38. Прижимаем к ближайшей ступени: иначе вёрстка встаёт между
+    # ступенями и её же аудит сообщает font_size_off_scale.
+    return min(scale, key=lambda s: abs(s - size)) if scale else size
 
 
 def card_slots(body_slots, width, height, minimum=2, maximum=6):
@@ -493,7 +542,10 @@ def compose(outline, template, variant):
     )
     palette = tokens["colors"] or ["000000", "FFFFFF"]
     # Use the template's type scale, bounded by physical slide height.
-    scale = [s for s in tokens["font_sizes"] if 10 <= s <= 60]
+    # Шаблон может не объявлять кегли вовсе (весь текст наследует их от темы).
+    # Тогда шагать некуда: ни уменьшить блок, ни вырастить. Запасная лестница
+    # нужна именно для таких файлов.
+    scale = [s for s in tokens["font_sizes"] if 10 <= s <= 60] or DEFAULT_SCALE
     title_size = min(scale, key=lambda s: abs(s - height * 0.075)) if scale else 28
     body_size = min(scale, key=lambda s: abs(s - height * 0.045)) if scale else 18
     # Акцент берём из фактических цветов шаблона: офисная тема по умолчанию
@@ -762,11 +814,29 @@ def compose(outline, template, variant):
                 # Одна мысль занимает всю площадь: тогда кегль есть куда растить.
                 text_box("lead", bullets, [lead_x, top, lead_w, h])
             else:
-                text_box("lead", bullets[:1], [lead_x, top, lead_w, h * 0.3])
+                # Акценту нужна своя площадь: в фиксированной трети слайда он не
+                # мог вырасти и выходил мельче обычных тезисов под ним. Долю
+                # считаем по объёму текста, чтобы длинный акцент не жался.
+                lead_len = len(bullets[0])
+                rest = sum(len(b) for b in bullets[1:])
+                share = min(
+                    LEAD_SHARE_RANGE[1],
+                    max(
+                        LEAD_SHARE_RANGE[0],
+                        lead_len / max(1, lead_len + rest) + LEAD_SHARE_BONUS,
+                    ),
+                )
+                lead_h = h * share
+                text_box("lead", bullets[:1], [lead_x, top, lead_w, lead_h])
                 text_box(
                     "body",
                     bullets[1:],
-                    [lead_x, top + h * 0.36, lead_w, h * 0.64],
+                    [
+                        lead_x,
+                        top + lead_h + h * 0.06,
+                        lead_w,
+                        h - lead_h - h * 0.06,
+                    ],
                 )
         elif cards and len(bullets) >= 2:
             # Тезисы расходятся по карточкам шаблона: по одному на карточку,
@@ -806,8 +876,41 @@ def compose(outline, template, variant):
                 else max(slide_body_size, body_size) * 1.25
             ),
         )
+        if variant == "focus":
+            focus_accent(elements, scale)
         center_content(elements, top, bottom)
         dodge_decor(elements, reserved, bottom, height * 0.015)
+        # Последнее слово за вместимостью рамки: рост кегля и центрирование
+        # двигают и рамки, и текст, поэтому блок, который после них перестал
+        # помещаться, уменьшается до следующей ступени шкалы, а не выходит за
+        # карточку шаблона.
+        for element in elements:
+            if element["kind"] != "text":
+                continue
+            fit_text(element, scale, minimum=MIN_BODY_SIZE)
+            needed = estimated_text_height(element)
+            if needed <= element["box"][3] or element.get("from_template"):
+                # Блок в карточке шаблона остаётся в её границах: там решает
+                # дизайнер, а лишний текст ловит проверка text_overflow.
+                continue
+            # Мельче ступени шкалы уже нельзя. Тогда растёт рамка — вниз до
+            # границы рабочей области, а если там уже край, блок поднимается:
+            # центрирование сдвинуло его вниз и место осталось сверху.
+            ceiling = max(
+                [
+                    e["box"][1] + e["box"][3]
+                    for e in elements
+                    if e is not element
+                    and e["box"][1] + e["box"][3] <= element["box"][1] + 1
+                ]
+                + [top],
+            )
+            # Полпункта запаса: оценка высоты и сравнение в аудите идут по одной
+            # формуле, и рамка «ровно по тексту» всё равно даёт text_overflow на
+            # разнице последнего знака.
+            needed += 0.5
+            element["box"][1] = max(ceiling, min(element["box"][1], bottom - needed))
+            element["box"][3] = min(needed, bottom - element["box"][1])
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         luma = pattern.get("bg_luma")
         if luma is not None:  # noqa: SIM108 - читаемее развёрнуто
