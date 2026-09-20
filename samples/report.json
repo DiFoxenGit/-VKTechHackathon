@@ -2,117 +2,112 @@
   {
     "template": "Шаблон презентации VK Education",
     "variant": "classic",
-    "slides": 7,
-    "seconds": 137.8,
-    "errors": 2,
+    "slides": 10,
+    "seconds": 57.9,
+    "errors": 0,
     "warnings": {
-      "source_reference": 1,
+      "fill_ratio": 4,
+      "word_break": 3,
+      "overlap": 1,
+      "empty_content": 1
+    }
+  },
+  {
+    "template": "Шаблон презентации VK Education",
+    "variant": "split",
+    "slides": 10,
+    "seconds": 57.9,
+    "errors": 0,
+    "warnings": {
       "fill_ratio": 2,
-      "font_missing_glyphs": 2,
-      "overlap": 2,
+      "empty_content": 1
+    }
+  },
+  {
+    "template": "Шаблон презентации VK Education",
+    "variant": "focus",
+    "slides": 10,
+    "seconds": 57.9,
+    "errors": 0,
+    "warnings": {
+      "fill_ratio": 2,
+      "text_overflow": 1,
+      "empty_content": 1
+    }
+  },
+  {
+    "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+    "variant": "classic",
+    "slides": 10,
+    "seconds": 35.6,
+    "errors": 0,
+    "warnings": {
+      "fill_ratio": 3,
+      "text_over_image": 2,
       "word_break": 1
     }
   },
   {
-    "template": "Шаблон презентации VK Education",
+    "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "split",
-    "slides": 7,
-    "seconds": 137.8,
-    "errors": 2,
+    "slides": 10,
+    "seconds": 35.6,
+    "errors": 0,
     "warnings": {
-      "source_reference": 1,
       "fill_ratio": 1,
-      "font_missing_glyphs": 2
+      "text_over_image": 2
     }
   },
   {
-    "template": "Шаблон презентации VK Education",
+    "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "focus",
-    "slides": 7,
-    "seconds": 137.8,
-    "errors": 2,
+    "slides": 10,
+    "seconds": 35.6,
+    "errors": 0,
+    "warnings": {
+      "fill_ratio": 1,
+      "text_over_image": 2
+    }
+  },
+  {
+    "template": "VK Tech шаблон",
+    "variant": "classic",
+    "slides": 10,
+    "seconds": 26.0,
+    "errors": 0,
     "warnings": {
       "source_reference": 1,
-      "fill_ratio": 1,
-      "font_missing_glyphs": 2,
+      "fill_ratio": 5,
+      "text_over_image": 2,
+      "overlap": 1,
+      "word_break": 1,
       "text_overflow": 2
     }
   },
   {
-    "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
-    "variant": "classic",
-    "slides": 10,
-    "seconds": 48.3,
-    "errors": 4,
-    "warnings": {
-      "fill_ratio": 2,
-      "text_over_image": 2,
-      "font_missing_glyphs": 4,
-      "word_break": 3
-    }
-  },
-  {
-    "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+    "template": "VK Tech шаблон",
     "variant": "split",
     "slides": 10,
-    "seconds": 48.3,
-    "errors": 4,
+    "seconds": 26.0,
+    "errors": 0,
     "warnings": {
-      "fill_ratio": 2,
+      "source_reference": 1,
+      "fill_ratio": 6,
       "text_over_image": 2,
-      "font_missing_glyphs": 4
+      "branding_overlap": 1
     }
   },
   {
-    "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+    "template": "VK Tech шаблон",
     "variant": "focus",
     "slides": 10,
-    "seconds": 48.3,
-    "errors": 4,
+    "seconds": 26.0,
+    "errors": 0,
     "warnings": {
-      "fill_ratio": 1,
+      "source_reference": 1,
+      "fill_ratio": 5,
       "text_over_image": 2,
       "word_break": 1,
-      "font_missing_glyphs": 4
-    }
-  },
-  {
-    "template": "VK Tech шаблон",
-    "variant": "classic",
-    "slides": 10,
-    "seconds": 35.7,
-    "errors": 3,
-    "warnings": {
-      "fill_ratio": 1,
-      "text_over_image": 2,
-      "word_break": 12,
-      "font_missing_glyphs": 3,
-      "overlap": 1
-    }
-  },
-  {
-    "template": "VK Tech шаблон",
-    "variant": "split",
-    "slides": 10,
-    "seconds": 35.7,
-    "errors": 3,
-    "warnings": {
-      "fill_ratio": 1,
-      "text_over_image": 2,
-      "branding_overlap": 7,
-      "font_missing_glyphs": 3
-    }
-  },
-  {
-    "template": "VK Tech шаблон",
-    "variant": "focus",
-    "slides": 10,
-    "seconds": 35.7,
-    "errors": 3,
-    "warnings": {
-      "fill_ratio": 3,
-      "text_over_image": 2,
-      "font_missing_glyphs": 3,
       "text_overflow": 1
     }
   }
