@@ -11,6 +11,13 @@ DEFAULT_MARGINS = {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9}
 MIN_BULLETS_FOR_COLUMNS = 4
 # Разброс светлоты, после которого фон считается пёстрым: по нему текст не читается.
 BUSY_BACKGROUND = 0.12
+# Меньше этой доли рабочей области диаграмма перестаёт читаться: ось сливается,
+# короткий столбец пропадает. Приложение 1 ТЗ требует читаемых подписей осей.
+MIN_VISUAL_SHARE = 0.35
+# Минимальная рабочая полоса на слайде с визуализацией, долей высоты слайда.
+MIN_VISUAL_BAND = 0.42
+# Ширина текстовой колонки рядом с диаграммой, когда вместе по высоте не влезают.
+SIDE_COLUMN_SHARE = 0.4
 
 
 def estimated_text_height(element):
@@ -547,6 +554,9 @@ def compose(outline, template, variant):
             ty, tw = height * safe["y"], right - margin
         tx = margin
         has_visual = content["visual"]["kind"] != "none"
+        # Столбцы и линии живут по своим правилам: ось и короткий столбец
+        # требуют высоты, которой схемам из фигур не нужно.
+        is_chart = content["visual"]["kind"] in ("bar", "line")
         # Карточки шаблона стоят на своих местах: заголовок обязан закончиться
         # выше первой из них, иначе длинный заголовок ложится прямо на карточку.
         cards = (
@@ -620,6 +630,16 @@ def compose(outline, template, variant):
             # Крупный блок — одна мысль или диаграмма — не должен ложиться на
             # линии шаблона: ищем свободную полосу, если она достаточно широкая.
             top, bottom = decor_free_band(reserved, top, bottom, margin, right)
+        if is_chart:
+            # Вертикальный ритм прототипа и обход декора могут оставить под
+            # диаграмму полоску в десятую слайда: ось там не читается. Рабочая
+            # область возвращается к минимуму — сначала вниз, до безопасного
+            # края, потом вверх, но не выше конца заголовка.
+            floor = height * MIN_VISUAL_BAND
+            if bottom - top < floor:
+                bottom = min(height * min(1.0, safe["y"] + safe["h"]), top + floor)
+            if bottom - top < floor:
+                top = max(ty + th + height * 0.02, bottom - floor)
         w, h, gap = right - margin, bottom - top, width * 0.03
         elements = [
             {
@@ -682,22 +702,37 @@ def compose(outline, template, variant):
                 # the audit flags them. Few bullets stay in one full-width block.
                 text_box("body", bullets, [margin, top, w, h])
         elif has_visual:
-            text_h = (
-                min(
-                    h * 0.4,
-                    sum(
-                        max(1, math.ceil(len(b) / (w / (body_size * 0.55))))
-                        for b in bullets
-                    )
-                    * body_size
-                    * 1.3
-                    + 12,
+            needed_h = (
+                sum(
+                    max(1, math.ceil(len(b) / (w / (body_size * 0.55))))
+                    for b in bullets
                 )
+                * body_size
+                * 1.3
+                + 12
                 if bullets
                 else 0
             )
+            text_h = min(h * 0.4, needed_h)
             visual_h = h - text_h - (height * 0.025 if bullets else 0)
-            if variant == "focus":
+            # Тезисы, которым нужно больше отведённой полосы, сейчас просто
+            # уменьшаются в кегле: диаграмма остаётся целой, зато текст под ней
+            # набран мельче шкалы. Такой слайд лучше собрать в две колонки.
+            if is_chart and bullets and needed_h > h * (1 - MIN_VISUAL_SHARE):
+                # Диаграмма не ужимается под текст: сжатая до полоски, она не
+                # читается вовсе. Тезисы уходят в колонку слева — так у обоих
+                # блоков остаётся полная высота рабочей области.
+                column = (w - gap) * SIDE_COLUMN_SHARE
+                text_box("body", bullets, [margin, top, column, h])
+                elements.append(
+                    {
+                        "id": "visual",
+                        "kind": visual["kind"],
+                        "box": [margin + column + gap, top, w - column - gap, h],
+                        "data": visual,
+                    }
+                )
+            elif variant == "focus":
                 elements.append(
                     {
                         "id": "visual",

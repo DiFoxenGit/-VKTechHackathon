@@ -13,7 +13,7 @@ from pathlib import Path
 from pptx import Presentation
 from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
-from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
+from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION, XL_LEGEND_POSITION
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml.ns import qn
@@ -245,6 +245,83 @@ def diagram_style(font, accent, background, text_color, palette):
     return {"paint": paint, "label": label, "caption": caption}
 
 
+# Длинная единица измерения у каждого столбца превращает диаграмму в текст:
+# такую единицу несёт только заголовок оси.
+MAX_INLINE_UNIT = 10
+
+
+def value_axis_title(visual):
+    """Что написано у оси значений: единица и, при одном ряде, его название.
+
+    Легенда при одном ряде только повторяет сама себя, поэтому её выключаем, —
+    но тогда зритель не знает, что именно измерено. Название ряда переезжает
+    сюда, к единице измерения: одна короткая строка вместо лишней легенды.
+    """
+    unit = (visual.get("unit") or "").strip()
+    series = visual.get("series") or []
+    name = (series[0].get("name") or "").strip() if len(series) == 1 else ""
+    if name and unit:
+        return f"{name}, {unit}"
+    return name or unit
+
+
+def _horizontal_title(axis):
+    """Развернуть заголовок оси в строку.
+
+    По умолчанию PowerPoint кладёт заголовок оси значений на бок. В узкой рамке
+    повёрнутое слово переносится по слогам («мин/ут»), поэтому держим его
+    горизонтальным: короткая единица читается и сбоку от оси.
+    """
+    body = axis.axis_title.text_frame._txBody.find(qn("a:bodyPr"))
+    if body is None:
+        return
+    body.set("rot", "0")
+    body.set("vert", "horz")
+
+
+def _number_format(values, unit):
+    """Формат подписи значения: число и, если она короткая, единица.
+
+    Дробные значения показываем с одним знаком, целые — без хвоста: «4», а не
+    «4,0». Длинная единица остаётся только в заголовке оси, иначе подписи
+    закрывают саму диаграмму.
+    """
+    fractional = any(
+        isinstance(v, float) and abs(v - round(v)) > 1e-9 for v in values
+    )
+    base = "0.#" if fractional else "0"
+    unit = unit.strip().replace('"', "")
+    if unit and len(unit) <= MAX_INLINE_UNIT:
+        return f'{base}" {unit}"'
+    return base
+
+
+def add_value_labels(chart, kind, font, color, unit):
+    """Подписи значений на диаграмме — требование Приложения 1.
+
+    Без них столбец «4» рядом со «186» — полоска в пиксель у самой оси: значение
+    приходится угадывать по сетке. Подпись ставится снаружи столбца (над точкой
+    у линии), чтобы не тонуть в заливке.
+    """
+    values = [v for series in chart.series for v in series.values if v is not None]
+    plot = chart.plots[0]
+    plot.has_data_labels = True
+    labels = plot.data_labels
+    labels.number_format = _number_format(values, unit)
+    labels.number_format_is_linked = False
+    labels.position = (
+        XL_LABEL_POSITION.OUTSIDE_END if kind == "bar" else XL_LABEL_POSITION.ABOVE
+    )
+    labels.show_value = True
+    _font(labels.font, font, 11, color)
+    # Подпись значения PowerPoint переносит по ширине столбца: «186» и «минут»
+    # расходятся на две строки и читаются как два числа. Запрещаем перенос —
+    # подпись остаётся одной строкой над столбцом.
+    body = labels._element.find(f"{qn('c:txPr')}/{qn('a:bodyPr')}")
+    if body is not None:
+        body.set("wrap", "none")
+
+
 def export_pptx(template_path: Path, template, deck_data, output: Path):
     deck = Presentation(template_path)
     originals = list(deck.slides)
@@ -336,7 +413,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                 ).chart
                 chart.has_title = False
                 # Легенда нужна, когда рядов несколько. Один ряд она только
-                # повторяет, забирая место у самой диаграммы.
+                # повторяет, забирая место у самой диаграммы: его название
+                # уходит в заголовок оси значений рядом с единицей.
                 chart.has_legend = len(visual["series"]) > 1
                 if chart.has_legend:
                     chart.legend.position = XL_LEGEND_POSITION.BOTTOM
@@ -346,7 +424,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                 # категорий уже стоят под столбцами: слово «Категория» под ними
                 # ничего не добавляет и выдаёт шаблон офисной диаграммы.
                 for axis, label in (
-                    (chart.value_axis, visual.get("unit", "")),
+                    (chart.value_axis, value_axis_title(visual)),
                     (chart.category_axis, ""),
                 ):
                     _font(axis.tick_labels.font, font, 11, text_color)
@@ -358,6 +436,10 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                     axis.axis_title.text_frame.text = label
                     for p in axis.axis_title.text_frame.paragraphs:
                         _font(p.font, font, 11, text_color)
+                    _horizontal_title(axis)
+                # Подписи значений стоят всегда: при разбросе 186 и 4 короткий
+                # столбец сливается с осью, и прочитать его иначе нельзя.
+                add_value_labels(chart, kind, font, text_color, visual.get("unit", ""))
                 accents = template["tokens"].get("accents") or []
                 # Сетка офисного серого спорит с палитрой шаблона: делаем её
                 # тише текста, а столбцы — шире промежутков.

@@ -39,6 +39,9 @@ MAX_STEPS = 6
 # Доля слайда под картинкой, после которой текст поверх неё считается риском.
 IMAGE_COVER_LIMIT = 0.5
 MAX_FONT_FAMILIES = 2
+# Ниже этой доли высоты слайда диаграмма перестаёт читаться: ось сливается,
+# короткий столбец рядом с длинным превращается в полоску у оси.
+MIN_CHART_HEIGHT = 0.25
 MIN_FONT_SIZE = 12
 # A slide below the first value reads as empty, above the second as a wall of text.
 FILL_RANGE = (0.25, 0.75)
@@ -248,15 +251,39 @@ def audit(deck, template, sources):
                         "В диаграмме одно значение: число на слайде читается лучше графика",
                     )
                 )
+            # Приложение 1: «у диаграммы нет подписей осей, единиц или легенды».
+            # Единица — это заголовок оси значений; при одном ряде легенду
+            # заменяет название ряда в том же заголовке.
+            named = any((s.get("name") or "").strip() for s in visual["series"])
             if not visual.get("unit", "").strip():
                 issues.append(
                     issue(
                         index,
                         None,
                         "chart_labels",
-                        "У диаграммы не указана единица измерения по оси значений",
+                        "У диаграммы не указана единица измерения по оси значений"
+                        + ("" if named else "; ряд тоже без названия, ось подписать нечем"),
                     )
                 )
+            chart_element = next(
+                (e for e in elements if e["id"] == "visual" and e["kind"] == visual["kind"]),
+                None,
+            )
+            if chart_element and height:
+                share = chart_element["box"][3] / height
+                if share < MIN_CHART_HEIGHT:
+                    issues.append(
+                        issue(
+                            index,
+                            "visual",
+                            "chart_too_small",
+                            f"Диаграмма занимает {round(share * 100)}% высоты слайда; "
+                            f"ориентир — не меньше {round(MIN_CHART_HEIGHT * 100)}%, "
+                            "иначе ось и короткий столбец не читаются",
+                            chart_element["box"],
+                            True,
+                        )
+                    )
         if slide.get("layout_index") not in known_layouts:
             issues.append(
                 issue(
@@ -628,6 +655,21 @@ def apply_fixes(deck, report, issue_ids, template):
                 "lt1", "FFFFFF"
             )
             element["color"] = best_text_color(background, palette)
+        elif finding["code"] == "chart_too_small":
+            # Диаграмма растёт вниз до нижнего поля, а если этого мало — вверх,
+            # но не наезжая на блок, который стоит над ней.
+            x, y, w, h = element["box"]
+            floor = height * MIN_CHART_HEIGHT
+            limit = height * (margins["y"] + margins["h"])
+            above = [
+                e["box"][1] + e["box"][3]
+                for e in slide["elements"]
+                if e is not element and e["box"][1] + e["box"][3] <= y + 1
+            ]
+            ceiling = max([*above, height * margins["y"]])
+            h = min(max(h, floor), limit - ceiling)
+            y = min(max(ceiling, limit - h), y)
+            element["box"] = [x, y, w, h]
         elif finding["code"] == "text_overflow":
             sizes = sorted(
                 {
