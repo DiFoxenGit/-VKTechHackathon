@@ -254,7 +254,7 @@ def create_app(data_dir=None, seed_dir=None):
     ):
         identifier = store.new_id()
         deck = compose(outline, template, variant)
-        report = audit(deck, template, sources)
+        report = audit(deck, template, sources, request.language)
         if contextual_findings is not None:
             report["issues"].extend(copy.deepcopy(contextual_findings))
             report["counts"]["warnings"] += len(contextual_findings)
@@ -431,6 +431,7 @@ def create_app(data_dir=None, seed_dir=None):
             record["deck"],
             store.get("templates", record["template_id"]),
             record["sources"],
+            record.get("generation", {}).get("language"),
         )
         if visual:
             # Проверка по картинке слайда: то, что просит Приложение 1.
@@ -458,7 +459,12 @@ def create_app(data_dir=None, seed_dir=None):
     def save_revision(record):
         template = store.get("templates", record["template_id"])
         record["revision"] += 1
-        record["audit"] = audit(record["deck"], template, record["sources"])
+        record["audit"] = audit(
+            record["deck"],
+            template,
+            record["sources"],
+            record.get("generation", {}).get("language"),
+        )
         folder = store.directory("presentations", record["id"])
         target = folder / f"r{record['revision']}.pptx"
         export_pptx(
