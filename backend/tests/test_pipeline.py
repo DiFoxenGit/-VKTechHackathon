@@ -1773,3 +1773,131 @@ def test_invented_number_is_shipped_flagged_on_the_last_attempt(client, monkeypa
     )
     assert response.status_code == 200, response.text
     assert "95" in response.json()["slides"][0]["bullets"][0]
+
+
+def test_chart_carries_value_labels_and_a_readable_axis_title(tmp_path):
+    """Приложение 1: у диаграммы есть подписи значений и единица по оси.
+
+    Без подписей значений столбец «4» рядом со «186» — полоска у оси: прочитать
+    его можно только по сетке. Заголовок оси PowerPoint по умолчанию кладёт на
+    бок, и в узкой рамке слово рвётся по слогам, поэтому он должен быть
+    горизонтальным.
+    """
+    from lxml import etree
+
+    from designer.exporting import export_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+
+    plan = {
+        "title": "Диаграмма",
+        "slides": [
+            {
+                "title": "Колода за 4 минуты вместо 186",
+                "bullets": ["Замер на пилоте"],
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": {
+                    "kind": "bar",
+                    "unit": "минут",
+                    "categories": ["Вручную", "Сервис"],
+                    "series": [{"name": "Сборка колоды", "values": [186, 4]}],
+                },
+            }
+        ],
+    }
+    source = template_bytes()
+    template = parse_template(source, "unknown.pptx")
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    source_path = tmp_path / "template.pptx"
+    source_path.write_bytes(source)
+    output = tmp_path / "deck.pptx"
+    export_pptx(source_path, template, deck, output)
+
+    namespaces = {
+        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+    }
+    with zipfile.ZipFile(output) as archive:
+        name = next(n for n in archive.namelist() if n.startswith("ppt/charts/chart"))
+        chart = etree.fromstring(archive.read(name))
+    labels = chart.find(".//c:plotArea//c:dLbls", namespaces)
+    assert labels is not None, "подписей значений нет вовсе"
+    assert labels.find("c:showVal", namespaces).get("val") in ("1", "true")
+    # Единица стоит в самой подписи, а перенос запрещён: «186 минут» одной строкой.
+    assert "минут" in labels.find("c:numFmt", namespaces).get("formatCode")
+    assert labels.find("c:txPr/a:bodyPr", namespaces).get("wrap") == "none"
+    # Ось значений подписана единицей и названием ряда — легенда при одном ряде
+    # только повторяла бы его.
+    title = chart.find(".//c:valAx/c:title", namespaces)
+    assert title is not None
+    text = "".join(title.itertext())
+    assert "минут" in text and "Сборка колоды" in text
+    assert title.find(".//a:bodyPr", namespaces).get("rot") == "0"
+    assert chart.find("c:chart/c:legend", namespaces) is None
+
+
+def test_a_squeezed_chart_is_reported_and_can_be_grown():
+    """chart_too_small ловит диаграмму, сжатую до полоски, и умеет её починить."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+
+    def squeeze(slide):
+        visual = next(e for e in slide["elements"] if e["id"] == "visual")
+        visual["box"][3] = 40.0
+
+    def chart(content):
+        content["slides"][0]["visual"] = {
+            "kind": "bar",
+            "unit": "минут",
+            "categories": ["Вручную", "Сервис"],
+            "series": [{"name": "Сборка", "values": [186, 4]}],
+        }
+
+    deck, report, codes = audited(template, squeeze, chart)
+    assert "chart_too_small" in codes
+    from designer.audit import apply_fixes
+
+    finding = next(i for i in report["issues"] if i["code"] == "chart_too_small")
+    assert finding["fixable"]
+    apply_fixes(deck, report, [finding["id"]], template)
+    visual = next(e for e in deck["slides"][0]["elements"] if e["id"] == "visual")
+    assert visual["box"][3] >= deck["height"] * 0.25
+    assert "chart_too_small" not in {
+        i["code"]
+        for i in audit(deck, template, [{"id": "brief", "text": "Первый тезис 10 20"}])[
+            "issues"
+        ]
+    }
+
+
+def test_bullets_move_beside_a_chart_instead_of_squeezing_it():
+    """Диаграмма не ужимается под текст: тезисы уходят в колонку слева."""
+    from designer.layout import MIN_VISUAL_SHARE, compose
+    from designer.models import Outline
+
+    plan = {
+        "title": "Диаграмма и текст",
+        "slides": [
+            {
+                "title": "Колода за 4 минуты вместо 186",
+                "bullets": ["Замер на пилоте, колода из 12 слайдов " * 6] * 4,
+                "notes": "",
+                "source_refs": ["brief"],
+                "visual": {
+                    "kind": "bar",
+                    "unit": "минут",
+                    "categories": ["Вручную", "Сервис"],
+                    "series": [{"name": "Сборка", "values": [186, 4]}],
+                },
+            }
+        ],
+    }
+    template = parse_template(template_bytes(), "unknown.pptx")
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    slide = deck["slides"][0]
+    visual = next(e for e in slide["elements"] if e["id"] == "visual")
+    body = next(e for e in slide["elements"] if e["id"] == "body")
+    assert visual["box"][3] >= deck["height"] * MIN_VISUAL_SHARE * 0.9
+    # Блоки стоят рядом, а не друг под другом.
+    assert body["box"][0] + body["box"][2] <= visual["box"][0] + 1
