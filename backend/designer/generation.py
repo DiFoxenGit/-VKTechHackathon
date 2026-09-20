@@ -338,6 +338,46 @@ def known_numbers(sources):
     return numbers_in("\n".join(source["text"] for source in sources))
 
 
+# Модель пишет типографские символы, которых в фирменных гарнитурах обычно нет:
+# неразрывный дефис в «дизайн‑система», узкий пробел в «1 400». В шаблоне на
+# Play или Poppins такой символ выводится пустым прямоугольником, и аудит
+# справедливо считает это ошибкой. Приводим их к простым эквивалентам: дефис
+# остаётся дефисом, неразрывный пробел — обычным пробелом.
+TYPOGRAPHY = str.maketrans(
+    {
+        "‐": "-",
+        "‑": "-",
+        "‒": "-",
+        "−": "-",
+        " ": " ",
+        " ": " ",
+        " ": " ",
+        " ": " ",
+        "​": "",
+        "‌": "",
+        "‍": "",
+        "﻿": "",
+    }
+)
+
+
+def tidy_label(text):
+    """Подпись внутри визуализации: только типографика и лишние пробелы."""
+    return " ".join(text.translate(TYPOGRAPHY).split())
+
+
+def tidy_visual(visual):
+    """Подписи диаграмм и таблиц — тот же текст на слайде, те же правила."""
+    visual.categories = [tidy_label(value) for value in visual.categories]
+    visual.columns = [tidy_label(value) for value in visual.columns]
+    visual.steps = [tidy_label(value) for value in visual.steps]
+    visual.rows = [[tidy_label(cell) for cell in row] for row in visual.rows]
+    visual.unit = tidy_label(visual.unit)
+    for series in visual.series:
+        series.name = tidy_label(series.name)
+    return visual
+
+
 def tidy_line(text):
     """Тезис так, как его пишут в презентациях: с заглавной и без точки.
 
@@ -345,7 +385,7 @@ def tidy_line(text):
     колоде. Это не вопрос вкуса: разнобой сразу виден на слайде, а чинить его
     правилом дешевле, чем просить модель ещё раз.
     """
-    value = " ".join(text.split())
+    value = tidy_label(text)
     if not value:
         return value
     if value[0].islower():
@@ -565,6 +605,7 @@ async def generate_outline(request, sources):
         for slide in outline.slides:
             slide.title = tidy_line(slide.title)
             slide.bullets = [tidy_line(b) for b in slide.bullets if b.strip()]
+            tidy_visual(slide.visual)
         return outline
 
     return await completion(
