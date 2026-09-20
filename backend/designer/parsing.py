@@ -13,6 +13,8 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
 from pypdf import PdfReader
 
+from .fonts import choose_font, embedded_coverage, font_coverage, resolve_font
+
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
 
 # Region a designer fills with content, as a fraction of the slide. Shapes that
@@ -22,7 +24,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 16
+PARSER_VERSION = 17
 
 
 def is_footer_placeholder(shape):
@@ -64,7 +66,7 @@ def branding_boxes(slides, width, height, share=0.4):
     return {box for box, count in counts.items() if count >= threshold}
 
 
-def master_text_defaults(master, theme):
+def master_text_defaults(master, theme, font_scheme=None):
     """Типографика уровня мастера: p:txStyles — последний источник правды.
 
     Стиль заголовка и текста в шаблоне часто не написан ни на слайде, ни на
@@ -94,7 +96,7 @@ def master_text_defaults(master, theme):
             latin = run.find(qn("a:latin"))
             if latin is not None and latin.get("typeface"):
                 face = latin.get("typeface")
-                style["font"] = None if face.startswith("+") else face
+                style["font"] = resolve_font(face, font_scheme)
             srgb = run.find(f"{qn('a:solidFill')}/{qn('a:srgbClr')}")
             scheme = run.find(f"{qn('a:solidFill')}/{qn('a:schemeClr')}")
             if srgb is not None:
@@ -105,7 +107,7 @@ def master_text_defaults(master, theme):
     return defaults
 
 
-def frame_defaults(shape, theme):
+def frame_defaults(shape, theme, font_scheme=None):
     """Стиль, объявленный в самой рамке: <a:lstStyle> первого уровня.
 
     В шаблонах формат заголовка обычно живёт здесь — на плейсхолдере макета, а не
@@ -130,7 +132,7 @@ def frame_defaults(shape, theme):
     latin = run.find(qn("a:latin"))
     if latin is not None and latin.get("typeface"):
         face = latin.get("typeface")
-        style["font"] = None if face.startswith("+") else face
+        style["font"] = resolve_font(face, font_scheme)
     srgb = run.find(f"{qn('a:solidFill')}/{qn('a:srgbClr')}")
     scheme = run.find(f"{qn('a:solidFill')}/{qn('a:schemeClr')}")
     if srgb is not None:
@@ -140,7 +142,7 @@ def frame_defaults(shape, theme):
     return style
 
 
-def text_style(shape, theme):
+def text_style(shape, theme, font_scheme=None):
     """Как шаблон оформляет текст в этой рамке.
 
     Мы не изобретаем типографику: заголовок нового слайда получает кегль, цвет,
@@ -161,8 +163,8 @@ def text_style(shape, theme):
         if paragraph.alignment is not None:
             style["align"] = str(paragraph.alignment).split(" ")[0].lower()
         for font in [*(run.font for run in paragraph.runs), paragraph.font]:
-            if style["font"] is None and font.name and not font.name.startswith("+"):
-                style["font"] = font.name
+            if style["font"] is None and font.name:
+                style["font"] = resolve_font(font.name, font_scheme)
             if style["size"] is None and font.size:
                 style["size"] = round(font.size.pt, 2)
             if style["bold"] is None and font.bold is not None:
@@ -172,7 +174,7 @@ def text_style(shape, theme):
                 if value:
                     style["color"] = value
         break
-    for key, value in frame_defaults(shape, theme).items():
+    for key, value in frame_defaults(shape, theme, font_scheme).items():
         if style.get(key) is None:
             style[key] = value
     text = shape.text.strip()
@@ -570,34 +572,40 @@ def picture_ratio(shape):
     }
 
 
+def read_theme(root):
+    colors, fonts = {}, {}
+    for entry in root.findall(".//a:clrScheme/*", NS):
+        if len(entry):
+            value = entry[0].get("val") if entry[0].tag.endswith("srgbClr") else entry[0].get("lastClr")
+            if value:
+                key = etree.QName(entry).localname
+                colors[key] = value.upper()
+                colors[key.replace("accent", "accent_")] = value.upper()
+    for role in ("major", "minor"):
+        node = root.find(f".//a:fontScheme/a:{role}Font", NS)
+        if node is not None:
+            fonts[role] = {etree.QName(child).localname: child.get("typeface") for child in node if etree.QName(child).localname in ("latin", "ea", "cs")}
+    return colors, fonts
+
+
 def parse_template(data: bytes, name: str):
     check_zip(data)
     deck = Presentation(io.BytesIO(data))
     if not deck.slides or len(deck.slides) > 200:
         raise ValueError("Template must contain 1 to 200 slides")
-    theme = {}
+    theme, font_scheme = {}, {}
+    role_fonts = {"title": Counter(), "body": Counter()}
     fonts, sizes, colors = Counter(), Counter(), Counter()
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        embedded = embedded_coverage(archive)
         for filename in archive.namelist():
             if filename.startswith("ppt/theme/theme") and filename.endswith(".xml"):
                 root = etree.fromstring(
                     archive.read(filename),
                     etree.XMLParser(resolve_entities=False, no_network=True),
                 )
-                for entry in root.findall(".//a:clrScheme/*", NS):
-                    if len(entry):
-                        value = (
-                            entry[0].get("val")
-                            if entry[0].tag.endswith("srgbClr")
-                            else entry[0].get("lastClr")
-                        )
-                        if value:
-                            key = etree.QName(entry).localname
-                            theme[key] = value
-                            theme[key.replace("accent", "accent_")] = value
-                for element in root.findall(".//a:fontScheme//a:latin", NS):
-                    if element.get("typeface"):
-                        fonts[element.get("typeface")] += 1
+                if not theme:
+                    theme, font_scheme = read_theme(root)
     width, height = int(deck.slide_width), int(deck.slide_height)
 
     def scan(shapes):
@@ -618,11 +626,8 @@ def parse_template(data: bytes, name: str):
             }
             if shape.has_text_frame:
                 item["text"] = shape.text[:2000]
-                item["style"] = text_style(shape, theme)
+                item["style"] = text_style(shape, theme, font_scheme)
                 for p in shape.text_frame.paragraphs:
-                    for font in [p.font, *(r.font for r in p.runs)]:
-                        if font.name and not font.name.startswith("+"):
-                            fonts[font.name] += 1
                     for font in [p.font, *(r.font for r in p.runs)]:
                         value = color_value(font.color, theme)
                         if value:
@@ -658,11 +663,6 @@ def parse_template(data: bytes, name: str):
     layouts = list(deck.slide_layouts)
     branding = branding_boxes(list(deck.slides), width, height)
     master_defaults = {}
-    for master in deck.slide_masters:
-        master_defaults = master_text_defaults(master, theme) or master_defaults
-        if master_defaults:
-            break
-
     def inherit_styles(slide, shapes):
         """Стиль плейсхолдера живёт в макете: на слайде он часто пустой.
 
@@ -672,10 +672,10 @@ def parse_template(data: bytes, name: str):
         layout_styles = {}
         for shape in slide.slide_layout.placeholders:
             if shape.has_text_frame:
-                layout_styles[shape.placeholder_format.idx] = text_style(shape, theme)
+                layout_styles[shape.placeholder_format.idx] = text_style(shape, theme, font_scheme)
         for shape in slide.slide_layout.slide_master.placeholders:
             if shape.has_text_frame:
-                master_style = text_style(shape, theme)
+                master_style = text_style(shape, theme, font_scheme)
                 role = "title" if "TITLE" in str(shape.placeholder_format.type) else "body"
                 master_defaults.setdefault(role, {})
                 for key, value in master_style.items():
@@ -701,6 +701,11 @@ def parse_template(data: bytes, name: str):
         return shapes
 
     for index, slide in enumerate(deck.slides):
+        for relationship in slide.slide_layout.slide_master.part.rels.values():
+            if relationship.reltype.endswith("/theme"):
+                theme, font_scheme = read_theme(etree.fromstring(relationship.target_part.blob, etree.XMLParser(resolve_entities=False, no_network=True)))
+                break
+        master_defaults = master_text_defaults(slide.slide_layout.slide_master, theme, font_scheme)
         shapes = inherit_styles(slide, scan(slide.shapes))
         text_shapes = [s for s in shapes if s["text"].strip()]
         title = next(
@@ -708,6 +713,27 @@ def parse_template(data: bytes, name: str):
         )
         if title is None and text_shapes:
             title = min(text_shapes, key=lambda s: s["box"]["y"])
+        def count_text(items, source_shapes):
+            for item, shape in zip(items, source_shapes):
+                if shape.has_text_frame:
+                    role = "title" if title and item["id"] == title["id"] else "body"
+                    inherited = dict(master_defaults.get(role) or {})
+                    inherited.update({key: value for key, value in item.get("style", {}).items() if value is not None})
+                    default_face = font_scheme.get("major" if role == "title" else "minor", {}).get("latin")
+                    for paragraph in shape.text_frame.paragraphs:
+                        for run in paragraph.runs:
+                            weight = len(run.text.strip())
+                            if not weight:
+                                continue
+                            face = resolve_font(run.font.name or paragraph.font.name, font_scheme) or inherited.get("font") or default_face
+                            if face:
+                                fonts[face] += weight
+                                role_fonts[role][face] += weight
+                    item.setdefault("style", {}).setdefault("font", default_face)
+                if item.get("children"):
+                    count_text(item["children"], shape.shapes)
+
+        count_text(shapes, slide.shapes)
         # Score layout decorations inside the content area, excluding full-page backgrounds.
         decoration_area = 0.0
         decoration_count = 0
@@ -825,12 +851,26 @@ def parse_template(data: bytes, name: str):
         # Шаблон, где ничего не покрашено явно: весь цвет наследуется от темы.
         # Тогда clrScheme и есть его палитра — другого источника просто нет.
         colors.update(dict.fromkeys(theme.values(), 1))
+    fallback = [font for font, _ in fonts.most_common()]
+    fallback += [value.get("latin") for value in font_scheme.values() if value.get("latin") not in fallback]
+    coverage = {name: font_coverage(name, embedded) for name in fallback if name}
+    font_choice = {"language": "ru"}
+    for role in ("title", "body"):
+        font_choice[role] = choose_font(role_fonts[role], fallback, coverage)
+        selected = font_choice[role]["selected"]
+        coverage.setdefault(selected, font_coverage(selected, embedded))
+    for pattern in patterns:
+        for slot in pattern["slots"]:
+            slot["style"]["font"] = font_choice[slot["role"]]["selected"]
+    ordered_fonts = list(dict.fromkeys([font_choice["body"]["selected"], font_choice["title"]["selected"], *fallback]))
     return {
         "name": Path(name).stem,
         "width": width,
         "height": height,
         "tokens": {
-            "fonts": [f for f, _ in fonts.most_common()],
+            "fonts": ordered_fonts,
+            "font_choice": font_choice,
+            "font_coverage": coverage,
             "font_sizes": type_scale(sizes, height / 12700),
             "caption_sizes": caption_sizes(sizes),
             "colors": [c for c, _ in colors.most_common()],

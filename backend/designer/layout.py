@@ -932,8 +932,11 @@ def compose(outline, template, variant):
             # текст кладётся светлая подложка — самый безопасный вариант.
             background = tokens["theme"].get("lt1", "FFFFFF")
         text_color = best_text_color(background, palette)
-        slide_font = title_style.get("font") or body_style.get("font") or font
         for element in elements:
+            role = "title" if element.get("role") == "title" else "body"
+            preferred = tokens.get("font_choice", {}).get(role, {})
+            style = title_style if role == "title" else body_style
+            slide_font = preferred.get("selected") or style.get("font") or font
             element.update(font=slide_font, color=text_color, accent=accent)
             element.setdefault("bold", element.get("role") == "title")
             element.setdefault("align", "left")
