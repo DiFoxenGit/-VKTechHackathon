@@ -21,7 +21,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 14
+PARSER_VERSION = 15
 
 
 def is_footer_placeholder(shape):
@@ -450,6 +450,71 @@ def derive_geometry(patterns):
     return {"safe_area": safe_area, "margins": margins, "guides": guides}
 
 
+# Ниже этого кегля текст на слайде не читается: это сноски, подписи внутри
+# иконок и служебные строки образцов. В основную шкалу они не идут.
+MIN_SCALE_SIZE = 9.0
+# Столько ступеней держит любая осмысленная типографическая шкала. Всё, что
+# длиннее, — это список случайно встреченных значений, а не решение дизайнера.
+MAX_SCALE_STEPS = 9
+# Кегль выше этой доли высоты слайда — декоративная цифра или буква во весь
+# экран (166 pt у VK Tech, 288 pt у Education), а не ступень для текста.
+MAX_SCALE_HEIGHT_SHARE = 0.11
+# Два кегля, отличающиеся меньше чем на эту долю, — одно и то же решение,
+# разъехавшееся при правках (17.5 и 18 pt).
+SCALE_TOLERANCE = 0.05
+
+
+def caption_sizes(counted):
+    """Мелкие кегли шаблона: сноски, подписи в иконках, служебные строки.
+
+    Они существуют в файле, поэтому выбрасывать их насовсем нечестно, но и
+    верстать ими нельзя: `font_size_off_scale` по такой шкале не отсекает
+    ничего.
+    """
+    return sorted(size for size in counted if size < MIN_SCALE_SIZE)
+
+
+def type_scale(counted, height_pt=540.0):
+    """Типографическая шкала шаблона: кластеры кеглей по объёму текста.
+
+    В `tokens.font_sizes` попадал каждый когда-либо встреченный кегль — у VK Tech
+    их набиралось 37 штук от 4.14 до 166 pt. По такой «шкале» проверка
+    `font_size_off_scale` не отсекала ничего, а вёрстка выбирала из мусора.
+
+    Близкие значения сливаются в одну ступень: представителем становится тот
+    кегль, которым набрано больше текста, — он реально существует в шаблоне.
+    Остаются не больше девяти ступеней, но крайние сохраняются всегда: заголовок
+    набран немногими знаками и по весу проиграл бы основному тексту, а без
+    верхней ступени вёрстка мельчит заголовки и слайд читается как полупустой.
+    """
+    ceiling = height_pt * MAX_SCALE_HEIGHT_SHARE
+    sizes = sorted(s for s in counted if MIN_SCALE_SIZE <= s <= ceiling)
+    if not sizes:
+        return sorted(counted)
+    clusters = [[sizes[0]]]
+    for size in sizes[1:]:
+        if size - clusters[-1][-1] <= clusters[-1][-1] * SCALE_TOLERANCE:
+            clusters[-1].append(size)
+        else:
+            clusters.append([size])
+    steps = [
+        (max(cluster, key=lambda s: (counted[s], s)), sum(counted[s] for s in cluster))
+        for cluster in clusters
+    ]
+    while len(steps) > MAX_SCALE_STEPS:
+        # Лишняя ступень — та, что ближе всего к соседям: между 17 и 18 pt
+        # выбора нет, а между 24 и 48 он есть. Крайние не трогаем: без верхней
+        # вёрстка мельчит заголовки, без нижней — теряет подписи. При равном
+        # зазоре уходит та, которой набрано меньше текста.
+        def redundancy(position):
+            size, weight = steps[position]
+            gap = min(size / steps[position - 1][0], steps[position + 1][0] / size)
+            return (round(gap, 4), weight)
+
+        steps.pop(min(range(1, len(steps) - 1), key=redundancy))
+    return [size for size, _ in steps]
+
+
 def accent_colors(counted, theme, limit=6):
     """Фирменные акценты шаблона — по тому, чем он реально покрашен.
 
@@ -506,7 +571,6 @@ def parse_template(data: bytes, name: str):
                             key = etree.QName(entry).localname
                             theme[key] = value
                             theme[key.replace("accent", "accent_")] = value
-                            colors[value] += 1
                 for element in root.findall(".//a:fontScheme//a:latin", NS):
                     if element.get("typeface"):
                         fonts[element.get("typeface")] += 1
@@ -535,11 +599,19 @@ def parse_template(data: bytes, name: str):
                     for font in [p.font, *(r.font for r in p.runs)]:
                         if font.name and not font.name.startswith("+"):
                             fonts[font.name] += 1
-                        if font.size:
-                            sizes[round(font.size.pt, 2)] += 1
+                    for font in [p.font, *(r.font for r in p.runs)]:
                         value = color_value(font.color, theme)
                         if value:
                             colors[value] += 1
+                    # Кегль взвешивается объёмом текста, а не числом run'ов:
+                    # иначе сноска в три знака весит столько же, сколько
+                    # заголовок страницы, и шкала собирается из случайностей.
+                    for run in p.runs:
+                        size = run.font.size or p.font.size
+                        if size:
+                            sizes[round(size.pt, 2)] += max(1, len(run.text))
+                    if not p.runs and p.font.size and p.text.strip():
+                        sizes[round(p.font.size.pt, 2)] += len(p.text)
             if hasattr(shape, "fill"):
                 try:
                     if shape.fill.type == 1:
@@ -722,13 +794,18 @@ def parse_template(data: bytes, name: str):
         scan(layout.shapes)
     for master in deck.slide_masters:
         scan(master.shapes)
+    if not colors:
+        # Шаблон, где ничего не покрашено явно: весь цвет наследуется от темы.
+        # Тогда clrScheme и есть его палитра — другого источника просто нет.
+        colors.update(dict.fromkeys(theme.values(), 1))
     return {
         "name": Path(name).stem,
         "width": width,
         "height": height,
         "tokens": {
             "fonts": [f for f, _ in fonts.most_common()],
-            "font_sizes": sorted(sizes),
+            "font_sizes": type_scale(sizes, height / 12700),
+            "caption_sizes": caption_sizes(sizes),
             "colors": [c for c, _ in colors.most_common()],
             "accents": accent_colors(colors.most_common(), theme),
             "theme": theme,

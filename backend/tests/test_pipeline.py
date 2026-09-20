@@ -1901,3 +1901,92 @@ def test_bullets_move_beside_a_chart_instead_of_squeezing_it():
     assert visual["box"][3] >= deck["height"] * MIN_VISUAL_SHARE * 0.9
     # Блоки стоят рядом, а не друг под другом.
     assert body["box"][0] + body["box"][2] <= visual["box"][0] + 1
+
+
+def test_type_scale_is_clustered_and_bounded():
+    """Шкала кеглей — ступени дизайнера, а не список всех встреченных значений."""
+    from collections import Counter
+
+    from designer.parsing import MAX_SCALE_STEPS, MIN_SCALE_SIZE, type_scale
+
+    # Так выглядит реальный шаблон: основной текст весит много, декоративная
+    # цифра во весь экран — три знака, сноски набраны 4–8 pt.
+    counted = Counter(
+        {
+            4.14: 40, 6.0: 30, 8.0: 20,
+            9.0: 2650, 9.92: 308, 10.13: 95, 10.5: 214, 11.0: 45,
+            12.0: 1148, 12.25: 263, 13.22: 84, 14.0: 299, 14.06: 263,
+            16.0: 225, 16.88: 98, 18.0: 96, 18.03: 24,
+            24.0: 22, 24.38: 48, 27.05: 18, 32.0: 11, 48.0: 3,
+            96.0: 3, 166.0: 3,
+        }
+    )
+    scale = type_scale(counted, height_pt=540.0)
+    assert 5 <= len(scale) <= MAX_SCALE_STEPS
+    assert min(scale) >= MIN_SCALE_SIZE
+    # Декоративные 96 и 166 pt — не ступень для текста.
+    assert max(scale) <= 540.0 * 0.11
+    # Близкие значения слились: 14.0 и 14.06 не могут быть двумя ступенями.
+    assert not any(
+        b - a <= a * 0.05 for a, b in zip(scale, scale[1:])
+    ), scale
+    # Мелкие кегли не пропали, но живут отдельно.
+    from designer.parsing import caption_sizes
+
+    assert caption_sizes(counted) == [4.14, 6.0, 8.0]
+
+
+def test_palette_drops_office_theme_colours_nobody_uses():
+    """В палитру идут цвета, которыми в шаблоне что-то покрашено."""
+    import io
+
+    from pptx import Presentation as Deck
+    from pptx.dml.color import RGBColor
+    from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE
+    from pptx.util import Pt
+
+    from designer.parsing import parse_template
+
+    deck = Deck()
+    slide = deck.slides.add_slide(deck.slide_layouts[1])
+    slide.shapes.title.text = "Заголовок"
+    slide.placeholders[1].text = "Текст"
+    shape = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.RECTANGLE, Pt(10), Pt(10), Pt(80), Pt(40)
+    )
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor.from_string("0077FF")
+    out = io.BytesIO()
+    deck.save(out)
+
+    palette = parse_template(out.getvalue(), "brand.pptx")["tokens"]["colors"]
+    assert "0077FF" in palette
+    # Офисная тема по умолчанию: эти цвета объявлены в clrScheme, но ими в
+    # шаблоне ничего не покрашено.
+    assert not {"ED7D31", "A5A5A5", "FFC000", "70AD47"} & set(palette)
+
+
+def test_a_template_without_explicit_colour_keeps_its_theme_palette():
+    """Если явных цветов нет вовсе, палитрой становится тема: другого нет."""
+    from designer.parsing import parse_template
+
+    tokens = parse_template(template_bytes(), "unknown.pptx")["tokens"]
+    assert tokens["colors"], "палитра не может быть пустой"
+
+
+def test_layout_font_sizes_stay_on_the_template_scale():
+    """Вёрстка не встаёт между ступенями, иначе её же аудит это находит."""
+    from designer.models import Outline
+
+    for name in ("VK Tech", "Education", "WorkSpace"):
+        path = require_template(name)
+        template = parse_template(path.read_bytes(), path.name)
+        scale = template["tokens"]["font_sizes"]
+        for variant in ("classic", "split", "focus"):
+            deck = compose(
+                Outline.model_validate(outline(4)).model_dump(), template, variant
+            )
+            report = audit(deck, template, [{"id": "brief", "text": "Первый тезис"}])
+            assert not [
+                i for i in report["issues"] if i["code"] == "font_size_off_scale"
+            ], (path.name, variant, scale)
