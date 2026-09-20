@@ -26,6 +26,7 @@ from .layout import (
     ink_area,
 )
 from .parsing import best_text_color, contrast_ratio
+from .fonts import missing_glyphs
 from .visuals import CHAR_WIDTH, MIN_LABEL_SIZE, label_plan
 
 LOGGER = logging.getLogger("designer.audit")
@@ -433,6 +434,13 @@ def audit(deck, template, sources, language=None):
             guides.append(width * (slot["box"]["x"] + slot["box"]["w"]))
         for element in elements:
             x, y, w, h = element["box"]
+            if element['kind'] != 'text' and element.get('font'):
+                missing = missing_glyphs(element['font'], ' '.join(visual_labels(element.get('data', {}))),
+                                         template['tokens'].get('font_coverage'))
+                if missing:
+                    issues.append(issue(index, element['id'], 'font_missing_glyphs',
+                                        f"В гарнитуре {element['font']} нет символов подписей: " + ''.join(missing[:20]),
+                                        element['box'], severity='error'))
             if not inside(element["box"], slide_box, 0.1):
                 issues.append(
                     issue(
@@ -531,6 +539,11 @@ def audit(deck, template, sources, language=None):
                         )
                     )
             if element["kind"] == "text":
+                missing = missing_glyphs(element['font'], element['text'], template['tokens'].get('font_coverage'))
+                if missing:
+                    issues.append(issue(index, element['id'], 'font_missing_glyphs',
+                                        f"В гарнитуре {element['font']} нет символов: " + ''.join(missing[:20]),
+                                        element['box'], severity='error'))
                 families.add(element["font"])
                 if element["font_size"] < MIN_LABEL_SIZE - 0.01:
                     issues.append(
