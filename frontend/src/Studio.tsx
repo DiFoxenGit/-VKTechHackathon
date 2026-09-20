@@ -507,6 +507,13 @@ export default function Studio() {
           </p>
         )}
 
+        {/* Колода собралась, но не так, как просили: например, слайдов меньше. */}
+        {job?.warnings?.map(warning => (
+          <p className="banner warning" key={warning}>
+            <AlertTriangle size={16} /> {warning}
+          </p>
+        ))}
+
         {outline && (
           <section className="card">
             <header className="card-head">

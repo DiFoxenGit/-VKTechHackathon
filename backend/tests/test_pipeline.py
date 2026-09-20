@@ -2297,3 +2297,51 @@ def test_model_typography_is_normalised_before_layout(client, monkeypatch):
     assert slide["bullets"][0] == "Дизайн-система за 1 400 рублей"
     assert slide["visual"]["categories"][0] == "Было-раньше"
     assert slide["visual"]["series"][0]["name"] == "Сборка колоды"
+
+
+def test_short_deck_is_sent_back_with_a_way_to_grow(client, monkeypatch):
+    """Недобор слайдов — повод попросить модель разбить слайды, а не молча принять."""
+    # Хелпер отдаёт не больше трёх слайдов, поэтому запрашиваем три.
+    captured = mock_provider(
+        monkeypatch, [json.dumps(outline(2)), json.dumps(outline(3))]
+    )
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3},
+    )
+    assert response.status_code == 200, response.text
+    assert len(response.json()["slides"]) == 3
+    nudge = captured[-1]["messages"][-1]["content"].lower()
+    assert "разбей" in nudge and ("таблиц" in nudge or "схем" in nudge)
+
+
+def test_stubborn_short_deck_is_accepted_with_a_warning(monkeypatch):
+    """Если материала правда мало, колода выходит, но пользователь об этом знает."""
+    import asyncio
+
+    from designer.generation import generate_outline
+    from designer.models import Brief
+
+    mock_provider(monkeypatch, [json.dumps(outline(2))] * 3)
+    warnings: list[str] = []
+    request = Brief(brief="Данные: 10 и 20. Разделы 1, 2, 3.", slide_count=5)
+    result = asyncio.run(
+        generate_outline(request, [{"id": "brief", "text": request.brief}], warnings)
+    )
+    assert len(result.slides) == 2
+    assert warnings and "2 слайдов вместо 5" in warnings[0]
+
+
+def test_deck_never_exceeds_the_requested_size(monkeypatch):
+    """Верхняя граница — это граница: лишние слайды не уезжают пользователю."""
+    import asyncio
+
+    from designer.generation import generate_outline
+    from designer.models import Brief
+
+    mock_provider(monkeypatch, [json.dumps(outline(5))] * 3)
+    request = Brief(brief="Данные: 10 и 20. Разделы 1, 2, 3.", slide_count=3)
+    result = asyncio.run(
+        generate_outline(request, [{"id": "brief", "text": request.brief}], [])
+    )
+    assert len(result.slides) == 3

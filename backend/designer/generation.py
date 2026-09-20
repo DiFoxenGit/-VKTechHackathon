@@ -506,7 +506,13 @@ async def balance_outline(outline, template, capacity=None):
     return outline
 
 
-async def generate_outline(request, sources):
+async def generate_outline(request, sources, warnings=None):
+    """План колоды по брифу и материалам.
+
+    `warnings` — список, куда попадает то, о чём пользователь должен знать, но
+    что не повод прерывать работу: например, что модель собрала меньше слайдов,
+    чем просили. Задача кладёт этот список в интерфейс.
+    """
     allowed = {s["id"] for s in sources}
 
     known = known_numbers(sources)
@@ -520,21 +526,37 @@ async def generate_outline(request, sources):
         last_chance = attempt["n"] >= MAX_ATTEMPTS
         outline = Outline.model_validate(result)
         count = len(outline.slides)
-        # Материала может не хватать на запрошенное число слайдов. Размазанный по
-        # трём страницам один факт хуже короткой колоды, поэтому недобор до 60%
-        # принимаем, а перебор — нет: пользователь задал верхнюю границу.
-        floor = min(request.slide_count, max(3, int(request.slide_count * 0.6)))
-        if not last_chance and not (floor <= count <= request.slide_count):
-            raise ValueError(
-                f"Нужно от {floor} до {request.slide_count} слайдов, получено {count}. "
-                "Если материала мало — лучше меньше слайдов, но с содержанием."
-            )
-        if len(outline.slides) != request.slide_count:
+        # ТЗ задаёт целевой объём, и пользователь задаёт его явно. Перебор не
+        # принимаем никогда: это верхняя граница. Недобор возвращаем модели с
+        # понятной просьбой — разбить насыщенные слайды или добавить страницу с
+        # таблицей либо схемой по материалам, — и соглашаемся на меньшее только
+        # когда попытки кончились.
+        if count > request.slide_count:
+            if not last_chance:
+                raise ValueError(
+                    f"Слайдов {count}, а просили не больше {request.slide_count}. "
+                    "Объедини близкие мысли, не выбрасывая факты."
+                )
+            outline.slides = outline.slides[: request.slide_count]
+            count = len(outline.slides)
+        if count < request.slide_count:
+            if not last_chance:
+                raise ValueError(
+                    f"Слайдов {count}, а нужно {request.slide_count}. "
+                    "Разбей самые насыщенные слайды на два по смыслу или добавь "
+                    "слайды с таблицей либо схемой по материалам: сравнение "
+                    "показателей, этапы, сроки. Новые слайды несут факты из "
+                    "источников, а не воду."
+                )
             LOGGER.warning(
-                "Model insisted on %s slides instead of %s",
-                len(outline.slides),
-                request.slide_count,
+                "Model insisted on %s slides instead of %s", count, request.slide_count
             )
+            if warnings is not None:
+                warnings.append(
+                    f"Модель собрала {count} слайдов вместо {request.slide_count}: "
+                    "в материалах не нашлось содержания на остальные. Добавьте "
+                    "материалы или уменьшите запрошенный объём."
+                )
         unknown = {ref for slide in outline.slides for ref in slide.source_refs} - allowed
         if unknown:
             raise ValueError(

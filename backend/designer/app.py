@@ -298,7 +298,7 @@ def create_app(data_dir=None, seed_dir=None):
                 store.put("jobs", job)
                 async with asyncio.timeout(300):
                     outline = request.outline or await generate_outline(
-                        request, sources
+                        request, sources, job["warnings"]
                     )
                     # Тексты подгоняются под вместимость шаблона до вёрстки, чтобы
                     # все три варианта собирались из одного выверенного содержания.
@@ -369,6 +369,8 @@ def create_app(data_dir=None, seed_dir=None):
                 "stage": "queued",
                 "progress": 0,
                 "presentation_ids": [],
+                # То, о чём пользователь должен знать, но что не прерывает работу.
+                "warnings": [],
                 "created_at": time.time(),
                 "workflow": workflow(),
             },
