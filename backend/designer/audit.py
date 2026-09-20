@@ -25,6 +25,7 @@ from .layout import (
     ink_area,
 )
 from .parsing import best_text_color, contrast_ratio
+from .visuals import CHAR_WIDTH, MIN_LABEL_SIZE, label_plan
 
 LOGGER = logging.getLogger("designer.audit")
 
@@ -421,8 +422,61 @@ def audit(deck, template, sources):
                         )
                     )
                     break
+            plan = label_plan(element["kind"], element["box"], element.get("data") or {})
+            if plan:
+                # Подписи схем рисуются при экспорте, поэтому их кегль в модели
+                # слайда не лежит: считаем его той же формулой, что и рисование.
+                if plan["size"] < MIN_LABEL_SIZE - 0.01:
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "text_too_small",
+                            f"Подписи схемы набраны {plan['size']:g} pt; "
+                            f"ориентир — не мельче {MIN_LABEL_SIZE:g} pt",
+                            element["box"],
+                            True,
+                        )
+                    )
+                if plan["word_break"]:
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "word_break",
+                            "Подпись в схеме не помещается целым словом "
+                            "и будет разорвана по слогам",
+                            element["box"],
+                        )
+                    )
             if element["kind"] == "text":
                 families.add(element["font"])
+                if element["font_size"] < MIN_LABEL_SIZE - 0.01:
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "text_too_small",
+                            f"Кегль {element['font_size']:g} pt мельче "
+                            f"{MIN_LABEL_SIZE:g} pt: текст не читается с экрана",
+                            element["box"],
+                            True,
+                        )
+                    )
+                longest = max(
+                    (len(word) for word in element["text"].split()), default=1
+                )
+                if longest * element["font_size"] * CHAR_WIDTH > w - 12:
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "word_break",
+                            "Самое длинное слово шире рамки и будет "
+                            "перенесено по слогам",
+                            element["box"],
+                        )
+                    )
                 if scale and not any(
                     abs(element["font_size"] - size) < 0.6 for size in scale
                 ):
@@ -655,6 +709,11 @@ def apply_fixes(deck, report, issue_ids, template):
                 "lt1", "FFFFFF"
             )
             element["color"] = best_text_color(background, palette)
+        elif finding["code"] == "text_too_small":
+            # Поднимаем до ближайшей ступени шкалы, не мельче ориентира. Если
+            # такой ступени нет, берём сам ориентир: читаемость важнее шкалы.
+            larger = [s for s in scale if s >= MIN_LABEL_SIZE]
+            element["font_size"] = min(larger) if larger else MIN_LABEL_SIZE
         elif finding["code"] == "chart_too_small":
             # Диаграмма растёт вниз до нижнего поля, а если этого мало — вверх,
             # но не наезжая на блок, который стоит над ней.
