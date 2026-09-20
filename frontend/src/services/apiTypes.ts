@@ -53,6 +53,8 @@ export type ApiJob = {
   stage: string;
   progress: number;
   presentation_ids: string[];
+  /** То, о чём стоит знать, но что не прервало работу: например, меньше слайдов, чем просили. */
+  warnings?: string[];
   error?: string;
   elapsed_seconds?: number;
   status_url?: string;

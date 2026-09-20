@@ -831,3 +831,10 @@ input[type='text'] {
   padding-top: var(--step-3);
   border-top: 1px solid var(--line);
 }
+
+.banner.warning {
+  background: var(--warn-100);
+  border: 1px solid var(--warn-500);
+  border: 1px solid color-mix(in srgb, var(--warn-500) 35%, transparent);
+  color: var(--warn-500);
+}

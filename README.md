@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Экспорт](https://img.shields.io/badge/Экспорт-PPTX%20·%20PDF%20·%20HTML-FF0053)](#-экспорт)
-[![Тесты](https://img.shields.io/badge/Тесты-58%20сценариев-520978)](#-тесты)
+[![Тесты](https://img.shields.io/badge/Тесты-pytest%20·%20регресс%20вёрстки-520978)](#-тесты)
 [![Кейс](https://img.shields.io/badge/Кейс-VK%20Tech%20·%20ЛЦТ%202026-8A83D1)](#-о-кейсе)
 
 [Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md)
@@ -128,7 +128,7 @@ Swagger и `openapi.json` — инструмент разработчика: н�
 ## 🧪 Тесты
 
 ```bash
-cd backend && pytest -q      # 69 сценариев: парсинг, вёрстка, аудит, фиксы, экспорт, API
+cd backend && pytest -q      # парсинг, вёрстка, аудит, фиксы, экспорт, шрифты, API
 cd frontend && npm run build # tsc -b и сборка
 ```
 

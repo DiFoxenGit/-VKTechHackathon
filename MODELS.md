@@ -22,10 +22,17 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 DESIGNER_VLM_MODEL=gpt://<folder_id>/qwen3.6-35b-a3b
 ```
 
-| Модель | Веса | Лицензия | Размер |
+| Модель в AI Studio | Веса на Hugging Face | Лицензия | Размер |
 |---|---|---|---|
-| `gpt-oss-20b` | открытые | Apache 2.0 | 20B |
-| `qwen3.6-35b-a3b` | открытые | Apache 2.0 | 35B, MoE (3B активных) |
+| `gpt-oss-20b` | [openai/gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b) | Apache 2.0 | 20B |
+| `qwen3.6-35b-a3b` | [Qwen/Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) | Apache 2.0 | MoE, 3B активных параметров |
+
+Лицензия у обеих карточек — `apache-2.0`, то есть требование ТЗ выполнено. По размеру:
+у `gpt-oss-20b` 20B, у мультимодальной модели активных параметров 3B, но всего в MoE
+карточка Hugging Face показывает 36B. Если жюри считает предел в 35B по общему числу
+параметров, мультимодальную модель нужно заменить — например, на
+[Qwen/Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) той же лицензии. Аудит по
+картинке при этом не ломается: модель задаётся переменной `DESIGNER_VLM_MODEL`.
 
 Ключ выдаётся сервисному аккаунту с ролью `ai.languageModels.user`, область действия — `yc.ai.foundationModels.execute`. Ключ остаётся на сервере и в браузер не попадает.
 
