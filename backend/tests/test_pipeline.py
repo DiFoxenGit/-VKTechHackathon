@@ -2156,3 +2156,117 @@ def test_focus_bullets_do_not_leave_their_box_on_supplied_templates():
                     slide["index"],
                     element["id"],
                 )
+
+
+def test_english_slide_in_a_russian_deck_is_reported():
+    """deck_language ловит слайд, целиком написанный на другом языке."""
+    from designer.audit import deck_language_strays
+
+    deck = {
+        "slides": [
+            {
+                "index": 0,
+                "content": {
+                    "title": "Сервис автоматической вёрстки",
+                    "bullets": ["Колода собирается за четыре минуты"],
+                },
+            },
+            {
+                "index": 1,
+                "content": {
+                    "title": "Revenue grew 500 percent",
+                    "bullets": ["The pilot team shipped the first release"],
+                },
+            },
+        ]
+    }
+    assert deck_language_strays(deck) == ("ru", [2])
+    # Запрошенный язык важнее большинства.
+    assert deck_language_strays(deck, "en") == ("en", [1])
+
+
+def test_product_names_do_not_make_a_slide_foreign():
+    """vCPU, gpt-oss-20b и OpenAI живут в русском слайде на своих местах."""
+    from designer.audit import deck_language_strays
+    from designer.language import script_of
+
+    assert script_of("Инференс на 8 vCPU, модель gpt-oss-20b от OpenAI") == "ru"
+    assert script_of("gpt-oss-20b, vCPU, OpenAI, VK Tech") is None
+    deck = {
+        "slides": [
+            {
+                "index": 0,
+                "content": {
+                    "title": "Модели и железо",
+                    "bullets": ["gpt-oss-20b на 8 vCPU"],
+                },
+            },
+            {
+                "index": 1,
+                "content": {"title": "gpt-oss-20b, vCPU, OpenAI", "bullets": []},
+            },
+        ]
+    }
+    assert deck_language_strays(deck) is None
+
+
+def test_stretched_picture_finding_and_fix():
+    """Растянутая картинка страницы шаблона находится и чинится."""
+    from designer.audit import restore_picture, stretched_pictures
+
+    pattern = {
+        "index": 0,
+        "shapes": [
+            {
+                "id": 7,
+                "box": {"x": 0.1, "y": 0.1, "w": 0.4, "h": 0.4},
+                # Рамка 1:1 при собственных пропорциях 16:9 — картинка сплющена.
+                "picture": {"native": 1.778, "frame": 1.0},
+            },
+            {
+                # Значок в пару пикселей: искажение там не читается.
+                "id": 8,
+                "box": {"x": 0.9, "y": 0.9, "w": 0.02, "h": 0.02},
+                "picture": {"native": 1.0, "frame": 2.0},
+            },
+        ],
+    }
+    found = stretched_pictures(pattern)
+    assert [s["id"] for s in found] == [7]
+
+    slide = {"pattern_index": 0, "elements": []}
+    restore_picture(slide, pattern, {"element_id": "picture_7"})
+    fix = slide["shape_fixes"]["7"]
+    assert fix["ratio"] == 1.778
+    # Короткая сторона на месте, длинная подрезана.
+    assert fix["box"]["w"] == pytest.approx(0.4)
+    assert fix["box"]["h"] < 0.4
+    # После правки находки больше нет.
+    assert stretched_pictures(pattern, slide["shape_fixes"]) == []
+
+
+def test_text_overflow_fix_either_repairs_or_explains_itself():
+    """POST /fixes больше не плодит ревизии с той же находкой."""
+    from designer.audit import apply_fixes
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    # Шаблон без объявленной шкалы: ступени мельче текущей просто нет.
+    template["tokens"]["font_sizes"] = [18.0]
+
+    def squeeze(slide):
+        element = slide["elements"][1]
+        element["font_size"] = 18.0
+        element["text"] = "Очень длинный тезис, который заведомо не помещается " * 6
+        element["box"][3] = 30.0
+
+    deck, report, codes = audited(template, squeeze)
+    assert "text_overflow" in codes
+    finding = next(i for i in report["issues"] if i["code"] == "text_overflow")
+    assert finding["fixable"]
+    apply_fixes(deck, report, [finding["id"]], template)
+    again = audit(deck, template, [{"id": "brief", "text": "Первый тезис 10 20"}])
+    repeat = [i for i in again["issues"] if i["code"] == "text_overflow"]
+    # Либо находки нет, либо она честно помечена неисправимой с причиной.
+    for item in repeat:
+        assert not item["fixable"], item["message"]
+        assert "автоисправление невозможно" in item["message"]
