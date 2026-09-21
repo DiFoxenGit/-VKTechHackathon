@@ -16,6 +16,13 @@ const PURPOSES: Record<string, 'project' | 'product' | 'feature' | 'initiative'>
   'Запустить продукт': 'product',
   'Объяснить решение': 'feature',
 };
+/** Пока список шаблонов едет с сервера, экранам нужен кто-то с такими же полями:
+ *  иначе первый рендер падает на обращении к имени шаблона. */
+const LOADING_TEMPLATE: Template = {
+  id: '', name: 'Загружаем шаблоны…', description: 'Дизайн-система придёт с сервера',
+  color: '#0674ff', secondary: '#8a83d1', font: 'Manrope Variable',
+  layoutCount: 0, slideCount: 0, tag: '16:9',
+};
 const STAGES: Record<string, string> = {
   queued: 'В очереди', outline: 'Собираем структуру', balance: 'Подгоняем текст под шаблон',
   contextual_audit: 'Проверяем содержание', compose: 'Верстаем варианты', audit: 'Аудит', export: 'Готовим файлы',
@@ -101,7 +108,7 @@ export default function App() {
   const templateInput = useRef<HTMLInputElement>(null);
   const briefInput = useRef<HTMLTextAreaElement>(null);
   const allTemplates = templates;
-  const currentTemplate = allTemplates.find(t => t.id === (deck && ['outline', 'design', 'editor'].includes(screen) ? deck.templateId : brief.templateId)) || templates[0];
+  const currentTemplate = allTemplates.find(t => t.id === (deck && ['outline', 'design', 'editor'].includes(screen) ? deck.templateId : brief.templateId)) || allTemplates[0] || LOADING_TEMPLATE;
   const issues = project?.issues ?? [];
   const slide = deck?.slides[Math.min(activeSlide, deck.slides.length - 1)];
 
