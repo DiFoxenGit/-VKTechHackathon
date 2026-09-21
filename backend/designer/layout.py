@@ -3,6 +3,7 @@
 import copy
 import math
 
+from .fonts import printable, printable_visual
 from .parsing import best_text_color
 
 DEFAULT_SAFE_AREA = {"x": 0.055, "y": 0.055, "w": 0.89, "h": 0.825}
@@ -586,6 +587,7 @@ def compose(outline, template, variant):
     body_size = min(scale, key=lambda s: abs(s - height * 0.045)) if scale else 18
     # Акцент берём из фактических цветов шаблона: офисная тема по умолчанию
     # покрасила бы диаграммы чужим синим.
+    coverage = tokens.get("font_coverage") or {}
     accents = tokens.get("accents") or []
     accent = accents[0] if accents else tokens["theme"].get("accent1", palette[0])
     slides = []
@@ -1018,6 +1020,14 @@ def compose(outline, template, variant):
             style = title_style if role == "title" else body_style
             slide_font = preferred.get("selected") or style.get("font") or font
             element.update(font=slide_font, color=text_color, accent=accent)
+            if element["kind"] == "text":
+                # Символ, которого нет в гарнитуре, выводится пустым
+                # прямоугольником: меняем его на читаемый эквивалент здесь, пока
+                # известна и гарнитура слайда, и покрытие из разбора шаблона.
+                element["text"] = printable(element["text"], slide_font, coverage)
+            elif element.get("data"):
+                # Подписи внутри диаграмм и схем — тот же текст на слайде.
+                printable_visual(element["data"], slide_font, coverage)
             element.setdefault("bold", element.get("role") == "title")
             element.setdefault("align", "left")
         slides.append(

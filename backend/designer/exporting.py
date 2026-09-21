@@ -20,6 +20,7 @@ from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
+from .fonts import printable
 from .layout import estimated_text_height
 from .visuals import DIAGRAMS, MIN_LABEL_SIZE
 from .parsing import (
@@ -214,7 +215,7 @@ def add_scrim(slide, elements, color):
     _translucent(shape, color)
 
 
-def diagram_style(font, accent, background, text_color, palette):
+def diagram_style(font, accent, background, text_color, palette, coverage=None):
     """Кисти для библиотеки диаграмм: заливка, подпись внутри фигуры и под ней."""
     on_accent = best_text_color(accent, palette)
 
@@ -239,6 +240,7 @@ def diagram_style(font, accent, background, text_color, palette):
         каждой фигуры отдельно, и в одном ряду шевронов «Аудит» оказывался
         крупнее соседей, а на узкой колонке подписи падали до 6 pt.
         """
+        text = printable(text, font, coverage)
         frame = shape.text_frame
         frame.word_wrap = True
         # Внутренние поля по умолчанию съедают у фигуры четверть дюйма: для
@@ -353,6 +355,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
     originals = list(deck.slides)
     original_ids = list(deck.slides._sldIdLst)
     palette = template["tokens"]["colors"]
+    # Покрытие гарнитур из разбора шаблона: по нему видно, какой символ
+    # шаблонный шрифт не нарисует.
+    coverage = template["tokens"].get("font_coverage") or {}
     # Пустой набор — это результат разбора («ничего не повторяется»), а не его
     # отсутствие: отличаем по наличию ключа, иначе включится старое правило.
     branding = (
@@ -432,10 +437,15 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                         _font(run.font, font, size, text_color, line_bold)
             elif kind in ("bar", "line"):
                 visual = element["data"]
+
+                def safe(value, font=font):
+                    """Подпись внутри объекта — тот же текст на слайде."""
+                    return printable(str(value), font, coverage)
+
                 data = CategoryChartData()
-                data.categories = visual["categories"]
+                data.categories = [safe(c) for c in visual["categories"]]
                 for series in visual["series"]:
-                    data.add_series(series["name"], series["values"])
+                    data.add_series(safe(series["name"]), series["values"])
                 chart = slide.shapes.add_chart(
                     XL_CHART_TYPE.COLUMN_CLUSTERED
                     if kind == "bar"
@@ -459,7 +469,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                 # категорий уже стоят под столбцами: слово «Категория» под ними
                 # ничего не добавляет и выдаёт шаблон офисной диаграммы.
                 for axis, label in (
-                    (chart.value_axis, value_axis_title(visual)),
+                    (chart.value_axis, safe(value_axis_title(visual))),
                     (chart.category_axis, ""),
                 ):
                     _font(axis.tick_labels.font, font, 11, text_color)
@@ -501,7 +511,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                 for r, values in enumerate(rows):
                     for c, value in enumerate(values):
                         cell = table.cell(r, c)
-                        cell.text = value
+                        cell.text = printable(str(value), font, coverage)
                         cell.fill.solid()
                         cell.fill.fore_color.rgb = RGBColor.from_string(
                             accent if r == 0 else background
@@ -516,7 +526,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                     slide.shapes,
                     (int(x), int(y), int(w), int(h)),
                     element["data"],
-                    diagram_style(font, accent, background, text_color, palette),
+                    diagram_style(
+                        font, accent, background, text_color, palette, coverage
+                    ),
                 )
         slide.notes_slide.notes_text_frame.text = slide_data["content"]["notes"]
     for identifier in original_ids:
