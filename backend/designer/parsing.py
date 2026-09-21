@@ -24,7 +24,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 17
+PARSER_VERSION = 18
 
 
 def is_footer_placeholder(shape):
@@ -199,18 +199,91 @@ def classify_pattern(pattern, index, total):
     содержания, разделители. Ставить контент на разделитель — то же, что печатать
     текст на обложке книги, поэтому роль важна при подборе.
     """
-    text = " ".join(shape["text"] for shape in pattern["shapes"]).lower()
+    title_box = pattern.get("title_box")
+    text = " ".join(shape["text"] for shape in pattern["shapes"]
+                    if shape.get("box") == title_box).lower()
     for role, words in ROLE_WORDS.items():
         if any(word in text for word in words):
             return role
-    title = pattern.get("title_box") or {}
     slots = pattern.get("text_slots", 0)
-    # Первые страницы шаблона с крупным заголовком и почти без текста — обложка.
-    if index <= max(2, total * 0.05) and slots <= 4 and title.get("h", 0) >= 0.1:
-        return "cover"
     if slots <= 1:
         return "section"
     return "content"
+
+
+def classify_patterns(patterns):
+    """Use the whole template to distinguish early covers from repeat dividers.
+
+    Filenames and layout names are deliberately irrelevant. Empty placeholders
+    carry the same typographic evidence as filled ones.
+    """
+    title_sizes = [slot['style']['size'] for pattern in patterns for slot in pattern['slots']
+                   if slot['role'] == 'title' and slot['style'].get('size')]
+    large = percentile(title_sizes, 2 / 3) if title_sizes else 28
+    eligible = []
+    for index, pattern in enumerate(patterns):
+        pattern['role'] = classify_pattern(pattern, index, len(patterns))
+        title = next((s for s in pattern['slots'] if s['role'] == 'title'), {})
+        box = title.get('box') or {}
+        size = title.get('style', {}).get('size')
+        sparse = pattern['text_slots'] <= 4 and sum(
+            s['length'] for s in pattern['slots'] if s['role'] == 'body'
+        ) <= 220
+        large_title = size >= large if size else box.get('h', 0) >= 0.15
+        eligible.append(bool(title and sparse and large_title))
+        pattern['role_evidence'] = {'large_title': bool(large_title), 'sparse': sparse,
+                                    'opening': index < 3}
+    # At most two opening alternatives; later matching pages are dividers when
+    # the same composition recurs throughout the file.
+    seeds = [i for i, p in enumerate(patterns[:3]) if eligible[i]
+             and p['role'] not in ('agenda', 'closing', 'team', 'section')]
+    # A single empty title naturally starts as 'section' before the collection
+    # supplies context (e.g. a cover placeholder inherited only from its layout).
+    seeds += [i for i, p in enumerate(patterns[:3]) if eligible[i]
+              and p['role'] == 'section'
+              and not any(word in ' '.join(s['text'] for s in p['shapes']).lower()
+                          for word in ROLE_WORDS['section'])]
+    seeds = sorted(set(seeds))[:2]
+
+    def similar(first, second):
+        a, b = first.get('title_box') or {}, second.get('title_box') or {}
+        return all(abs(a.get(key, 0) - b.get(key, 0)) <= tolerance
+                   for key, tolerance in (('x', .12), ('y', .08), ('w', .2), ('h', .08)))
+
+    for index, pattern in enumerate(patterns):
+        matches = [i for i, other in enumerate(patterns) if eligible[i] and similar(pattern, other)]
+        opening_match = any(similar(pattern, patterns[i])
+                            and pattern['background'] == patterns[i]['background']
+                            and pattern['background_kind'] == patterns[i]['background_kind'] for i in seeds)
+        if index in seeds:
+            pattern['role'] = 'cover'
+        elif eligible[index] and pattern['role'] in ('content', 'section') and opening_match:
+            if len(matches) >= 3:
+                pattern['role'] = 'section'
+            elif pattern['role'] == 'content':
+                pattern['role'] = 'cover'
+        pattern['role_evidence']['similar_pages'] = len(matches)
+
+
+def branding_score(slide, width, height, background):
+    """Reward visible identity outside the content band, not arbitrary artwork."""
+    marks = set()
+    for owner in (slide, slide.slide_layout, slide.slide_layout.slide_master):
+        for shape in owner.shapes:
+            x, y, w, h = shape_key(shape, width, height)
+            area = max(0, min(1, x + w) - max(0, x)) * max(0, min(1, y + h) - max(0, y))
+            if area <= 0.0001:
+                continue
+            if owner is slide and is_footer_placeholder(shape) and shape.text.strip():
+                marks.add((x, y, w, h))
+            elif not shape.is_placeholder and 0.0001 < area < 0.12:
+                edge = y + h <= 0.2 or y >= 0.85 or x + w <= 0.05 or x >= 0.95
+                visible = shape.shape_type in (MSO_SHAPE_TYPE.PICTURE, MSO_SHAPE_TYPE.GROUP)
+                visible = visible or bool(fill_colour(shape))
+                if edge and visible and (not shape.has_text_frame or not shape.text.strip()):
+                    marks.add((x, y, w, h))
+    colored = relative_luminance(background['color']) < 0.85
+    return round(min(0.6, len(marks) * 0.2) + (0.3 if colored else 0.0), 3)
 
 
 def fill_colour(shape):
@@ -351,6 +424,69 @@ def background_info(slide, theme):
 def background_color(slide, theme):
     """Цвет фона слайда; для картинки и градиента — приближение."""
     return background_info(slide, theme)["color"]
+
+
+def title_background(slide, box, width, height, base_color):
+    """Sample a raster background at the designer's title slot, without Office.
+
+    A photographic cover's entire canvas can be bright while its text area is
+    dark. Sampling that area avoids painting a white panel over the brand.
+    """
+    if not box:
+        return None
+    from PIL import Image, ImageStat
+
+    def sample(blob, region_box):
+        try:
+            with Image.open(io.BytesIO(blob)) as image:
+                # Transparent PNG artwork is composited over the slide fill;
+                # discarding alpha would measure bright hidden RGB pixels.
+                canvas = Image.new('RGBA', image.size, '#' + base_color)
+                image = Image.alpha_composite(canvas, image.convert('RGBA')).convert('RGB')
+                image.thumbnail((240, 240))
+                left, top = max(0, region_box['x']), max(0, region_box['y'])
+                right = min(1, region_box['x'] + region_box['w'])
+                bottom = min(1, region_box['y'] + region_box['h'])
+                if right <= left or bottom <= top:
+                    return None
+                region = image.crop((int(left * image.width), int(top * image.height),
+                                     max(int(left * image.width) + 1, int(right * image.width)),
+                                     max(int(top * image.height) + 1, int(bottom * image.height))))
+                stats = ImageStat.Stat(region)
+                return {'color': ''.join(f'{round(c):02X}' for c in stats.mean),
+                        'spread': round(ImageStat.Stat(region.convert('L')).stddev[0] / 255, 4)}
+        except (OSError, ValueError, KeyError):
+            return None
+    owners = (slide, slide.slide_layout, slide.slide_layout.slide_master)
+    # A full-slide picture can supply the background while p:bg stays solid.
+    for owner in owners:
+        for shape in reversed(list(owner.shapes)):
+            if shape.shape_type != MSO_SHAPE_TYPE.PICTURE:
+                continue
+            x, y, w, h = shape_key(shape, width, height)
+            if w * h < .85 or not (x <= box['x'] and y <= box['y']
+                                   and x + w >= box['x'] + box['w']
+                                   and y + h >= box['y'] + box['h']):
+                continue
+            cw, ch = 1 - shape.crop_left - shape.crop_right, 1 - shape.crop_top - shape.crop_bottom
+            return sample(shape.image.blob, {
+                'x': shape.crop_left + (box['x'] - x) / w * cw,
+                'y': shape.crop_top + (box['y'] - y) / h * ch,
+                'w': box['w'] / w * cw, 'h': box['h'] / h * ch,
+            })
+    for owner in owners:
+        bg = owner._element.cSld.bg
+        if bg is None:
+            continue
+        blips = bg.xpath('.//a:blip')
+        reference = blips[0].get(qn('r:embed')) if blips else None
+        if not reference:
+            return None
+        try:
+            return sample(owner.part.related_part(reference).blob, box)
+        except KeyError:
+            return None
+    return None
 
 
 def check_zip(data: bytes):
@@ -608,7 +744,7 @@ def parse_template(data: bytes, name: str):
                     theme, font_scheme = read_theme(root)
     width, height = int(deck.slide_width), int(deck.slide_height)
 
-    def scan(shapes):
+    def scan(shapes, collect=True):
         results = []
         for shape in shapes:
             box = {
@@ -628,6 +764,8 @@ def parse_template(data: bytes, name: str):
                 item["text"] = shape.text[:2000]
                 item["style"] = text_style(shape, theme, font_scheme)
                 for p in shape.text_frame.paragraphs:
+                    if not collect:
+                        break
                     for font in [p.font, *(r.font for r in p.runs)]:
                         value = color_value(font.color, theme)
                         if value:
@@ -641,7 +779,7 @@ def parse_template(data: bytes, name: str):
                             sizes[round(size.pt, 2)] += max(1, len(run.text))
                     if not p.runs and p.font.size and p.text.strip():
                         sizes[round(p.font.size.pt, 2)] += len(p.text)
-            if hasattr(shape, "fill"):
+            if collect and hasattr(shape, "fill"):
                 try:
                     if shape.fill.type == 1:
                         value = color_value(shape.fill.fore_color, theme)
@@ -653,9 +791,11 @@ def parse_template(data: bytes, name: str):
             if native:
                 item["picture"] = native
             if shape.shape_type == 6:
-                item["children"] = scan(shape.shapes)
+                item["children"] = scan(shape.shapes, collect=collect)
             if shape.is_placeholder:
                 item["placeholder"] = str(shape.placeholder_format.type)
+                item["placeholder_idx"] = shape.placeholder_format.idx
+                item["footer"] = is_footer_placeholder(shape)
             results.append(item)
         return results
 
@@ -707,9 +847,35 @@ def parse_template(data: bytes, name: str):
                 break
         master_defaults = master_text_defaults(slide.slide_layout.slide_master, theme, font_scheme)
         shapes = inherit_styles(slide, scan(slide.shapes))
-        text_shapes = [s for s in shapes if s["text"].strip()]
+        # Some templates deliberately omit title/body instances on a slide and
+        # leave their empty placeholders only in the layout. They still define
+        # a valid content slot; footers and slide numbers never do.
+        present = {s.get('placeholder_idx') for s in shapes if 'placeholder' in s}
+        inherited = []
+        empty_prototype = not any(s['text'].strip() and not s.get('footer') for s in shapes)
+        for item in scan(slide.slide_layout.shapes, collect=False):
+            if not empty_prototype:
+                break
+            kind = item.get('placeholder', '')
+            if item.get('placeholder_idx') in present or item.get('footer'):
+                continue
+            if any(word in kind for word in ('TITLE', 'BODY', 'SUBTITLE', 'OBJECT')):
+                item['id'] = f"layout:{item['id']}"
+                item['text'] = ''  # Layout instructions are not user content.
+                item['inherited'] = True
+                role = 'title' if 'TITLE' in kind and 'SUBTITLE' not in kind else 'body'
+                for key, value in (master_defaults.get(role) or {}).items():
+                    if item.get('style', {}).get(key) is None:
+                        item.setdefault('style', {})[key] = value
+                inherited.append(item)
+        shapes.extend(inherited)
+        text_shapes = [s for s in shapes if not s.get('footer') and (
+            s['text'].strip() or any(word in s.get('placeholder', '')
+                                    for word in ('TITLE', 'BODY', 'SUBTITLE', 'OBJECT'))
+        )]
         title = next(
-            (s for s in text_shapes if "TITLE" in s.get("placeholder", "")), None
+            (s for s in text_shapes if "TITLE" in s.get("placeholder", "")
+             and 'SUBTITLE' not in s.get('placeholder', '')), None
         )
         if title is None and text_shapes:
             title = min(text_shapes, key=lambda s: s["box"]["y"])
@@ -838,10 +1004,12 @@ def parse_template(data: bytes, name: str):
                 "title_box": title["box"] if title else None,
                 "shapes": shapes,
                 "text_slots": len(text_shapes),
+                "branding_score": branding_score(slide, width, height, background),
+                "title_background": title_background(slide, title['box'] if title else None,
+                                                     width, height, background['color']),
             }
         )
-    for index, pattern in enumerate(patterns):
-        pattern["role"] = classify_pattern(pattern, index, len(patterns))
+    classify_patterns(patterns)
     geometry = derive_geometry(patterns)
     for layout in layouts:
         scan(layout.shapes)

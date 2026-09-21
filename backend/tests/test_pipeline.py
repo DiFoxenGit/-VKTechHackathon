@@ -1733,8 +1733,8 @@ def test_export_drops_media_nobody_references(tmp_path):
         assert verify_pptx(result, len(deck["slides"]))["opens"]
 
 
-def test_dense_first_slide_does_not_take_the_cover_page():
-    """Четыре тезиса поверх фонового фото — не титул, а испорченная обложка."""
+def test_dense_first_slide_still_uses_cover_without_losing_content():
+    """P0-2: первый слайд всегда использует обложку, содержание сохраняется."""
     from designer.layout import compose
     from designer.models import Outline
 
@@ -1747,7 +1747,9 @@ def test_dense_first_slide_does_not_take_the_cover_page():
         synthetic_template([cover, content]),
         "classic",
     )
-    assert deck["slides"][0]["pattern_index"] == 1
+    assert deck["slides"][0]["pattern_index"] == 0
+    assert deck["slides"][0]["content"]['bullets'] == ["Раз", "Два", "Три", "Четыре"]
+    assert any(e['kind'] == 'bar' for e in deck['slides'][0]['elements'])
 
 
 def test_parked_shapes_never_become_a_card_grid():

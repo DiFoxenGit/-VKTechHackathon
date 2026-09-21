@@ -391,7 +391,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
             ),
             best_text_color(background, palette),
         )
-        if slide_data.get("needs_scrim") or slide_data.get("image_cover", 0) >= 0.5:
+        if slide_data.get("needs_scrim") or (
+            slide_data.get("image_cover", 0) >= 0.5 and not slide_data.get('native_cover')
+        ):
             add_scrim(slide, slide_data["elements"], background)
         for element in slide_data["elements"]:
             x, y, w, h = [Pt(v) for v in element["box"]]

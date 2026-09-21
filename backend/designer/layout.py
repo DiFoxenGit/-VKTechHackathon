@@ -214,12 +214,8 @@ def content_demand(content, position=1, total=1):
         "lines": sum(1 + len(b) // 60 for b in bullets),
         "has_visual": content["visual"]["kind"] != "none",
         "title_length": len(content["title"]),
-        # Первый слайд — обложка: у шаблона для неё свои страницы, с крупным
-        # заголовком по центру и почти без текстовых блоков. Но если модель
-        # начала колоду сразу с содержания, обложечная страница ему не подходит:
-        # четыре тезиса поверх фонового фото — не титул.
-        "cover": position == 0 and len(bullets) <= 1,
-        "closing": total > 2 and position == total - 1,
+        "cover": position == 0,
+        "closing": total > 1 and position == total - 1,
         # Сколько карточек пригодилось бы этому слайду.
         "cards": 0 if content["visual"]["kind"] != "none" else len(bullets),
     }
@@ -282,7 +278,9 @@ def candidate_patterns(patterns):
     ]
 
     def widen(found):
-        extra = [p for p in special if p["index"] not in {f["index"] for f in found}]
+        branded = [p for p in patterns if p.get('role') == 'content'
+                   and p.get('branding_score', 0) > 0 and usable(p, 2, .3, .3)]
+        extra = [p for p in [*special, *branded] if p["index"] not in {f["index"] for f in found}]
         return [*found, *extra]
 
     for rule in ((2, 0.2, 0.65), (2, 0.3, 0.45), (1, 0.45, 0.3)):
@@ -330,6 +328,9 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
     score -= branding_in_band(pattern) * (0.8 if designed else 5.0)
     score += free_area(pattern) * (0.5 if demand["has_visual"] else 0.2)
     score += 0.05 * min(pattern.get("text_slots", 0), 4)
+    # Visible logos, footers and a corporate background survive export. At the
+    # same capacity they should beat a white specimen page without identity.
+    score += 0.3 * pattern.get('branding_score', 0)
     title_box = pattern.get("title_box")
     if title_box:
         score += 0.12 if title_box["w"] > 0.6 else 0.0
@@ -367,6 +368,8 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
         score += 0.5 if pattern.get("text_slots", 0) <= 3 else -0.3
         score += 0.4 if title_box.get("y", 0) > 0.2 else 0.0
         score += 0.3 if title_box.get("h", 0) > 0.15 else 0.0
+        if demand['lines']:
+            score += .35 if any(s['role'] == 'body' for s in pattern.get('slots', [])) else -.2
     if recent and pattern["index"] == recent[-1]:
         score -= 0.6
     # Reuse is allowed, but every repeat costs more, so a deck spreads over the
@@ -378,6 +381,13 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
 def choose_pattern(candidates, content, recent, usage=None, position=1, total=1):
     demand = content_demand(content, position, total)
     usage = usage or {}
+    wanted = 'cover' if demand['cover'] else 'closing' if demand['closing'] else None
+    designed = [p for p in candidates if p.get('role') == wanted] if wanted else []
+    if designed:
+        candidates = designed
+    elif not demand['cover']:
+        reusable = [p for p in candidates if p.get('role') not in ('cover', 'closing')]
+        candidates = reusable or candidates
     scored = [
         (score_pattern(p, demand, recent, usage.get(p["index"], 0)), -p["index"], p)
         for p in candidates
@@ -385,6 +395,32 @@ def choose_pattern(candidates, content, recent, usage=None, position=1, total=1)
     # Deterministic: equal scores resolve by the lowest pattern index.
     best = max(scored, key=lambda item: (item[0], item[1]))
     return best[2], best[0]
+
+
+def special_page_region(reserved, left, top, right, bottom, width, height):
+    """Largest usable rectangle around cover/closing artwork and logos.
+
+    These pages must be used even with dense content. Their low title and QR
+    blocks cannot be treated as a full-width content-page layout.
+    """
+    blockers = [b for b in reserved if b[0] < right and b[0] + b[2] > left
+                and b[1] < bottom and b[1] + b[3] > top]
+    xs = sorted({left, right, *(max(left, b[0] - width * .01) for b in blockers),
+                 *(min(right, b[0] + b[2] + width * .01) for b in blockers)})
+    candidates = []
+    for x in xs:
+        for r in xs:
+            if r - x < width * .3:
+                continue
+            bands = sorted((max(top, by - height * .01), min(bottom, by + bh + height * .01))
+                           for bx, by, bw, bh in blockers if bx < r and bx + bw > x)
+            cursor = top
+            for start, end in [*bands, (bottom, bottom)]:
+                if start - cursor >= height * .3:
+                    candidates.append((x, cursor, r, start))
+                cursor = max(cursor, end)
+    return max(candidates, key=lambda r: (r[2] - r[0]) * (r[3] - r[1]),
+               default=(left, top, right, bottom))
 
 
 def decor_free_band(reserved, top, bottom, left, right, minimum=0.45):
@@ -623,6 +659,14 @@ def compose(outline, template, variant):
             for b in pattern.get("reserved", [])
             if b["w"] * b["h"] < 0.6 and not b.get("icons")
         ]
+        special_region = None
+        if pattern.get('role') in ('cover', 'closing') and (has_visual or len(content['bullets']) > 1):
+            special_region = special_page_region(
+                reserved, width * safe['x'], height * safe['y'], right,
+                height * min(1.0, safe['y'] + safe['h']), width, height,
+            )
+            margin, ty, right, _ = special_region
+            tx, tw = margin, right - margin
         if not from_template_title:
             for bx, by, _, bh in reserved:
                 if by < height * 0.3 and tx + tw * 0.35 < bx < tx + tw:
@@ -658,7 +702,9 @@ def compose(outline, template, variant):
                 ty = min(height * 0.35, max(ty, by + bh + height * 0.02))
         top = max(height * 0.26, ty + th + height * 0.035)
         bottom = height * min(1.0, safe["y"] + safe["h"])
-        if content_slot and content_slot["w"] * content_slot["h"] >= 0.12:
+        if special_region:
+            bottom = special_region[3]
+        elif content_slot and content_slot["w"] * content_slot["h"] >= 0.12:
             # Контент занимает ту же область, что и на слайде-прототипе.
             slot_top = height * content_slot["y"]
             slot_bottom = height * (content_slot["y"] + content_slot["h"])
@@ -689,7 +735,8 @@ def compose(outline, template, variant):
             # края, потом вверх, но не выше конца заголовка.
             floor = height * MIN_VISUAL_BAND
             if bottom - top < floor:
-                bottom = min(height * min(1.0, safe["y"] + safe["h"]), top + floor)
+                limit = special_region[3] if special_region else height * min(1.0, safe["y"] + safe["h"])
+                bottom = min(limit, top + floor)
             if bottom - top < floor:
                 top = max(ty + th + height * 0.02, bottom - floor)
         w, h, gap = right - margin, bottom - top, width * 0.03
@@ -733,7 +780,7 @@ def compose(outline, template, variant):
                     }
                 )
 
-        if variant == "split":
+        if variant == "split" and (not special_region or w >= width * 0.7):
             bw = (w - gap) / 2
             if has_visual:
                 text_box("body", bullets, [margin, top, bw, h])
@@ -856,6 +903,26 @@ def compose(outline, template, variant):
                 elements[-1]["from_template"] = True
         else:
             text_box("body", bullets, [margin, top, w, h])
+        # A sparse opening slide follows the cover's own title/subtitle frames,
+        # including titles below the middle of the page. Content geometry must
+        # not lift it into the logo band or stretch it across the brand artwork.
+        if i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1:
+            cover_box = pattern.get('title_box')
+            if cover_box:
+                cx = max(width * margins['x'], width * cover_box['x'])
+                cy = height * cover_box['y']
+                cw = min(width * cover_box['w'], width * (1 - margins['x']) - cx)
+                ch = min(height * cover_box['h'], height * .9 - cy)
+                elements[0]['box'] = [cx, cy, cw, ch]
+                elements[0]['from_template'] = True
+                if bullets:
+                    below = [s for s in body_slots if s['box']['y'] >= cover_box['y'] + cover_box['h'] * .8]
+                    subtitle = min(below, key=lambda s: s['box']['y'])['box'] if below else None
+                    by = max(cy + ch + height * .02, height * subtitle['y'] if subtitle else 0)
+                    body = next(e for e in elements if e['id'] != 'title')
+                    cover_bottom = height * min(.95, margins['y'] + margins['h'])
+                    body['box'] = [cx, by, cw, max(10, cover_bottom - by)]
+                    body['from_template'] = True
         # Resolve the text color once, against this slide's real background, so
         # layout, export and the contrast audit all agree on what will be rendered.
         # Подогнать текст до аудита: пользователь не должен чинить руками то,
@@ -931,7 +998,20 @@ def compose(outline, template, variant):
             # Фон не измерен: о его светлоте ничего не известно, поэтому под
             # текст кладётся светлая подложка — самый безопасный вариант.
             background = tokens["theme"].get("lt1", "FFFFFF")
-        text_color = best_text_color(background, palette)
+        native_cover = i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1
+        if native_cover:
+            sampled = pattern.get('title_background')
+            if sampled:
+                background = sampled['color']
+                needs_scrim = sampled['spread'] > BUSY_BACKGROUND
+            elif (pattern.get('background_kind', 'solid') == 'solid'
+                  and pattern.get('image_cover', 0) < 0.5):
+                background = pattern.get('background', background)
+                needs_scrim = False
+            else:
+                # Without a reliable local sample, retain the readability panel.
+                needs_scrim = True
+        text_color = best_text_color(background, palette, minimum=4.5)
         for element in elements:
             role = "title" if element.get("role") == "title" else "body"
             preferred = tokens.get("font_choice", {}).get(role, {})
@@ -949,6 +1029,7 @@ def compose(outline, template, variant):
                 "image_cover": pattern.get("image_cover", 0.0),
                 "background_kind": pattern.get("background_kind", "solid"),
                 "needs_scrim": needs_scrim,
+                "native_cover": native_cover,
                 # Kept so the UI and the pitch can answer "why this layout?".
                 "pattern_choice": {
                     "score": pattern_score,
