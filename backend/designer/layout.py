@@ -30,6 +30,9 @@ LEAD_SHARE_BONUS = 0.12
 # схем и у проверки text_too_small.
 MIN_BODY_SIZE = 10.0
 # Запасная типографическая лестница для шаблонов, которые не объявляют кегли.
+# Ширина знака в долях кегля для самого длинного слова — как у аудита
+# (visuals.CHAR_WIDTH): оценка щедрая, иначе слово всё-таки рвётся.
+WORD_CHAR_WIDTH = 0.78
 DEFAULT_SCALE = [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 40.0, 48.0]
 
 
@@ -80,7 +83,10 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
             if not larger:
                 continue
             candidate = dict(element, font_size=larger[0])
-            if estimated_text_height(candidate) <= element["box"][3]:
+            # Рост не должен рвать слово: та же мера, что у проверки word_break.
+            longest = max((len(word) for word in element["text"].split()), default=1)
+            fits_word = longest * larger[0] * WORD_CHAR_WIDTH <= element["box"][2] - 12
+            if fits_word and estimated_text_height(candidate) <= element["box"][3]:
                 element["font_size"] = larger[0]
                 grew = True
         if not grew:
@@ -909,14 +915,18 @@ def align_to_picture(elements):
 
 
 def picture_box(asset, box):
-    """Рамка картинки по её пропорциям внутри отведённой области, по центру."""
+    """Рамка картинки по её пропорциям: по вертикали по центру, по правому краю.
+
+    Правый край области — направляющая шаблона; картинка, повисшая между
+    колонками, читается как невыровненная.
+    """
     x, y, w, h = box
     ratio = asset.get("ratio") or 1.0
     if w / h > ratio:
         cw, ch = h * ratio, h
     else:
         cw, ch = w, w / ratio
-    return [x + (w - cw) / 2, y + (h - ch) / 2, cw, ch]
+    return [x + w - cw, y + (h - ch) / 2, cw, ch]
 
 
 def compose(outline, template, variant, assets=None):
