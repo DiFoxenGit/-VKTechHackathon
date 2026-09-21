@@ -8,6 +8,7 @@
 import { api, waitForJob } from './api';
 import type {
   ApiAuditIssue,
+  ApiOutline,
   ApiPresentation,
   ApiPurpose,
   ApiSlideContent,
@@ -120,7 +121,58 @@ function toContent(previous: ApiSlideContent, slide: Slide): ApiSlideContent {
   };
 }
 
+/** Правки экрана «Структура» обратно в план сервиса.
+ *
+ * Визуализации и ссылки на источники интерфейс не показывает, поэтому они
+ * берутся из исходного плана по номеру слайда: пользователь правит текст, а
+ * диаграммы и таблицы остаются на своих местах.
+ */
+export function toOutline(deck: Deck, source: ApiOutline | null): ApiOutline {
+  return {
+    title: source?.title || deck.title,
+    slides: deck.slides.map(slide => {
+      const index = Number(slide.id.split(':')[1]);
+      const original = Number.isInteger(index) ? source?.slides[index] : undefined;
+      return {
+        title: slide.title,
+        bullets: slide.body.split('\n').map(line => line.trim()).filter(Boolean),
+        notes: original?.notes ?? '',
+        source_refs: original?.source_refs?.length ? original.source_refs : ['brief'],
+        visual: original?.visual ?? { kind: 'none' },
+      };
+    }),
+  };
+}
+
+/** План сервиса в плоскую модель экранов: черновик, которого ещё нет на сервере. */
+export function draftDeck(outline: ApiOutline, templateId: string): Deck {
+  return {
+    id: 'draft',
+    title: outline.title,
+    slides: outline.slides.map((slide, index) => ({
+      id: `draft:${index}`,
+      title: slide.title,
+      body: slide.bullets.join('\n'),
+      kind: kindOf(index, outline.slides.length),
+    })),
+    templateId,
+    layout: 'classic',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export const presentationService = {
+  /** Только структура: быстрый шаг до вёрстки, его показывает экран «Структура». */
+  async createOutline(brief: Brief, packIds: string[], purpose: ApiPurpose): Promise<ApiOutline> {
+    return api.createOutline({
+      brief: brief.text,
+      purpose,
+      language: 'ru',
+      slide_count: brief.slideCount,
+      content_pack_ids: packIds,
+    });
+  },
+
   async listTemplates(): Promise<Template[]> {
     const items = await api.listTemplates();
     return items.map(toTemplate);
@@ -141,6 +193,7 @@ export const presentationService = {
     packIds: string[],
     purpose: ApiPurpose,
     onStage?: (stage: string, progress: number) => void,
+    outline?: ApiOutline,
   ): Promise<{ projects: Project[]; warnings: string[] }> {
     const job = await api.startGeneration({
       template_id: brief.templateId,
@@ -149,6 +202,8 @@ export const presentationService = {
       language: 'ru',
       slide_count: brief.slideCount,
       content_pack_ids: packIds,
+      // Готовый план вёрстка берёт как есть: модель второй раз не вызывается.
+      ...(outline ? { outline } : {}),
     });
     const finished = await waitForJob(job.id, state => onStage?.(state.stage, state.progress));
     const decks = await Promise.all(finished.presentation_ids.map(id => api.presentation(id)));

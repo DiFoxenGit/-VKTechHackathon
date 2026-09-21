@@ -3,8 +3,9 @@ import type { CSSProperties, ReactNode } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronRight, CircleHelp, Clock3, Copy, Download, FileText, FolderOpen, GripVertical, LayoutTemplate, LoaderCircle, Maximize2, Monitor, PanelLeftClose, Paperclip, Plus, Presentation, Search, ShieldCheck, Sparkles, Trash2, Upload, X, AlertCircle, CheckCircle2, ArrowUpRight, Lightbulb, FileUp, SlidersHorizontal } from 'lucide-react';
 import type { Brief, Deck, Layout, Slide, Template } from './types';
 import { EXAMPLE_BRIEF, getSlideTypography } from './engine';
-import { presentationService } from './services/presentationService';
+import { draftDeck, presentationService, toOutline } from './services/presentationService';
 import type { Project } from './services/presentationService';
+import type { ApiOutline } from './services/apiTypes';
 
 type Screen = 'create' | 'outline' | 'design' | 'editor' | 'projects' | 'templates';
 type Saved = { brief: Brief; decks: Deck[] };
@@ -88,6 +89,8 @@ export default function App() {
   const [variants, setVariants] = useState<Project[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [stage, setStage] = useState('');
+  // План колоды до вёрстки: его правит экран «Структура».
+  const [plan, setPlan] = useState<ApiOutline | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [screen, setScreen] = useState<Screen>('create');
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -181,20 +184,38 @@ export default function App() {
   async function startDeck() {
     if (brief.text.trim().length < 20) { setError('Добавьте хотя бы 20 символов: тему и несколько тезисов.'); briefInput.current?.focus(); return; }
     if (!currentTemplate?.id) { setError('Сначала выберите шаблон: сервис верстает по его дизайн-системе.'); return; }
-    setBusy('outline'); setStage('Отправляем бриф'); setWarnings([]);
+    setBusy('outline'); setStage('Собираем структуру'); setWarnings([]);
     try {
-      // Сервис собирает сразу три варианта одной структуры — их показывает экран «Дизайн».
+      // Сначала только план: по ТЗ структуру видно и можно править до вёрстки.
+      const outline = await presentationService.createOutline(
+        { ...brief, templateId: currentTemplate.id },
+        packs.map(pack => pack.id),
+        PURPOSES[brief.goal] ?? 'project',
+      );
+      setPlan(outline);
+      setDeck({ ...draftDeck(outline, currentTemplate.id), brief: { ...brief } });
+      setProject(null); setVariants([]); setActiveSlide(0); navigate('outline');
+    } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось собрать структуру. Ваш текст сохранён.'); }
+    finally { setBusy(null); setStage(''); }
+  }
+
+  /** Со структуры — в вёрстку: правки уходят готовым планом, модель не вызывается снова. */
+  async function layoutDeck() {
+    if (!deck || !currentTemplate.id) return;
+    setBusy('layout'); setStage('Верстаем варианты'); setWarnings([]);
+    try {
       const { projects, warnings: notes } = await presentationService.createDecks(
         { ...brief, templateId: currentTemplate.id },
         packs.map(pack => pack.id),
         PURPOSES[brief.goal] ?? 'project',
         (name, progress) => setStage(`${STAGES[name] ?? name} · ${progress}%`),
+        toOutline(deck, plan),
       );
       if (!projects.length) throw new Error('Сервис не вернул ни одного варианта.');
       setVariants(projects); setWarnings(notes);
       const first = projects.find(item => item.layout === 'classic') ?? projects[0];
       setProject(first); setDeck({ ...first.deck, brief: { ...brief } }); setActiveSlide(0); navigate('design');
-    } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось собрать презентацию. Ваш текст сохранён.'); }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сверстать варианты.'); }
     finally { setBusy(null); setStage(''); }
   }
 
@@ -291,7 +312,7 @@ export default function App() {
         {storageError && <div className="error-banner" role="alert"><AlertCircle size={18} /><span>Не удалось сохранить изменения в браузере. Скачайте презентацию перед закрытием страницы.</span></div>}
         {screen !== 'editor' && screen !== 'create' && <div className="page-heading"><div><div className="eyebrow">{screen === 'templates' ? 'ВАШ ФИРМЕННЫЙ СТИЛЬ' : screen === 'projects' ? 'РАБОЧЕЕ ПРОСТРАНСТВО' : 'ВАША ПРЕЗЕНТАЦИЯ'}</div><h1>{screen === 'outline' ? 'Сначала — главное' : screen === 'design' ? 'Одна история. Три взгляда.' : screen === 'templates' ? 'Узнаваемый стиль каждого слайда' : 'Мои презентации'}</h1><p>{screen === 'outline' ? 'Проверьте историю, измените текст и расставьте слайды в нужном порядке.' : screen === 'design' ? 'Выберите подачу, которая подходит вашей истории. Содержание останется прежним.' : screen === 'templates' ? 'Три фирменных шаблона из материалов кейса. Или добавьте свой.' : 'Все ваши идеи и последние изменения хранятся в этом браузере.'}</p></div>{screen === 'projects' && <button className="primary-button" onClick={() => navigate('create')}><Plus size={18} />Новая презентация</button>}</div>}
 
-        {busy === 'outline' && <div className="error-banner progress-banner" role="status"><LoaderCircle size={18} className="spin" /><span>{stage || 'Собираем презентацию'}</span></div>}
+        {(busy === 'outline' || busy === 'layout') && <div className="error-banner progress-banner" role="status"><LoaderCircle size={18} className="spin" /><span>{stage || 'Собираем презентацию'}</span></div>}
         {warnings.map(note => <div className="error-banner warning-banner" role="status" key={note}><AlertCircle size={18} /><span>{note}</span></div>)}
         {error && <div className="error-banner" role="alert"><AlertCircle size={18} /><span>{error}</span><IconButton label="Закрыть сообщение" onClick={() => setError('')}><X size={16} /></IconButton></div>}
 
@@ -309,7 +330,7 @@ export default function App() {
           {decks.length > 0 && <section className="home-recent"><div><h2>Продолжить работу</h2><button onClick={() => navigate('projects')}>Все презентации<ArrowRight size={14} /></button></div><div className="home-recent-list">{decks.slice(0, 2).map(d => <button key={d.id} onClick={() => void openDeck(d)}><span className="recent-deck-icon"><Presentation size={19} /></span><span><strong>{d.title || 'Без названия'}</strong><small>{d.slides.length} слайдов · {new Date(d.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small></span><ArrowUpRight size={17} /></button>)}</div></section>}
         </section>}
 
-        {screen === 'outline' && deck && <div className="outline-layout"><section><div className="outline-toolbar"><span><Presentation size={16} />{deck.slides.length} слайдов</span><span>Текст можно редактировать</span></div><div className="outline-list">{deck.slides.map((s, i) => <article className="outline-row" key={s.id}><div className="outline-index"><GripVertical size={16} /><span>{String(i + 1).padStart(2, '0')}</span></div><div className="outline-fields"><label className="sr-only" htmlFor={`title-${s.id}`}>Заголовок слайда {i + 1}</label><input id={`title-${s.id}`} value={s.title} onChange={e => editSlide(s.id, 'title', e.target.value)} placeholder="Заголовок слайда" maxLength={250} /><label className="sr-only" htmlFor={`body-${s.id}`}>Текст слайда {i + 1}</label><textarea id={`body-${s.id}`} value={s.body} onChange={e => editSlide(s.id, 'body', e.target.value)} placeholder="Добавьте ключевые тезисы. Они появятся на слайде." rows={2} maxLength={6000} /></div><div className="outline-actions"><IconButton label={`Поднять слайд ${i + 1}`} disabled={i === 0} onClick={() => moveSlide(i, -1)}><ArrowUp size={15} /></IconButton><IconButton label={`Опустить слайд ${i + 1}`} disabled={i === deck.slides.length - 1} onClick={() => moveSlide(i, 1)}><ArrowDown size={15} /></IconButton><IconButton label={`Удалить слайд ${i + 1}`} disabled={deck.slides.length === 1} onClick={() => removeSlide(s.id)}><Trash2 size={15} /></IconButton></div></article>)}</div><button className="add-slide" disabled={deck.slides.length >= 30} onClick={addSlide}><Plus size={17} />Добавить слайд</button><div className="flow-actions"><button className="secondary-button" onClick={() => navigate('create')}><ArrowLeft size={16} />К брифу</button><button className="primary-button" onClick={() => navigate('design')}>Выбрать дизайн<ArrowRight size={17} /></button></div></section><aside className="outline-aside panel"><div className="section-icon"><Lightbulb size={20} /></div><h3>Один слайд — одна мысль</h3><p>Оставьте в заголовке главное, а в тексте — то, что помогает это объяснить.</p><hr /><span className="eyebrow">ВЫБРАННЫЙ СТИЛЬ</span><TemplateArt template={currentTemplate} compact /><strong>{currentTemplate.name}</strong><div className="inline-note"><AlertCircle size={16} />Демоструктура собрана из вашего текста по простым правилам. Проверьте её перед оформлением.</div></aside></div>}
+        {screen === 'outline' && deck && <div className="outline-layout"><section><div className="outline-toolbar"><span><Presentation size={16} />{deck.slides.length} слайдов</span><span>Текст можно редактировать</span></div><div className="outline-list">{deck.slides.map((s, i) => <article className="outline-row" key={s.id}><div className="outline-index"><GripVertical size={16} /><span>{String(i + 1).padStart(2, '0')}</span></div><div className="outline-fields"><label className="sr-only" htmlFor={`title-${s.id}`}>Заголовок слайда {i + 1}</label><input id={`title-${s.id}`} value={s.title} onChange={e => editSlide(s.id, 'title', e.target.value)} placeholder="Заголовок слайда" maxLength={250} /><label className="sr-only" htmlFor={`body-${s.id}`}>Текст слайда {i + 1}</label><textarea id={`body-${s.id}`} value={s.body} onChange={e => editSlide(s.id, 'body', e.target.value)} placeholder="Добавьте ключевые тезисы. Они появятся на слайде." rows={2} maxLength={6000} /></div><div className="outline-actions"><IconButton label={`Поднять слайд ${i + 1}`} disabled={i === 0} onClick={() => moveSlide(i, -1)}><ArrowUp size={15} /></IconButton><IconButton label={`Опустить слайд ${i + 1}`} disabled={i === deck.slides.length - 1} onClick={() => moveSlide(i, 1)}><ArrowDown size={15} /></IconButton><IconButton label={`Удалить слайд ${i + 1}`} disabled={deck.slides.length === 1} onClick={() => removeSlide(s.id)}><Trash2 size={15} /></IconButton></div></article>)}</div><button className="add-slide" disabled={deck.slides.length >= 30} onClick={addSlide}><Plus size={17} />Добавить слайд</button><div className="flow-actions"><button className="secondary-button" onClick={() => navigate('create')}><ArrowLeft size={16} />К брифу</button><button className="primary-button" disabled={Boolean(busy)} onClick={() => void layoutDeck()}>{variants.length ? 'Сверстать заново' : 'Сверстать варианты'}<ArrowRight size={17} /></button></div></section><aside className="outline-aside panel"><div className="section-icon"><Lightbulb size={20} /></div><h3>Один слайд — одна мысль</h3><p>Оставьте в заголовке главное, а в тексте — то, что помогает это объяснить.</p><hr /><span className="eyebrow">ВЫБРАННЫЙ СТИЛЬ</span><TemplateArt template={currentTemplate} compact /><strong>{currentTemplate.name}</strong><div className="inline-note"><AlertCircle size={16} />Структуру собрала модель по брифу и материалам. Проверьте её: дальше по ней идёт вёрстка, и слайды соберутся ровно из этого текста.</div></aside></div>}
 
         {screen === 'design' && deck && <><div className="design-info"><span><CheckCircle2 size={17} />{deck.slides.length} слайдов с одинаковым содержанием</span><span>Шаблон: {currentTemplate.name}</span></div><div className="design-grid">{layoutOptions.map(option => <button key={option.id} className={`design-card ${deck.layout === option.id ? 'selected' : ''}`} aria-pressed={deck.layout === option.id} disabled={!variants.some(item => item.layout === option.id)} onClick={() => chooseLayout(option.id)}><div className="design-preview"><SlideCanvas slide={deck.slides[0]} template={currentTemplate} layout={option.id} miniature total={deck.slides.length} /></div><div className="design-copy"><div><h2>{option.name}</h2><span className="choice-circle">{deck.layout === option.id && <Check size={15} />}</span></div><p>{option.description}</p><span>{option.detail}</span></div></button>)}</div><div className="design-tip"><Sparkles size={19} /><div><strong>Три варианта уже свёрстаны сервисом</strong><p>Содержание одно, отличается раскладка. Переключайтесь — редактор откроет выбранный.</p></div></div><div className="flow-actions"><button className="secondary-button" onClick={() => navigate('outline')}><ArrowLeft size={16} />К структуре</button><button className="primary-button" onClick={() => { setActiveSlide(0); navigate('editor'); }}>Открыть редактор<ArrowRight size={17} /></button></div></>}
 
