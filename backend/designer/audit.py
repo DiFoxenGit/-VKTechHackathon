@@ -709,6 +709,90 @@ VISUAL_CODES = {
 }
 
 
+def file_issues(check):
+    """Проверки Приложения 1, которые честно видны только в записанном файле.
+
+    «Файл не открывается», «слайд оказался картинкой», «логотип сдвинут» и
+    подписи диаграмм проверяются по готовому PPTX, а не по модели вёрстки.
+    Находки складываются в тот же отчёт, чтобы пользователь видел их там же,
+    где остальные, и не искал их в логах сервера.
+    """
+    check = check or {}
+    issues = []
+    if not check.get("opens"):
+        issues.append(
+            issue(
+                None,
+                None,
+                "file_broken",
+                "Файл презентации не открывается",
+                severity="error",
+            )
+        )
+        return issues
+    for index in check.get("raster_slides") or []:
+        issues.append(
+            issue(
+                index,
+                None,
+                "raster_slide",
+                "Слайд собран картинкой, а не редактируемыми объектами",
+                severity="error",
+            )
+        )
+    for moved in check.get("moved_branding") or []:
+        issues.append(
+            issue(
+                moved.get("slide"),
+                None,
+                "branding_moved",
+                f"Элемент шаблона «{moved.get('name')}» сдвинут с места на "
+                f"{round((moved.get('shift') or 0) * 100, 1)}% размера слайда",
+                severity="error",
+            )
+        )
+    for chart in check.get("charts") or []:
+        missing = []
+        if chart.get("series", 0) > 1 and not chart.get("legend"):
+            missing.append("легенды")
+        if not chart.get("axis_title"):
+            missing.append("подписи осей")
+        if not chart.get("value_labels"):
+            missing.append("подписей значений")
+        if missing:
+            issues.append(
+                issue(
+                    chart.get("slide"),
+                    "visual",
+                    "chart_labels",
+                    "У диаграммы нет " + ", ".join(missing),
+                )
+            )
+    return issues
+
+
+def merge_file_issues(report, check):
+    """Дописать находки по файлу в готовый отчёт и пересчитать счётчики."""
+    found = file_issues(check)
+    if not found:
+        return report
+    report["issues"].extend(found)
+    report["counts"]["errors"] += sum(1 for i in found if i["severity"] == "error")
+    report["counts"]["warnings"] += sum(1 for i in found if i["severity"] != "error")
+    return report
+
+
+def merge_file_issues(report, check):
+    """Дописать находки по файлу в готовый отчёт и пересчитать счётчики."""
+    found = file_issues(check)
+    if not found:
+        return report
+    report["issues"].extend(found)
+    report["counts"]["errors"] += sum(1 for i in found if i["severity"] == "error")
+    report["counts"]["warnings"] += sum(1 for i in found if i["severity"] != "error")
+    return report
+
+
 async def visual_audit(deck, sources, images):
     """Контекстные проверки Приложения 1 по изображению каждого слайда.
 

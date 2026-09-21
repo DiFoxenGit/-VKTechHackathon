@@ -33,3 +33,14 @@
    «Как это работает» открывались чёрными. */
 :root { color-scheme: light; }
 .modal { background: #fff; }
+
+/* Итог проверки записанного файла: открывается ли он и из чего собраны слайды. */
+.audit-file-note {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: #eef4ff;
+  color: #1b4ea8;
+  font-size: 12px;
+  line-height: 1.45;
+}

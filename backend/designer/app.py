@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from .audit import apply_fixes, audit, contextual_audit, visual_audit
+from .audit import apply_fixes, audit, contextual_audit, merge_file_issues, visual_audit
 from .exporting import (
     HTML_EXPORT_MARKER,
     convert_pdf,
@@ -23,6 +23,7 @@ from .exporting import (
     export_pptx,
     render_slides,
     sample_backgrounds,
+    branding_drift,
     verify_pptx,
 )
 from .generation import (
@@ -279,13 +280,13 @@ def create_app(data_dir=None, seed_dir=None):
             "created_at": time.time(),
         }
         folder = store.directory("presentations", identifier)
-        export_pptx(
-            store.directory("templates", template["id"]) / "source.pptx",
-            template,
-            deck,
-            folder / "r1.pptx",
-        )
-        record["export_check"] = verify_pptx(folder / "r1.pptx", len(deck["slides"]))
+        source = store.directory("templates", template["id"]) / "source.pptx"
+        export_pptx(source, template, deck, folder / "r1.pptx")
+        # Проверки Приложения 1, которые видны только в записанном файле.
+        check = verify_pptx(folder / "r1.pptx", len(deck["slides"]))
+        check["moved_branding"] = branding_drift(source, deck, folder / "r1.pptx")
+        record["export_check"] = check
+        merge_file_issues(record["audit"], check)
         store.put("revisions", {**copy.deepcopy(record), "id": identifier + "_1"})
         return store.put("presentations", record)
 
@@ -470,13 +471,12 @@ def create_app(data_dir=None, seed_dir=None):
         )
         folder = store.directory("presentations", record["id"])
         target = folder / f"r{record['revision']}.pptx"
-        export_pptx(
-            store.directory("templates", template["id"]) / "source.pptx",
-            template,
-            record["deck"],
-            target,
-        )
-        record["export_check"] = verify_pptx(target, len(record["deck"]["slides"]))
+        source = store.directory("templates", template["id"]) / "source.pptx"
+        export_pptx(source, template, record["deck"], target)
+        check = verify_pptx(target, len(record["deck"]["slides"]))
+        check["moved_branding"] = branding_drift(source, record["deck"], target)
+        record["export_check"] = check
+        merge_file_issues(record["audit"], check)
         store.put(
             "revisions",
             {

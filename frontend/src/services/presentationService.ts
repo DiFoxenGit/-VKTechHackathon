@@ -32,6 +32,8 @@ export type Project = {
   deck: Deck;
   issues: AuditIssue[];
   exports: { pptx: string; pdf: string; html: string } | undefined;
+  /** Проверка записанного файла: открывается ли и из чего собраны слайды. */
+  file: { opens: boolean; slides: number; native_objects: number; raster_slides: number[] } | undefined;
 };
 
 function hex(value: string | undefined, fallback: string) {
@@ -109,6 +111,7 @@ function toProject(source: ApiPresentation): Project {
     deck: toDeck(source),
     issues: toIssues(source, source.id),
     exports: source.exports,
+    file: source.export_check,
   };
 }
 
