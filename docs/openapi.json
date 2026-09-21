@@ -193,6 +193,189 @@
         }
       }
     },
+    "/api/v1/templates/{template_id}/assets": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Template Assets",
+        "operationId": "template_assets_api_v1_templates__template_id__assets_get",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/content-packs/{pack_id}/assets": {
+      "get": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "Pack Assets",
+        "operationId": "pack_assets_api_v1_content_packs__pack_id__assets_get",
+        "parameters": [
+          {
+            "name": "pack_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pack Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{source}/{owner}/{name}": {
+      "get": {
+        "tags": [
+          "Content"
+        ],
+        "summary": "Asset File",
+        "operationId": "asset_file_api_v1_assets__source___owner___name__get",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "template",
+                "pack"
+              ],
+              "type": "string",
+              "title": "Source"
+            }
+          },
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Owner"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/templates/{template_id}/assets/tags": {
+      "post": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Tag Template Assets",
+        "description": "Подписать картинки шаблона мультимодальной моделью (иначе они не подбираются).",
+        "operationId": "tag_template_assets_api_v1_templates__template_id__assets_tags_post",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/content-packs/{pack_id}": {
       "get": {
         "tags": [
@@ -508,6 +691,16 @@
               "type": "boolean",
               "default": false,
               "title": "Contextual"
+            }
+          },
+          {
+            "name": "visual",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Visual"
             }
           }
         ],
@@ -1113,7 +1306,11 @@
               "bar",
               "line",
               "process",
-              "icon"
+              "icon",
+              "cycle",
+              "pyramid",
+              "timeline",
+              "comparison"
             ],
             "title": "Kind",
             "default": "none"

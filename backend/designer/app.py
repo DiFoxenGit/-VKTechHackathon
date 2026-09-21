@@ -15,6 +15,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 
+from .assets import (
+    harvest_pptx,
+    library,
+    parse_pack_zip,
+    resolve,
+    save_assets,
+    tag_assets,
+)
 from .audit import apply_fixes, audit, contextual_audit, merge_file_issues, visual_audit
 from .exporting import (
     HTML_EXPORT_MARKER,
@@ -31,6 +39,7 @@ from .generation import (
     generate_outline,
     provider,
     sources_for,
+    vision_available,
     workflow,
 )
 from .layout import compose
@@ -51,6 +60,33 @@ async def upload_bytes(file):
     return bytes(data)
 
 
+def attach_assets(store, template, data, previous=None):
+    """Собрать картинки шаблона на диск и в запись; подписи прежнего разбора сохраняются."""
+    known = {a["id"]: a for a in (previous or {}).get("assets") or []}
+    try:
+        harvested = harvest_pptx(data, {tuple(b) for b in template.get("branding") or []})
+    except Exception:  # noqa: BLE001 - без картинок шаблон всё равно пригоден
+        LOGGER.exception("Cannot harvest pictures from %s", template.get("name"))
+        harvested = []
+    metas = save_assets(store.directory("templates", template["id"]) / "assets", harvested)
+    for meta in metas:
+        old = known.get(meta["id"])
+        if old:
+            for key in ("tags", "label", "tag_tried"):
+                if key in old:
+                    meta[key] = old[key]
+    template["assets"] = metas
+    return template
+
+
+def asset_counts(assets):
+    counts = {"icon": 0, "illustration": 0, "photo": 0, "tagged": 0}
+    for meta in assets or []:
+        counts[meta["kind"]] = counts.get(meta["kind"], 0) + 1
+        counts["tagged"] += bool(meta.get("tags"))
+    return counts
+
+
 def register_template(store, data, name):
     digest = hashlib.sha256(data).hexdigest()
     with store.lock:
@@ -67,6 +103,7 @@ def register_template(store, data, name):
         source = store.directory("templates", template["id"]) / "source.pptx"
         source.write_bytes(data)
         measure_backgrounds(template, source)
+        attach_assets(store, template, data)
         return store.put("templates", template)
 
 
@@ -102,6 +139,7 @@ def refresh_templates(store):
             continue
         template.update(id=record["id"], sha256=record["sha256"])
         measure_backgrounds(template, source)
+        attach_assets(store, template, source.read_bytes(), record)
         store.put("templates", template)
         updated += 1
     if updated:
@@ -198,7 +236,10 @@ def create_app(data_dir=None, seed_dir=None):
     def templates():
         return {
             "items": [
-                {k: v for k, v in t.items() if k != "patterns"}
+                {
+                    **{k: v for k, v in t.items() if k not in ("patterns", "assets")},
+                    "asset_counts": asset_counts(t.get("assets")),
+                }
                 for t in store.list("templates")
             ]
         }
@@ -214,22 +255,50 @@ def create_app(data_dir=None, seed_dir=None):
     def template(template_id: str):
         return store.get("templates", template_id)
 
+    def read_pack(data, name):
+        """Текст и картинки контент-пакета: zip, одиночная картинка или документ."""
+        suffix = Path(name).suffix.lower()
+        if suffix == ".zip":
+            return parse_pack_zip(data, parse_content)
+        if suffix in (".svg", ".png", ".jpg", ".jpeg"):
+            # Одна картинка — пакет из одного ассета, теги из имени файла.
+            import io
+            import zipfile
+
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w") as archive:
+                archive.writestr(Path(name).name, data)
+            return parse_pack_zip(buffer.getvalue(), parse_content)
+        text = parse_content(data, name)
+        assets = harvest_pptx(data) if suffix == ".pptx" else []
+        return text, assets
+
     @api.post("/content-packs", status_code=201, tags=["Content"])
     async def upload_content(file: Annotated[UploadFile, File()]):
         data = await upload_bytes(file)
+        name = file.filename or ""
         try:
-            text = await run_in_threadpool(parse_content, data, file.filename or "")
+            text, assets = await run_in_threadpool(read_pack, data, name)
         except Exception as exc:
             raise HTTPException(
                 422,
-                "Cannot extract content; use UTF-8 text, CSV, JSON, DOCX, PPTX or a text PDF",
+                "Cannot extract content; use UTF-8 text, CSV, JSON, DOCX, PPTX, a text PDF, "
+                "images (SVG, PNG, JPEG) or a ZIP of them",
             ) from exc
+        if not text.strip() and not assets:
+            raise HTTPException(422, "Content pack has neither text nor pictures")
+        identifier = store.new_id()
+        metas = await run_in_threadpool(
+            save_assets, store.directory("content_packs", identifier) / "assets", assets
+        )
         return store.put(
             "content_packs",
             {
-                "id": store.new_id(),
-                "name": Path(file.filename).name,
+                "id": identifier,
+                "name": Path(name).name,
                 "text": text,
+                "assets": metas,
+                "asset_counts": asset_counts(metas),
                 "sha256": hashlib.sha256(data).hexdigest(),
             },
         )
@@ -238,10 +307,97 @@ def create_app(data_dir=None, seed_dir=None):
     def content_packs():
         return {
             "items": [
-                {k: v for k, v in p.items() if k != "text"}
+                {k: v for k, v in p.items() if k not in ("text", "assets")}
                 for p in store.list("content_packs")
             ]
         }
+
+    def deck_library(template, pack_ids):
+        """Картинки колоды: пакеты запроса, шаблон и встроенный набор."""
+        packs = []
+        for identifier in pack_ids or []:
+            try:
+                packs.append(store.get("content_packs", identifier))
+            except HTTPException:
+                continue
+        return library(template, packs)
+
+    @api.get("/templates/{template_id}/assets", tags=["Templates"])
+    def template_assets(template_id: str):
+        template = store.get("templates", template_id)
+        return {
+            "counts": asset_counts(template.get("assets")),
+            "items": [
+                {**meta, "url": f"{base_path}/api/v1/assets/template/{template_id}/{meta['file']}"}
+                for meta in template.get("assets") or []
+            ],
+        }
+
+    @api.get("/content-packs/{pack_id}/assets", tags=["Content"])
+    def pack_assets(pack_id: str):
+        pack = store.get("content_packs", pack_id)
+        return {
+            "counts": asset_counts(pack.get("assets")),
+            "items": [
+                {**meta, "url": f"{base_path}/api/v1/assets/pack/{pack_id}/{meta['file']}"}
+                for meta in pack.get("assets") or []
+            ],
+        }
+
+    @api.get("/assets/{source}/{owner}/{name}", tags=["Content"])
+    def asset_file(source: Literal["template", "pack"], owner: str, name: str):
+        try:
+            path = resolve(f"{source}:{owner}:{name}", store.root)
+        except ValueError as exc:
+            raise HTTPException(404, "Asset not found") from exc
+        if not path.exists():
+            raise HTTPException(404, "Asset not found")
+        media = {"svg": "image/svg+xml", "png": "image/png", "jpeg": "image/jpeg"}
+        return FileResponse(
+            path,
+            media_type=media[path.suffix.lstrip(".")],
+            # SVG пользователя не должен исполнять скрипты в браузере.
+            headers={"Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'"},
+        )
+
+    async def label_assets(template, pack_ids):
+        """Подписать картинки шаблона и пакетов моделью, пока их не с чем сопоставить."""
+        if not vision_available():
+            return 0
+
+        def loader(kind, owner):
+            def load(meta):
+                return resolve(f"{kind}:{owner}:{meta['file']}", store.root).read_bytes()
+
+            return load
+
+        total = 0
+        try:
+            async with asyncio.timeout(120):
+                total += await tag_assets(template.get("assets") or [], loader("template", template["id"]))
+                with store.lock:
+                    current = store.get("templates", template["id"])
+                    current["assets"] = template.get("assets") or []
+                    store.put("templates", current)
+                for identifier in pack_ids or []:
+                    pack = store.get("content_packs", identifier)
+                    tagged = await tag_assets(pack.get("assets") or [], loader("pack", identifier))
+                    if tagged:
+                        pack["asset_counts"] = asset_counts(pack["assets"])
+                        store.put("content_packs", pack)
+                    total += tagged
+        except TimeoutError:
+            LOGGER.warning("Asset labelling timed out; continuing with what is labelled")
+        return total
+
+    @api.post("/templates/{template_id}/assets/tags", tags=["Templates"])
+    async def tag_template_assets(template_id: str):
+        """Подписать картинки шаблона мультимодальной моделью (иначе они не подбираются)."""
+        template = store.get("templates", template_id)
+        if not vision_available():
+            raise HTTPException(503, "Configure DESIGNER_VLM_MODEL to label template pictures")
+        tagged = await label_assets(template, [])
+        return {"tagged": tagged, "counts": asset_counts(store.get("templates", template_id).get("assets"))}
 
     @api.get("/content-packs/{pack_id}", tags=["Content"])
     def content_pack(pack_id: str):
@@ -255,7 +411,7 @@ def create_app(data_dir=None, seed_dir=None):
         request, outline, template, sources, variant, contextual_findings=None
     ):
         identifier = store.new_id()
-        deck = compose(outline, template, variant)
+        deck = compose(outline, template, variant, deck_library(template, request.content_pack_ids))
         report = audit(deck, template, sources, request.language)
         if contextual_findings is not None:
             report["issues"].extend(copy.deepcopy(contextual_findings))
@@ -278,10 +434,12 @@ def create_app(data_dir=None, seed_dir=None):
                 "language": request.language,
             },
             "created_at": time.time(),
+            # Пакеты с картинками нужны снова при правке слайда и исправлениях.
+            "content_pack_ids": list(request.content_pack_ids),
         }
         folder = store.directory("presentations", identifier)
         source = store.directory("templates", template["id"]) / "source.pptx"
-        export_pptx(source, template, deck, folder / "r1.pptx")
+        export_pptx(source, template, deck, folder / "r1.pptx", store.root)
         # Проверки Приложения 1, которые видны только в записанном файле.
         check = verify_pptx(folder / "r1.pptx", len(deck["slides"]))
         check["moved_branding"] = branding_drift(source, deck, folder / "r1.pptx")
@@ -308,6 +466,10 @@ def create_app(data_dir=None, seed_dir=None):
                     balanced = await balance_outline(outline.model_dump(), template)
                     outline = Outline.model_validate(balanced)
                     job["outline"] = outline.model_dump()
+                    if vision_available():
+                        job.update(stage="assets", progress=14)
+                        store.put("jobs", job)
+                        await label_assets(template, request.content_pack_ids)
                     contextual_findings = None
                     if request.contextual_audit:
                         job.update(stage="contextual_audit", progress=15)
@@ -472,7 +634,7 @@ def create_app(data_dir=None, seed_dir=None):
         folder = store.directory("presentations", record["id"])
         target = folder / f"r{record['revision']}.pptx"
         source = store.directory("templates", template["id"]) / "source.pptx"
-        export_pptx(source, template, record["deck"], target)
+        export_pptx(source, template, record["deck"], target, store.root)
         check = verify_pptx(target, len(record["deck"]["slides"]))
         check["moved_branding"] = branding_drift(source, record["deck"], target)
         record["export_check"] = check
@@ -515,10 +677,12 @@ def create_app(data_dir=None, seed_dir=None):
                 raise HTTPException(404, "Slide not found")
             outline = {"slides": [s["content"] for s in record["deck"]["slides"]]}
             outline["slides"][index] = request.content.model_dump()
+            template = store.get("templates", record["template_id"])
             rebuilt = compose(
                 outline,
-                store.get("templates", record["template_id"]),
+                template,
                 record["variant"],
+                deck_library(template, record.get("content_pack_ids")),
             )
             record["deck"]["slides"][index] = rebuilt["slides"][index]
             return save_revision(record)

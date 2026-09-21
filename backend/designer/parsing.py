@@ -24,7 +24,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 18
+PARSER_VERSION = 19
 
 
 def is_footer_placeholder(shape):
@@ -345,6 +345,23 @@ def preserved_shape(shape, width, height, branding=None):
     if looks_like_placeholder_art(shape, width, height):
         return False
     return True
+
+
+def stage_clutter(box, branding=()):
+    """Мелкий образец на сцене страницы: стрелка, соединитель, значок, точка.
+
+    Когда слайд собран своей композицией (фактоиды, иконки, картинка), такие
+    фигуры образца ни к чему не относятся и читаются как мусор. Брендинг,
+    который повторяется по шаблону, и рисунок макета сюда не входят.
+    """
+    if box.get("layout"):
+        return False
+    key = tuple(round(box[k], 3) for k in ("x", "y", "w", "h"))
+    if key in {tuple(b) for b in branding or ()}:
+        return False
+    left, top, right, bottom = CONTENT_REGION
+    cx, cy = box["x"] + box["w"] / 2, box["y"] + box["h"] / 2
+    return box["w"] * box["h"] < 0.05 and left < cx < right and top < cy < bottom
 
 
 def relative_luminance(value):
@@ -685,6 +702,80 @@ def accent_colors(counted, theme, limit=6):
     return found[:limit]
 
 
+def _group_transform(group, outer):
+    """Как координаты детей группы переводятся в координаты слайда."""
+    xfrm = group._element.find(f"{qn('p:grpSpPr')}/{qn('a:xfrm')}")
+    if xfrm is None:
+        return outer
+    values = {}
+    for tag in ("off", "ext", "chOff", "chExt"):
+        node = xfrm.find(qn("a:" + tag))
+        if node is None:
+            return outer
+        values[tag] = (
+            int(node.get("x", node.get("cx", 0))),
+            int(node.get("y", node.get("cy", 0))),
+        )
+    sx = values["ext"][0] / values["chExt"][0] if values["chExt"][0] else 1.0
+    sy = values["ext"][1] / values["chExt"][1] if values["chExt"][1] else 1.0
+    ox = values["off"][0] - values["chOff"][0] * sx
+    oy = values["off"][1] - values["chOff"][1] * sy
+    # Внешнее преобразование применяется поверх внутреннего.
+    return (outer[0] + ox * outer[2], outer[1] + oy * outer[3], sx * outer[2], sy * outer[3])
+
+
+def icon_slots(slide, width, height, branding=(), limit=12):
+    """Значки образца страницы: место, где дизайнер поставил тематическую иконку.
+
+    На карточных страницах над каждым тезисом стоит пиктограмма. Сама она —
+    пример («лампочка»), а место и цвет — решение дизайнера. Вёрстка ставит на
+    это место иконку по смыслу тезиса, а образец снимает. Берутся только
+    одноцветные картинки: их можно честно перекрасить в исходный цвет.
+    """
+    from .assets import inspect_image
+
+    found = []
+
+    def walk(shapes, transform):
+        for shape in shapes:
+            if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                walk(shape.shapes, _group_transform(shape, transform))
+                continue
+            if shape.shape_type != MSO_SHAPE_TYPE.PICTURE:
+                continue
+            ox, oy, sx, sy = transform
+            box = {
+                "x": round((ox + shape.left * sx) / width, 5),
+                "y": round((oy + shape.top * sy) / height, 5),
+                "w": round(shape.width * sx / width, 5),
+                "h": round(shape.height * sy / height, 5),
+            }
+            area = box["w"] * box["h"]
+            aspect = (box["w"] * width) / max(1, box["h"] * height)
+            left, top, right, bottom = CONTENT_REGION
+            cx, cy = box["x"] + box["w"] / 2, box["y"] + box["h"] / 2
+            key = tuple(round(box[k], 3) for k in ("x", "y", "w", "h"))
+            if not (0.0003 < area < 0.02 and 0.6 < aspect < 1.67):
+                continue
+            if not (left < cx < right and top < cy < bottom) or key in branding:
+                continue
+            try:
+                info = inspect_image(shape.image.blob)
+            except Exception:  # noqa: BLE001 - нечитаемая картинка — не значок
+                continue
+            # Глиф, а не плашка: плашка — заливка почти на всю рамку, она
+            # остаётся подложкой, а меняется значок поверх неё.
+            if info.get("coverage", 1) > 0.6 or info.get("dominance", 0) < 0.7:
+                continue
+            if not info.get("color"):
+                continue
+            found.append({"id": shape.shape_id, "box": box, "color": info["color"]})
+
+    walk(slide.shapes, (0.0, 0.0, 1.0, 1.0))
+    # Страница-каталог с сотней значков — не карточки, а витрина набора.
+    return found if len(found) <= limit else []
+
+
 def picture_ratio(shape):
     """Пропорции картинки: своя и та, в которую её поставил шаблон.
 
@@ -934,7 +1025,9 @@ def parse_template(data: bytes, name: str):
             sh for sh in slide.shapes if preserved_shape(sh, width, height, branding)
         ]
         # Layout artwork is inherited by the cloned slide even though it is not copied.
-        kept += [sh for sh in slide.slide_layout.shapes if not sh.is_placeholder]
+        inherited = [sh for sh in slide.slide_layout.shapes if not sh.is_placeholder]
+        kept += inherited
+        inherited_ids = {id(sh) for sh in inherited}
         for sh in kept:
             box = {
                 "x": round(sh.left / width, 5),
@@ -960,6 +1053,10 @@ def parse_template(data: bytes, name: str):
             if container:
                 continue
             if artwork or area < 0.6 or covered < 0.5 * area:
+                # Рисунок макета переезжает на слайд вместе с макетом, убрать его
+                # нельзя; фигуру самой страницы — можно (см. stage_clutter).
+                if id(sh) in inherited_ids:
+                    box["layout"] = True
                 if box not in reserved:
                     reserved.append(box)
         # Ряд одинаковых значков — заготовка страницы-каталога. Экспорт не
@@ -987,6 +1084,7 @@ def parse_template(data: bytes, name: str):
             )
         # Порядок чтения: сверху вниз, слева направо — как человек смотрит слайд.
         slots.sort(key=lambda s: (s["role"] != "title", s["box"]["y"], s["box"]["x"]))
+        branding_keys = {tuple(b) for b in branding}
         patterns.append(
             {
                 "slots": slots,
@@ -1002,6 +1100,7 @@ def parse_template(data: bytes, name: str):
                 else 0,
                 "layout_name": slide.slide_layout.name,
                 "title_box": title["box"] if title else None,
+                "icon_slots": icon_slots(slide, width, height, branding_keys),
                 "shapes": shapes,
                 "text_slots": len(text_shapes),
                 "branding_score": branding_score(slide, width, height, background),

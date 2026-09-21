@@ -187,7 +187,9 @@ export const presentationService = {
 
   async uploadMaterial(file: File) {
     const pack = await api.uploadContentPack(file, file.name);
-    return { id: pack.id, name: pack.name, text: pack.text };
+    const counts = pack.asset_counts;
+    const pictures = counts ? counts.icon + counts.illustration + counts.photo : 0;
+    return { id: pack.id, name: pack.name, text: pack.text, pictures };
   },
 
   /** Бриф → три свёрстанных варианта. `onStage` показывает, что идёт сейчас. */

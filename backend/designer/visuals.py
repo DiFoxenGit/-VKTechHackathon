@@ -221,6 +221,17 @@ def draw_icons(shapes, box, data, style):
         left = x + column * (cell + gap)
         top = y + row * band
         origin_x = left + (cell - glyph) / 2
+        # Иконка из библиотеки ассетов, если вёрстка её подобрала; композиция
+        # фигур — запасной вариант.
+        draw = style.get("glyph")
+        if draw and draw(shapes, index, (int(origin_x), int(top), int(glyph), int(glyph))):
+            style["caption"](
+                shapes,
+                (int(left), int(top + glyph + band * 0.06), int(cell), int(band - glyph - band * 0.06)),
+                label,
+                size,
+            )
+            continue
         for preset, gx, gy, gw, gh, role in ICONS[pick_icon(label)]:
             shape = shapes.add_shape(
                 preset,

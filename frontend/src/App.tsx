@@ -26,7 +26,7 @@ const LOADING_TEMPLATE: Template = {
 };
 const STAGES: Record<string, string> = {
   queued: 'В очереди', outline: 'Собираем структуру', balance: 'Подгоняем текст под шаблон',
-  contextual_audit: 'Проверяем содержание', compose: 'Верстаем варианты', audit: 'Аудит', export: 'Готовим файлы',
+  assets: 'Подписываем картинки шаблона', contextual_audit: 'Проверяем содержание', compose: 'Верстаем варианты', audit: 'Аудит', export: 'Готовим файлы',
 };
 const DEFAULT_BRIEF: Brief = { text: '', audience: 'Коллеги и команда', goal: 'Представить идею', slideCount: 10, templateId: 'tech', materials: '' };
 
@@ -255,15 +255,17 @@ export default function App() {
   }
   async function readMaterial(file?: File) {
     if (!file) return;
-    if (!/\.(txt|md|csv|json|pdf|docx|pptx)$/i.test(file.name)) { setError('Материалы: TXT, MD, CSV, JSON, PDF с текстовым слоем, DOCX или PPTX.'); return; }
+    if (!/\.(txt|md|csv|json|pdf|docx|pptx|zip|svg|png|jpe?g)$/i.test(file.name)) { setError('Материалы: TXT, MD, CSV, JSON, PDF с текстовым слоем, DOCX, PPTX, картинки SVG, PNG, JPEG или ZIP с ними.'); return; }
     if (file.size > 50 * 1024 * 1024) { setError('Выберите файл до 50 МБ.'); return; }
     setBusy('material');
     try {
       // Текст из PDF, DOCX и PPTX достаёт сервис: в браузере это делать нечем.
       const pack = await presentationService.uploadMaterial(file);
       setPacks(prev => [...prev.filter(item => item.id !== pack.id), { id: pack.id, name: pack.name }]);
-      updateBrief('materials', pack.text.slice(0, 50000)); setMaterialName(file.name); setError('');
-      setToast(`Материал добавлен: ${pack.text.length} символов`);
+      if (pack.text) updateBrief('materials', pack.text.slice(0, 50000));
+      setMaterialName(file.name); setError('');
+      // Картинки пакета сервис сам ставит на слайды: иконки и иллюстрации по смыслу тезисов.
+      setToast(`Материал добавлен: ${[pack.text.length ? `${pack.text.length} символов` : '', pack.pictures ? `${pack.pictures} картинок` : ''].filter(Boolean).join(', ')}`);
     } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось прочитать файл. Попробуйте ещё раз.'); }
     finally { setBusy(null); }
   }
@@ -322,7 +324,7 @@ export default function App() {
             <label className="sr-only" htmlFor="brief">Описание презентации</label>
             <textarea id="brief" ref={briefInput} value={brief.text} maxLength={6000} onChange={e => updateBrief('text', e.target.value)} onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !busy) { e.preventDefault(); void startDeck(); } }} placeholder="Например, питч нового продукта для команды. Какую проблему решаем, в чём идея и что делаем дальше…" aria-invalid={Boolean(error)} />
             {materialName && <div className="attached-material"><FileText size={15} /><span>{materialName}</span><IconButton label="Удалить материалы" onClick={() => { updateBrief('materials', ''); setMaterialName(''); }}><X size={14} /></IconButton></div>}
-            <div className="composer-toolbar"><div className="composer-tools"><button className="composer-tool" title="Материалы: TXT, MD, CSV, JSON, PDF, DOCX, PPTX" onClick={() => materialInput.current?.click()}><Paperclip size={18} /><span>Материалы</span></button><button className="composer-tool" onClick={() => setDialog('settings')}><SlidersHorizontal size={17} /><span>Настроить</span></button></div><button className="primary-button create-deck-button" disabled={Boolean(busy)} onClick={() => void startDeck()}>{busy === 'outline' ? <LoaderCircle className="spin" size={18} /> : <Sparkles size={17} />}<span>{busy === 'outline' ? 'Создаём…' : 'Создать презентацию'}</span><ArrowUpRight size={18} /></button></div>
+            <div className="composer-toolbar"><div className="composer-tools"><button className="composer-tool" title="Материалы: TXT, MD, CSV, JSON, PDF, DOCX, PPTX, картинки или ZIP" onClick={() => materialInput.current?.click()}><Paperclip size={18} /><span>Материалы</span></button><button className="composer-tool" onClick={() => setDialog('settings')}><SlidersHorizontal size={17} /><span>Настроить</span></button></div><button className="primary-button create-deck-button" disabled={Boolean(busy)} onClick={() => void startDeck()}>{busy === 'outline' ? <LoaderCircle className="spin" size={18} /> : <Sparkles size={17} />}<span>{busy === 'outline' ? 'Создаём…' : 'Создать презентацию'}</span><ArrowUpRight size={18} /></button></div>
           </div>
           <div className="composer-meta"><span>{brief.slideCount} слайдов <i /> {currentTemplate.name}</span><span>Ctrl + Enter</span></div>
           <div className="starter-prompts"><span>Нужна идея?</span><button onClick={() => updateBrief('text', EXAMPLE_BRIEF)}>Питч продукта<ArrowUpRight size={14} /></button><button onClick={() => updateBrief('text', 'Итоги работы над проектом для команды. Мы подготовили прототип сервиса, обсудили сценарии с пользователями и собрали обратную связь. Расскажите о проделанной работе, найденных сложностях и следующих шагах. Следующий этап — проверить основные сценарии и определить приоритеты разработки.')}>Итоги проекта<ArrowUpRight size={14} /></button><button onClick={() => updateBrief('text', 'Предлагаем запустить внутреннюю базу знаний. Сейчас полезные материалы распределены по разным чатам. Соберём инструкции и ответы на частые вопросы в одном месте. Начнём с пилота в одной команде, получим обратную связь и улучшим поиск. Цель — согласовать пилот и ответственных.')}>Предложить идею<ArrowUpRight size={14} /></button></div>
@@ -343,7 +345,7 @@ export default function App() {
       {screen !== 'editor' && <footer className="page-footer"><span>Создано для идей, которые стоит показать</span><span>Слайд · ЛЦТ 2026</span></footer>}
     </div>
 
-    <input ref={materialInput} className="sr-only" type="file" accept=".txt,.md,.csv,.json,.pdf,.docx,.pptx" onChange={e => { void readMaterial(e.target.files?.[0]); e.target.value = ''; }} aria-label="Загрузить текстовые материалы" />
+    <input ref={materialInput} className="sr-only" type="file" accept=".txt,.md,.csv,.json,.pdf,.docx,.pptx,.zip,.svg,.png,.jpg,.jpeg" onChange={e => { void readMaterial(e.target.files?.[0]); e.target.value = ''; }} aria-label="Загрузить текстовые материалы" />
     <input type="file" ref={templateInput} className="sr-only" accept=".pptx" onChange={e => void uploadTemplate(e.target.files?.[0])} aria-label="Загрузить шаблон PPTX" />
     {toast && <div className="toast" role="status"><CheckCircle2 size={18} /><span>{toast}</span><IconButton label="Скрыть уведомление" onClick={() => setToast('')}><X size={15} /></IconButton></div>}
     {dialog === 'settings' && <Modal title="Пара настроек — и готово" onClose={() => setDialog(null)} wide>
