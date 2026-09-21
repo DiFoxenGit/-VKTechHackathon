@@ -133,6 +133,87 @@ def missing_glyphs(font_name, text, coverage=None):
     return []
 
 
+# Модель любит типографские символы, а фирменные гарнитуры часто их не содержат:
+# в Play нет стрелки, в узких шрифтах — знака номера. Пустой прямоугольник на
+# слайде виден зрителю, поэтому такой символ заменяется читаемым эквивалентом.
+SAFE_SUBSTITUTES = {
+    "→": "->",
+    "←": "<-",
+    "↔": "<->",
+    "⇒": "=>",
+    "⇐": "<=",
+    "×": "x",
+    "≤": "<=",
+    "≥": ">=",
+    "≠": "!=",
+    "≈": "~",
+    "—": "-",
+    "–": "-",
+    "…": "...",
+    "№": "N",
+    "•": "-",
+    "·": "-",
+    "′": "'",
+    "″": '"',
+    "«": '"',
+    "»": '"',
+    "“": '"',
+    "”": '"',
+    "„": '"',
+    "™": "",
+    "®": "",
+    "©": "",
+}
+
+
+def printable(text, font_name, coverage=None):
+    """Текст без символов, которых нет в гарнитуре слайда.
+
+    Замена сама проверяется по той же гарнитуре: если и её нет, символ
+    убирается. Переводы строк сохраняются — по ним разделены тезисы.
+    """
+    if not text:
+        return text
+    missing = set(missing_glyphs(font_name, text, coverage))
+    if not missing:
+        return text
+    pieces = []
+    for char in text:
+        if char not in missing:
+            pieces.append(char)
+            continue
+        replacement = SAFE_SUBSTITUTES.get(char, "")
+        if replacement and missing_glyphs(font_name, replacement, coverage):
+            replacement = ""
+        pieces.append(replacement)
+    lines = "".join(pieces).split("\n")
+    return "\n".join(" ".join(line.split()) for line in lines)
+
+
+def printable_visual(visual, font_name, coverage=None):
+    """Подписи внутри визуализации — тот же текст на слайде, те же правила.
+
+    Данные колоды и записанный файл должны совпадать: аудит и интерфейс
+    показывают именно их.
+    """
+    if not isinstance(visual, dict):
+        return visual
+    for key in ("categories", "columns", "steps"):
+        if visual.get(key):
+            visual[key] = [printable(str(v), font_name, coverage) for v in visual[key]]
+    if visual.get("rows"):
+        visual["rows"] = [
+            [printable(str(cell), font_name, coverage) for cell in row]
+            for row in visual["rows"]
+        ]
+    if visual.get("unit"):
+        visual["unit"] = printable(str(visual["unit"]), font_name, coverage)
+    for series in visual.get("series") or []:
+        if series.get("name"):
+            series["name"] = printable(str(series["name"]), font_name, coverage)
+    return visual
+
+
 def choose_font(counts, fallback, coverage, language="ru"):
     ordered = [name for name, _ in counts.most_common() if name and name.casefold() not in ("wingdings", "symbol", "webdings")]
     ordered += [name for name in fallback if name and name not in ordered]

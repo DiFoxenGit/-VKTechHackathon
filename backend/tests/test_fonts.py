@@ -134,3 +134,64 @@ def test_russian_export_uses_theme_font_and_audit_detects_missing_glyphs(tmp_pat
     assert any(i['code'] == 'font_missing_glyphs' and i['severity'] == 'error' for i in findings)
 
 
+
+
+def test_symbol_missing_from_the_font_becomes_readable_text():
+    """Стрелка есть не в каждой гарнитуре: пустой прямоугольник виден зрителю."""
+    from designer.fonts import printable
+
+    narrow = {"Play": {"source": "embedded", "ranges": [[32, 1103]], "cyrillic": True}}
+    wide = {"Montserrat": {"source": "embedded", "ranges": [[32, 9999]], "cyrillic": True}}
+    assert printable("Сборка: 186 → 4 минуты", "Play", narrow) == "Сборка: 186 -> 4 минуты"
+    # Где глиф есть, текст не трогаем: подменять хорошую типографику незачем.
+    assert printable("Сборка: 186 → 4", "Montserrat", wide) == "Сборка: 186 → 4"
+    # Переводы строк разделяют тезисы и должны пережить замену.
+    assert printable("Первый\n• второй", "Play", narrow) == "Первый\n- второй"
+    # Незнакомая гарнитура — не повод портить текст.
+    assert printable("186 → 4", "Неизвестный шрифт", {}) == "186 → 4"
+
+
+def test_layout_and_chart_labels_drop_unsupported_symbols(tmp_path):
+    """Замена работает и в тексте слайда, и в подписях диаграммы."""
+    import zipfile
+
+    from designer.audit import audit
+    from designer.exporting import export_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+
+    from tests.test_pipeline import outline, pattern, require_template, synthetic_template
+
+    plan = outline(1)
+    plan["slides"][0]["title"] = "Сборка: 186 → 4 минуты"
+    plan["slides"][0]["bullets"] = ["Было 186 → стало 4"]
+    plan["slides"][0]["visual"] = {
+        "kind": "bar",
+        "categories": ["Было → сейчас", "Стало"],
+        "series": [{"name": "Минуты → колода", "values": [186, 4]}],
+        "unit": "мин → колода",
+    }
+    template = synthetic_template([pattern(0), pattern(1)])
+    template["tokens"]["font_coverage"] = {
+        "Arial": {"source": "embedded", "ranges": [[32, 1103]], "cyrillic": True}
+    }
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    body = " ".join(
+        e["text"] for e in deck["slides"][0]["elements"] if e["kind"] == "text"
+    )
+    assert "→" not in body and "->" in body
+
+    result = tmp_path / "deck.pptx"
+    export_pptx(require_template(), template, deck, result)
+    with zipfile.ZipFile(result) as archive:
+        written = "".join(
+            archive.read(name).decode("utf-8", "ignore")
+            for name in archive.namelist()
+            if name.startswith(("ppt/slides/slide", "ppt/charts/chart"))
+        )
+    assert "→" not in written
+    assert not [
+        i
+        for i in audit(deck, template, [{"id": "brief", "text": "186 и 4"}])["issues"]
+        if i["code"] == "font_missing_glyphs"
+    ]
