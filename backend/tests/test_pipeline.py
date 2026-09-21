@@ -2029,13 +2029,16 @@ def test_icons_are_drawn_not_left_as_empty_circles(tmp_path):
     source_path.write_bytes(source)
     output = tmp_path / "deck.pptx"
     export_pptx(source_path, template, deck, output)
-    glyphs = [
+    # Значок — группа нативных фигур из библиотеки иконок; у неподобранной
+    # подписи — нейтральный знак, но тоже рисунок, а не одна заливка.
+    icons = [
         s
         for s in Deck(output).slides[0].shapes
-        if s.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE and not s.text.strip()
+        if s.shape_type == MSO_SHAPE_TYPE.GROUP and s.name.startswith("icon:")
     ]
-    # Три значка по три фигуры в каждом: пустых кругов не осталось.
-    assert len(glyphs) >= 9
+    assert len(icons) == 3
+    assert all(len(icon.shapes) >= 2 for icon in icons)
+    assert any("palette" in icon.name for icon in icons)
 
 
 def test_diagram_labels_share_one_size_and_never_break_a_word():
@@ -2405,3 +2408,340 @@ def test_export_keeps_template_branding_in_place(tmp_path):
         # Диаграммы разбираются: у каждой видно легенду, подписи осей и значений.
         assert all({"legend", "axis_title", "value_labels"} <= set(c) for c in check["charts"])
         assert check["charts"], "в плане есть диаграмма, она должна попасть в отчёт"
+
+
+# ---------------------------------------------------------------- визуальные ассеты
+
+
+def png_glyph(color=(0, 119, 255), size=64, fill=0.45):
+    """Одноцветный значок на прозрачном фоне — как иконка из шаблона."""
+    import pymupdf
+
+    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, size, size), True)
+    pix.clear_with()
+    margin = int(size * (1 - fill) / 2)
+    pix.set_rect(pymupdf.IRect(margin, margin, size - margin, size - margin), (*color, 255))
+    return pix.tobytes("png")
+
+
+def png_photo(width=400, height=300):
+    """Непрозрачная пёстрая картинка — как фотография."""
+    import pymupdf
+
+    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, width, height), False)
+    stripe = width // 40
+    for i in range(40):
+        colour = ((i * 37) % 256, (i * 91) % 256, (i * 53) % 256)
+        pix.set_rect(pymupdf.IRect(i * stripe, 0, (i + 1) * stripe, height), colour)
+    return pix.tobytes("png")
+
+
+def test_svg_paths_become_contours_with_colour_roles():
+    from designer.assets import parse_svg
+
+    geometry = parse_svg(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none">'
+        '<g transform="translate(2 1)"><path d="M2 2h10v10z m2 2a3 3 0 01 6 0"/></g>'
+        '<circle cx="12" cy="12" r="4" fill="var(--accent)" stroke="none"/>'
+        '<rect x="1" y="1" width="4" height="4" rx="1" fill="#abc"/>'
+        '<script>alert(1)</script></svg>'
+    )
+    assert geometry["viewbox"] == [0.0, 0.0, 24.0, 24.0]
+    path, circle, rect = geometry["items"]
+    assert path["shape"] == "path" and path["stroke"] == "current"
+    square, arc = path["contours"]
+    assert square["closed"] and square["points"][0] == [4.0, 3.0]
+    # Дуга «a3 3 0 01 6 0» со слитыми флагами — полуокружность из многих точек.
+    assert not arc["closed"] and len(arc["points"]) > 8
+    assert arc["points"][-1] == [12.0, 5.0]
+    assert circle["shape"] == "ellipse" and circle["fill"] == "accent"
+    assert rect["shape"] == "rect" and rect["fill"] == "AABBCC" and rect["rx"] == 1.0
+
+
+def test_asset_references_cannot_leave_storage(tmp_path):
+    from designer.assets import resolve
+
+    for ref in (
+        "builtin:../../app.py",
+        "template:../../etc:passwd",
+        f"template:{'a' * 32}:../source.pptx",
+        "elsewhere:x:y",
+    ):
+        with pytest.raises(ValueError):
+            resolve(ref, tmp_path)
+    good = resolve(f"pack:{'b' * 32}:{'c' * 24}.png", tmp_path)
+    assert good == tmp_path / "content_packs" / ("b" * 32) / "assets" / ("c" * 24 + ".png")
+
+
+def test_stat_values_are_taken_from_the_text_verbatim():
+    from designer.layout import stat_plan, stat_value
+
+    nb = " "
+    assert stat_value("Время сборки сократилось с 186 до 4 минут") == f"4{nb}мин"
+    assert stat_value("Колода за 4 минуты вместо 186") == f"4{nb}мин"
+    assert stat_value("Нарушений стиля 2 из 68") == f"2{nb}из{nb}68"
+    assert stat_value("Инференс стоил 1 400 рублей") == f"1{nb}400{nb}₽"
+    assert stat_value("Доля выросла до 23%") == "23%"
+    assert stat_value("Запросы закрыты 38 вместо 11") == "38"
+    assert stat_value("Без чисел вовсе") is None
+    # Две цифры и фраза без чисел — фактоиды; одна цифра — нет.
+    assert stat_plan(["С 186 до 4 минут", "2 из 68 колод", "Рутина ушла"]) is not None
+    assert stat_plan(["С 186 до 4 минут", "Рутина ушла", "Дизайн свободен"]) is None
+
+
+def asset_outline():
+    return {
+        "title": "Сервис вёрстки",
+        "slides": [
+            {"title": "Сервис вёрстки", "bullets": [], "source_refs": ["brief"]},
+            {
+                "title": "Пилот сэкономил время",
+                "bullets": [
+                    "Время сборки сократилось с 186 до 4 минут",
+                    "Нарушений стиля 2 из 68 колод",
+                    "Дизайнеры закрыли 38 запросов вместо 11",
+                ],
+                "source_refs": ["brief"],
+            },
+            {
+                "title": "Что нужно для запуска",
+                "bullets": [
+                    "Команда из четырёх дизайнеров",
+                    "Сервер с двумя ядрами",
+                    "Бюджет на инференс",
+                ],
+                "source_refs": ["brief"],
+            },
+            {
+                "title": "Три риска и как мы их закрываем",
+                "bullets": ["Риск выдуманных цифр закрывает аудит"],
+                "source_refs": ["brief"],
+            },
+            {"title": "Спасибо", "bullets": ["Вопросы"], "source_refs": ["brief"]},
+        ],
+    }
+
+
+ASSET_SOURCES = [
+    {
+        "id": "brief",
+        "text": "С 186 до 4 минут, 2 из 68 колод, 38 запросов вместо 11.",
+    }
+]
+
+
+@pytest.mark.parametrize("variant", ["classic", "split", "focus"])
+def test_slides_get_stats_icons_and_pictures(tmp_path, variant):
+    from pptx import Presentation as Deck
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    from designer.exporting import export_pptx, verify_pptx
+    from designer.models import Outline
+
+    source = template_bytes()
+    template = parse_template(source, "plain.pptx")
+    plan = Outline.model_validate(asset_outline()).model_dump()
+    deck = compose(plan, template, variant)
+    kinds = [{e["kind"] for e in s["elements"]} for s in deck["slides"]]
+    # Цифры в тезисах стали фактоидами во всех вариантах.
+    stats = [e for e in deck["slides"][1]["elements"] if e["kind"] == "stat"]
+    assert stats and stats[0]["value"] == "4 мин"
+    if variant == "classic":
+        icons = [e for e in deck["slides"][2]["elements"] if e.get("role") == "icon"]
+        assert [i["asset"]["id"] for i in icons] == ["builtin-team", "builtin-server", "builtin-money"]
+    if variant == "split":
+        assert "image" in kinds[3]
+        picture = next(e for e in deck["slides"][3]["elements"] if e["id"] == "picture")
+        # Иллюстрация вписана без искажения: рамка в пропорциях картинки.
+        assert abs(picture["box"][2] / picture["box"][3] - picture["asset"]["ratio"]) < 0.01
+    report = audit(deck, template, ASSET_SOURCES, "ru")
+    assert not [i for i in report["issues"] if i["severity"] == "error"], report["issues"]
+    path = tmp_path / "template.pptx"
+    path.write_bytes(source)
+    output = tmp_path / "deck.pptx"
+    export_pptx(path, template, deck, output)
+    assert verify_pptx(output, len(deck["slides"]))["raster_slides"] == []
+    groups = [
+        s.name
+        for slide in Deck(output).slides
+        for s in slide.shapes
+        if s.shape_type == MSO_SHAPE_TYPE.GROUP
+    ]
+    # SVG встроенного набора лёг нативными фигурами, а не картинкой.
+    assert any(name.startswith(("icon:", "illustration:")) for name in groups) or variant == "focus"
+
+
+def test_visual_content_pack_zip_is_imported_and_used(client):
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as z:
+        z.writestr(
+            "manifest.json",
+            json.dumps({"assets": [{"file": "icons/rocket.svg", "kind": "icon", "tags": ["запуск", "старт"]}]}),
+        )
+        z.writestr(
+            "icons/rocket.svg",
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 20L12 3L20 20z" fill="#123456"/></svg>',
+        )
+        z.writestr("icons/команда-люди.png", png_glyph())
+        z.writestr("photos/офис.png", png_photo())
+        z.writestr("notes.md", "Запуск пилота: команда из четырёх человек.")
+        z.writestr("icons/broken.svg", "<svg><path d='M0 0'")
+    response = client.post(
+        "/api/v1/content-packs", files={"file": ("pack.zip", archive.getvalue(), "application/zip")}
+    )
+    assert response.status_code == 201, response.text
+    pack = response.json()
+    assert pack["asset_counts"]["icon"] == 2 and pack["asset_counts"]["photo"] == 1
+    assert "Запуск пилота" in pack["text"]
+    listing = client.get(f"/api/v1/content-packs/{pack['id']}/assets").json()
+    rocket = next(a for a in listing["items"] if a["name"] == "icons/rocket.svg")
+    assert rocket["tags"] == ["запус", "стар"]
+    served = client.get(rocket["url"].removeprefix(""))
+    assert served.status_code == 200 and served.headers["content-type"].startswith("image/svg")
+    assert "default-src 'none'" in served.headers["content-security-policy"]
+
+    template = client.post(
+        "/api/v1/templates", files={"file": ("template.pptx", template_bytes())}
+    ).json()
+    plan = {
+        "title": "Пилот",
+        "slides": [
+            {"title": "Пилот", "bullets": [], "source_refs": ["brief"]},
+            {
+                "title": "Как мы запускаем",
+                "bullets": ["Запуск через месяц", "Команда из четырёх человек"],
+                "source_refs": ["brief"],
+            },
+            {"title": "Итог", "bullets": ["Готовы"], "source_refs": ["brief"]},
+        ],
+    }
+    job = client.post(
+        "/api/v1/generations",
+        json={
+            "template_id": template["id"],
+            "brief": "Запуск пилота",
+            "slide_count": 3,
+            "outline": plan,
+            "content_pack_ids": [pack["id"]],
+        },
+    ).json()
+    done = wait_job(client, job["id"])
+    classic = next(
+        client.get(f"/api/v1/presentations/{i}").json()
+        for i in done["presentation_ids"]
+        if client.get(f"/api/v1/presentations/{i}").json()["variant"] == "classic"
+    )
+    icons = [e for e in classic["deck"]["slides"][1]["elements"] if e.get("role") == "icon"]
+    sources = [i["asset"]["source"] for i in icons]
+    # Пакет пользователя важнее встроенного набора: он покрыл все тезисы, и
+    # ряд собран из его значков, а не вперемешку со встроенными.
+    assert sources == ["pack", "pack"], icons
+    pptx = client.get(f"/api/v1/presentations/{classic['id']}/export/pptx")
+    deck = Presentation(io.BytesIO(pptx.content))
+    names = [s.name for s in deck.slides[1].shapes]
+    assert any(name == f"icon:{rocket['id']}" for name in names), names
+
+
+def test_single_picture_and_empty_upload(client):
+    ok = client.post("/api/v1/content-packs", files={"file": ("рост-выручки.svg", b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#f00"/></svg>')})
+    assert ok.status_code == 201, ok.text
+    assert ok.json()["asset_counts"]["icon"] == 1
+    empty = io.BytesIO()
+    with zipfile.ZipFile(empty, "w") as z:
+        z.writestr("readme.bin", b"\x00\x01")
+    bad = client.post("/api/v1/content-packs", files={"file": ("empty.zip", empty.getvalue())})
+    assert bad.status_code == 422
+
+
+def pictured_template():
+    """Шаблон с карточками, значком над каждой и фотографией на отдельной странице."""
+    from pptx.util import Emu
+
+    deck = Presentation()
+    width, height = deck.slide_width, deck.slide_height
+    slide = deck.slides.add_slide(deck.slide_layouts[5])
+    slide.shapes.title.text = "Заголовок страницы с карточками"
+    colours = [(0, 119, 255), (255, 57, 133), (255, 255, 255)]
+    for i in range(3):
+        left = int(width * (0.06 + i * 0.31))
+        slide.shapes.add_picture(
+            io.BytesIO(png_glyph(colours[i])), left, int(height * 0.3), Emu(int(width * 0.06)), Emu(int(width * 0.06))
+        )
+        box = slide.shapes.add_textbox(left, int(height * 0.42), int(width * 0.26), int(height * 0.3))
+        box.text_frame.text = "Тезис под тематической иконкой"
+    extra = deck.slides.add_slide(deck.slide_layouts[5])
+    extra.shapes.title.text = "Фото"
+    extra.shapes.add_picture(io.BytesIO(png_photo()), int(width * 0.5), int(height * 0.3), int(width * 0.4), int(height * 0.4))
+    out = io.BytesIO()
+    deck.save(out)
+    return out.getvalue()
+
+
+def test_template_pictures_are_harvested_and_labelled(client, monkeypatch):
+    import designer.generation as generation
+
+    response = client.post("/api/v1/templates", files={"file": ("pictured.pptx", pictured_template())})
+    assert response.status_code == 201, response.text
+    template = response.json()
+    listing = client.get(f"/api/v1/templates/{template['id']}/assets").json()
+    assert listing["counts"]["icon"] == 3 and listing["counts"]["photo"] == 1
+    assert client.get(listing["items"][0]["url"]).status_code == 200
+    # Без мультимодальной модели подписывать нечем — честный 503.
+    monkeypatch.delenv("DESIGNER_VLM_MODEL", raising=False)
+    assert client.post(f"/api/v1/templates/{template['id']}/assets/tags").status_code == 503
+
+    monkeypatch.setenv("DESIGNER_VLM_MODEL", "vlm")
+    monkeypatch.setenv("DESIGNER_VLM_BASE_URL", "http://vlm.invalid/v1")
+    calls = []
+
+    async def fake_vision(prompt, payload, image, attempts=2):
+        calls.append(payload["count"])
+        assert image.startswith(b"\x89PNG")
+        return {"items": [{"n": n, "tags": ["команда", "люди"]} for n in range(1, payload["count"] + 1)]}
+
+    monkeypatch.setattr(generation, "vision_completion", fake_vision)
+    tagged = client.post(f"/api/v1/templates/{template['id']}/assets/tags").json()
+    assert tagged["tagged"] == 4 and calls == [4]
+    # Повторно не спрашиваем: всё подписано.
+    assert client.post(f"/api/v1/templates/{template['id']}/assets/tags").json()["tagged"] == 0
+
+
+def test_template_sample_icons_are_replaced_in_place(tmp_path):
+    from pptx import Presentation as Deck
+
+    from designer.exporting import export_pptx
+    from designer.models import Outline
+
+    source = pictured_template()
+    template = parse_template(source, "pictured.pptx")
+    card_page = template["patterns"][0]
+    assert len(card_page["icon_slots"]) == 3
+    assert {s["color"] for s in card_page["icon_slots"]} == {"0077FF", "FF3985", "FFFFFF"}
+    plan = Outline.model_validate(
+        {
+            "title": "Карточки",
+            "slides": [
+                {"title": "Обложка", "bullets": [], "source_refs": ["brief"]},
+                {
+                    "title": "Что даёт сервис",
+                    "bullets": ["Команда свободна от рутины", "Бюджет меньше", "Сервер один"],
+                    "source_refs": ["brief"],
+                },
+                {"title": "Итог", "bullets": ["Готовы"], "source_refs": ["brief"]},
+            ],
+        }
+    ).model_dump()
+    deck = compose(plan, template, "classic")
+    slide = deck["slides"][1]
+    assert slide["pattern_index"] == 0
+    swaps = [e for e in slide["elements"] if e["id"].startswith("swap_")]
+    assert [s["asset"]["id"] for s in swaps] == ["builtin-team", "builtin-money", "builtin-server"]
+    # Цвет значка — цвет образца, место — его рамка.
+    assert [s["tint"] for s in swaps] == ["0077FF", "FF3985", "FFFFFF"]
+    path = tmp_path / "t.pptx"
+    path.write_bytes(source)
+    output = tmp_path / "d.pptx"
+    export_pptx(path, template, deck, output)
+    shapes = Deck(output).slides[1].shapes
+    assert not [s for s in shapes if s.shape_type == 13], "образцы значков остались на слайде"
+    assert len([s for s in shapes if s.name.startswith("icon:builtin-")]) == 3

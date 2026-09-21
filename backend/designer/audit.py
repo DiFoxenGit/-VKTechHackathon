@@ -22,10 +22,11 @@ from .language import CYRILLIC, LATIN, foreign_labels, script_of, visual_labels
 from .layout import (
     DEFAULT_MARGINS,
     DEFAULT_SAFE_AREA,
+    STAT_INSET,
     estimated_text_height,
     ink_area,
 )
-from .parsing import best_text_color, contrast_ratio
+from .parsing import best_text_color, contrast_ratio, stage_clutter
 from .fonts import missing_glyphs
 from .visuals import CHAR_WIDTH, MIN_LABEL_SIZE, label_plan
 
@@ -398,7 +399,9 @@ def audit(deck, template, sources, language=None):
             # объект, который текст обязан обходить: читаемость на ней
             # обеспечивают подложка и контраст. Ряд значков экспорт снимает,
             # когда раскладывать по нему нечего, — проверять его не по чему.
-            if b["w"] * b["h"] < 0.6 and not b.get("icons")
+            if b["w"] * b["h"] < 0.6
+            and not b.get("icons")
+            and not (slide.get("clear_stage") and stage_clutter(b, template.get("branding") or ()))
         ]
         # Приложение 1: «картинка растянута». Наши слайды картинок не вставляют,
         # но страница шаблона приходит на слайд вместе со своими: клонирование
@@ -468,7 +471,7 @@ def audit(deck, template, sources, language=None):
             # safe-area edge; a lone offset reads as a layout mistake.
             # Блок, чья рамка взята из шаблона, выровнен по определению: это
             # композиция дизайнера, а не наша геометрия.
-            aligned = element.get("from_template") or (
+            aligned = element.get("from_template") or element.get("grid") or (
                 len(elements) < 2
                 or abs(x - width * safe["x"]) <= ALIGN_TOLERANCE
                 or abs(x + w - width * (safe["x"] + safe["w"])) <= ALIGN_TOLERANCE
@@ -633,6 +636,47 @@ def audit(deck, template, sources, language=None):
                             "font_not_in_template",
                             "Шрифт отсутствует в шаблоне",
                             element["box"],
+                        )
+                    )
+            if element["kind"] == "stat":
+                # Фактоид — тот же текст: гарнитура, шкала и контраст проверяются
+                # так же, только крупная цифра меряется порогом крупного кегля.
+                families.add(element["font"])
+                for size in (element["value_size"], element["font_size"]):
+                    if scale and not any(abs(size - step) < 0.6 for step in scale):
+                        issues.append(
+                            issue(
+                                index,
+                                element["id"],
+                                "font_size_off_scale",
+                                f"Кегль {size} pt отсутствует в типографической шкале шаблона",
+                                element["box"],
+                            )
+                        )
+                caption = {
+                    "box": [x, y, w - STAT_INSET, h],
+                    "font_size": element["font_size"],
+                    "text": element["text"],
+                }
+                if element["value_size"] * 1.25 + estimated_text_height(caption) > h + 1:
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "text_overflow",
+                            "Оценка: подпись фактоида может не поместиться под цифрой",
+                            element["box"],
+                        )
+                    )
+                if contrast_ratio(background, element.get("color") or "000000") < MIN_CONTRAST:
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "low_contrast",
+                            f"Контраст подписи к фону ниже {MIN_CONTRAST}:1",
+                            element["box"],
+                            severity="error",
                         )
                     )
             for other in elements:

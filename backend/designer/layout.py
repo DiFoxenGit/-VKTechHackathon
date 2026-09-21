@@ -2,9 +2,11 @@
 
 import copy
 import math
+import re
 
+from .assets import asset_ref, library, pick_icons, pick_picture
 from .fonts import printable, printable_visual
-from .parsing import best_text_color
+from .parsing import best_text_color, stage_clutter
 
 DEFAULT_SAFE_AREA = {"x": 0.055, "y": 0.055, "w": 0.89, "h": 0.825}
 DEFAULT_MARGINS = {"x": 0.04, "y": 0.04, "w": 0.92, "h": 0.9}
@@ -28,6 +30,9 @@ LEAD_SHARE_BONUS = 0.12
 # схем и у проверки text_too_small.
 MIN_BODY_SIZE = 10.0
 # Запасная типографическая лестница для шаблонов, которые не объявляют кегли.
+# Ширина знака в долях кегля для самого длинного слова — как у аудита
+# (visuals.CHAR_WIDTH): оценка щедрая, иначе слово всё-таки рвётся.
+WORD_CHAR_WIDTH = 0.78
 DEFAULT_SCALE = [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 40.0, 48.0]
 
 
@@ -78,7 +83,10 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
             if not larger:
                 continue
             candidate = dict(element, font_size=larger[0])
-            if estimated_text_height(candidate) <= element["box"][3]:
+            # Рост не должен рвать слово: та же мера, что у проверки word_break.
+            longest = max((len(word) for word in element["text"].split()), default=1)
+            fits_word = longest * larger[0] * WORD_CHAR_WIDTH <= element["box"][2] - 12
+            if fits_word and estimated_text_height(candidate) <= element["box"][3]:
                 element["font_size"] = larger[0]
                 grew = True
         if not grew:
@@ -208,17 +216,126 @@ def fit_text(element, scale, minimum=12):
     return element
 
 
-def content_demand(content, position=1, total=1):
+# ---------------------------------------------------------------- фактоиды
+
+NUMBER_TEXT = r"\d+(?:[.,]\d+)?(?:[\s ]\d{3})*"
+# Единица после числа и как её показать крупно: «4 минут» → «4 мин».
+UNITS = [
+    (r"%", "%"),
+    (r"мин(?:ут[аы]?|\.)?", "мин"),
+    (r"час(?:ов|а)?|ч\.?", "ч"),
+    (r"дн(?:ей|я)|день", None),
+    (r"недел(?:ь|и|ю|я)", "нед."),
+    (r"месяц(?:ев|а)?|мес\.?", "мес."),
+    (r"руб(?:л(?:ей|я|ь))?\.?|₽", "₽"),
+    (r"млрд|млн|тыс\.?", None),
+    (r"[гтм]б", None),
+    (r"v?cpu", "vCPU"),
+    (r"раз(?:а)?", "×"),
+]
+UNIT = "(?:" + "|".join(pattern for pattern, _ in UNITS) + r")(?![а-яa-z])"
+STAT_PATTERNS = [
+    # «с 186 до 4 минут» — главное новое значение.
+    re.compile(rf"\bс\s+{NUMBER_TEXT}\s*(?:{UNIT})?\s+до\s+(?P<v>{NUMBER_TEXT})\s*(?P<u>{UNIT})?", re.I),
+    # «4 минуты вместо 186», «38 запросов вместо 11».
+    re.compile(rf"(?P<v>{NUMBER_TEXT})\s*(?P<u>{UNIT})?(?:\s+[а-яё]+)?\s+вместо\s+{NUMBER_TEXT}", re.I),
+    # «2 из 68» — доля читается только целиком.
+    re.compile(rf"(?P<v>{NUMBER_TEXT}\s+из\s+{NUMBER_TEXT})", re.I),
+    re.compile(rf"(?P<v>{NUMBER_TEXT})\s*(?P<u>{UNIT})", re.I),
+    re.compile(r"(?<![\w.,])(?P<v>\d{2,}(?:[.,]\d+)?(?:[\s ]\d{3})*)(?![\w.,])"),
+]
+# Больше — и фактоид превращается в абзац, а крупная цифра теряется.
+MAX_STAT_CAPTION = 110
+STAT_BAR = 4.0
+STAT_INSET = 14.0
+
+
+def unit_label(unit):
+    if not unit:
+        return ""
+    lowered = unit.lower()
+    for pattern, label in UNITS:
+        if re.fullmatch(pattern, lowered, re.I):
+            return label if label is not None else (unit.upper() if len(unit) == 2 else unit)
+    return unit
+
+
+def stat_value(text):
+    """Число, которое тезис несёт крупно: «4 мин», «2 из 68», «23%».
+
+    Число берётся из текста дословно — фактоид не может сообщить больше, чем
+    тезис. Если в тезисе нет весомого числа, фактоида нет.
+    """
+    for pattern in STAT_PATTERNS:
+        found = pattern.search(text)
+        if not found:
+            continue
+        value = " ".join(found.group("v").split()).replace(" ", " ")
+        unit = unit_label(found.groupdict().get("u") or "")
+        if unit in ("%",):
+            return value + unit
+        if unit == "×":
+            return value + "×"
+        return f"{value} {unit}" if unit else value
+    return None
+
+
+def stat_plan(bullets):
+    """Годится ли слайд под фактоиды: две-четыре цифры и не больше одной фразы без них."""
+    values = [stat_value(b) for b in bullets]
+    count = sum(v is not None for v in values)
+    if not 2 <= count <= 4 or len(bullets) - count > 1 or len(bullets) > 5:
+        return None
+    if any(v and len(b) > MAX_STAT_CAPTION for v, b in zip(values, bullets)):
+        return None
+    return values
+
+
+def slide_mode(content, variant, position, total, assets, used):
+    """Как подать слайд с тезисами без визуализации: фактоиды, иконки, картинка.
+
+    Выбор объясним: цифры в тезисах → крупные фактоиды; перечень, к которому
+    нашлись иконки по смыслу → список с иконками (classic); немного текста и
+    подходящая иллюстрация → текст рядом с картинкой (split, focus). Обложку и
+    финал не трогаем: там композицию задаёт страница шаблона.
+    """
+    bullets = content["bullets"]
+    if (
+        content["visual"]["kind"] != "none"
+        or not bullets
+        or position == 0
+        or (total > 2 and position == total - 1)
+    ):
+        return None
+    values = stat_plan(bullets)
+    if values:
+        return {"kind": "stats", "values": values}
+    text = " ".join(bullets)
+    if variant == "classic" and 2 <= len(bullets) <= 5:
+        icons, matched = pick_icons(bullets, assets, used["icons"])
+        if icons[0] is not None and matched >= math.ceil(len(bullets) / 2):
+            return {"kind": "icons", "icons": icons}
+    limit = {"split": 4, "focus": 2, "classic": 1}[variant]
+    if len(bullets) <= limit and sum(len(b) for b in bullets) <= 320:
+        picture = pick_picture(text, assets, used=used["pictures"], title=content["title"])
+        if picture:
+            return {"kind": "picture", "asset": picture}
+    return None
+
+
+def content_demand(content, position=1, total=1, mode=None):
     """How much room this slide needs and what kind of room."""
     bullets = content["bullets"]
     return {
         "lines": sum(1 + len(b) // 60 for b in bullets),
-        "has_visual": content["visual"]["kind"] != "none",
+        # Фактоиды и картинка требуют свободной площади так же, как диаграмма.
+        "has_visual": content["visual"]["kind"] != "none"
+        or bool(mode and mode["kind"] in ("stats", "picture")),
         "title_length": len(content["title"]),
         "cover": position == 0,
         "closing": total > 1 and position == total - 1,
         # Сколько карточек пригодилось бы этому слайду.
-        "cards": 0 if content["visual"]["kind"] != "none" else len(bullets),
+        "cards": 0 if content["visual"]["kind"] != "none" or mode else len(bullets),
     }
 
 
@@ -379,8 +496,8 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
     return round(score, 6)
 
 
-def choose_pattern(candidates, content, recent, usage=None, position=1, total=1):
-    demand = content_demand(content, position, total)
+def choose_pattern(candidates, content, recent, usage=None, position=1, total=1, mode=None):
+    demand = content_demand(content, position, total, mode)
     usage = usage or {}
     wanted = 'cover' if demand['cover'] else 'closing' if demand['closing'] else None
     designed = [p for p in candidates if p.get('role') == wanted] if wanted else []
@@ -568,7 +685,255 @@ def slide_capacity(template, size=None):
     return int(per_line * lines * 0.85)
 
 
-def compose(outline, template, variant):
+def stat_elements(values, bullets, variant, area, scale, body_size, height):
+    """Фактоиды: крупное число из тезиса и сам тезис подписью под ним.
+
+    classic — ряд плиток, split — сетка в две колонки, focus — одна цифра
+    героем во всю ширину, остальные тезисы текстом ниже. Кегли — ступени шкалы
+    шаблона: крупная цифра — верхние ступени, подпись — кегль тела слайда.
+    """
+    left, top, w, h = area
+    gap = w * 0.04
+    steps = sorted(scale)
+    elements = []
+    plain = [b for v, b in zip(values, bullets) if v is None]
+    stats = [(v, b) for v, b in zip(values, bullets) if v is not None]
+    rest = []
+    if variant == "focus":
+        rest = [b for _, b in stats[1:]] + plain
+        stats, plain = stats[:1], []
+    if plain:
+        note = {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": plain[0],
+            "box": [left, top, w, h],
+            "font_size": body_size,
+            "bold": False,
+            "align": "left",
+        }
+        note["box"][3] = min(h * 0.3, estimated_text_height(note))
+        elements.append(note)
+        top += note["box"][3] + height * 0.03
+        h -= note["box"][3] + height * 0.03
+    rest_h = 0.0
+    if rest:
+        rest_h = h * 0.42
+        h -= rest_h + height * 0.03
+    columns = {"classic": len(stats), "split": 2 if len(stats) > 1 else 1, "focus": 1}[variant]
+    rows = math.ceil(len(stats) / columns)
+    tile_w = (w - gap * (columns - 1)) / columns
+    row_gap = height * 0.04
+    row_h = (h - row_gap * (rows - 1)) / rows
+    text_w = tile_w - STAT_INSET
+    ceiling = height * (0.2 if variant == "focus" else 0.13)
+    longest = max(len(v) for v, _ in stats)
+    # Цифры уже букв: 0.56 кегля на знак, иначе крупная цифра зря мельчает.
+    fitting = [s for s in steps if s <= ceiling and longest * s * 0.56 <= text_w - 12]
+    value_size = fitting[-1] if fitting else steps[0]
+    value_h = value_size * 1.25
+    caption_size = body_size
+    for size in sorted((s for s in steps if MIN_BODY_SIZE <= s <= body_size), reverse=True):
+        caption_size = size
+        needed = max(
+            estimated_text_height({"box": [0, 0, text_w, 0], "font_size": size, "text": b})
+            for _, b in stats
+        )
+        if value_h + needed <= row_h:
+            break
+    for index, (value, bullet) in enumerate(stats):
+        row, column = divmod(index, columns)
+        caption_h = estimated_text_height(
+            {"box": [0, 0, text_w, 0], "font_size": caption_size, "text": bullet}
+        )
+        elements.append(
+            {
+                "id": f"stat_{index}",
+                "kind": "stat",
+                "role": "body",
+                "value": value,
+                "text": bullet,
+                "box": [
+                    left + column * (tile_w + gap),
+                    top + row * (row_h + row_gap),
+                    tile_w,
+                    min(row_h, value_h + caption_h),
+                ],
+                "value_size": value_size,
+                "font_size": caption_size,
+                # Плитки встают равномерной сеткой от левого края области: их
+                # выравнивание — шаг сетки, а не направляющие шаблона.
+                "grid": column > 0,
+                "bold": False,
+                "align": "left",
+            }
+        )
+    if rest:
+        elements.append(
+            {
+                "id": "body",
+                "kind": "text",
+                "role": "body",
+                "text": "\n".join(("• " + b if len(rest) > 1 else b) for b in rest),
+                "box": [left, top + h + height * 0.03, w, rest_h],
+                "font_size": body_size,
+                "bold": False,
+                "align": "left",
+            }
+        )
+    return elements
+
+
+def icon_rows(bullets, icons, area, body_size, height):
+    """Список с иконками: значок слева от каждого тезиса, тезисы на одной вертикали."""
+    left, top, w, h = area
+    count = len(bullets)
+    size = max(26.0, min(body_size * 2.4, height * 0.085, h / count * 0.8))
+    gap = size * 0.45
+    row = h / count
+    elements = []
+    for index, (bullet, icon) in enumerate(zip(bullets, icons)):
+        y = top + index * row
+        elements.append(
+            {
+                "id": f"icon_{index}",
+                "kind": "image",
+                "role": "icon",
+                "box": [left, y, size, size],
+                "asset": asset_ref(icon),
+                "fit": "contain",
+            }
+        )
+        elements.append(
+            {
+                "id": f"item_{index}",
+                "kind": "text",
+                "role": "body",
+                "text": bullet,
+                "box": [left + size + gap, y, w - size - gap, max(size, row - height * 0.02)],
+                "font_size": body_size,
+                "bold": False,
+                "align": "left",
+            }
+        )
+    return elements
+
+
+def align_icons(elements):
+    """Значок встаёт по центру своего тезиса, после того как тезис нашёл место.
+
+    Центрирование и обход декора двигают текст; значок, оставшийся на старом
+    месте, читается как съехавшая вёрстка.
+    """
+    for element in elements:
+        if not element["id"].startswith("icon_"):
+            continue
+        text = next((e for e in elements if e["id"] == "item_" + element["id"][5:]), None)
+        if not text:
+            continue
+        size = element["box"][3]
+        used = min(text["box"][3], estimated_text_height(text))
+        if used >= size:
+            element["box"][1] = text["box"][1] + (used - size) / 2
+        else:
+            element["box"][1] = text["box"][1]
+            text["box"][1] += (size - used) / 2
+            text["box"][3] = max(used, text["box"][3] - (size - used) / 2)
+    return elements
+
+
+def swap_icons(elements, slots, assets, used, width, height):
+    """Иконки образца над карточками — заменить на подходящие по смыслу.
+
+    Место и цвет значка задал дизайнер, поэтому новая иконка встаёт ровно в
+    рамку образца и красится в его цвет. Значок над карточкой ищется по
+    горизонтали: его центр лежит над карточкой, выше неё или в её верхней части.
+    """
+    cards = [e for e in elements if e["id"].startswith("card_")]
+    pairs, taken = [], set()
+    for card in cards:
+        x, y, w, h = card["box"]
+        best = None
+        for slot in slots:
+            if slot["id"] in taken:
+                continue
+            bx, by = slot["box"]["x"] * width, slot["box"]["y"] * height
+            bw, bh = slot["box"]["w"] * width, slot["box"]["h"] * height
+            cx, cy = bx + bw / 2, by + bh / 2
+            if not (x - w * 0.1 <= cx <= x + w * 1.1):
+                continue
+            if not (y - height * 0.3 <= cy <= y + h * 0.5):
+                continue
+            # Значок, лежащий под текстом карточки, заменять нельзя: новая
+            # иконка наедет на тезис.
+            if bx < x + w and bx + bw > x and by < y + h and by + bh > y:
+                continue
+            distance = abs(cx - (x + w / 2)) + abs(cy - y)
+            if best is None or distance < best[0]:
+                best = (distance, slot, [bx, by, bw, bh])
+        if best:
+            taken.add(best[1]["id"])
+            pairs.append((card, best[1], best[2]))
+    if not pairs:
+        return elements
+    icons, _ = pick_icons([card["text"] for card, _, _ in pairs], assets, used["icons"])
+    for index, ((card, slot, box), icon) in enumerate(zip(pairs, icons)):
+        if icon is None:
+            continue
+        used["icons"].add(icon["id"])
+        elements.append(
+            {
+                "id": f"swap_{index}",
+                "kind": "image",
+                "role": "icon",
+                "box": box,
+                "asset": asset_ref(icon),
+                "fit": "contain",
+                "tint": slot["color"],
+                "from_template": True,
+            }
+        )
+    return elements
+
+
+def align_to_picture(elements):
+    """Текст рядом с картинкой — по её вертикальному центру, а не прибитым к верху."""
+    picture = next((e for e in elements if e["id"] == "picture"), None)
+    texts = [e for e in elements if e["kind"] == "text" and e.get("role") != "title"]
+    if not picture or not texts:
+        return elements
+    top = min(e["box"][1] for e in texts)
+    bottom = max(e["box"][1] + min(e["box"][3], estimated_text_height(e)) for e in texts)
+    shift = picture["box"][1] + picture["box"][3] / 2 - (top + bottom) / 2
+    # Двигаем только вниз: вверху текст упирается в заголовок.
+    if shift > 0:
+        for element in texts:
+            element["box"][3] = min(element["box"][3], estimated_text_height(element))
+            element["box"][1] += shift
+    return elements
+
+
+def picture_box(asset, box):
+    """Рамка картинки по её пропорциям: по вертикали по центру, по правому краю.
+
+    Правый край области — направляющая шаблона; картинка, повисшая между
+    колонками, читается как невыровненная.
+    """
+    x, y, w, h = box
+    ratio = asset.get("ratio") or 1.0
+    if w / h > ratio:
+        cw, ch = h * ratio, h
+    else:
+        cw, ch = w, w / ratio
+    return [x + w - cw, y + (h - ch) / 2, cw, ch]
+
+
+def compose(outline, template, variant, assets=None):
+    """assets — библиотека картинок колоды (шаблон, пакеты, встроенный набор)."""
+    if assets is None:
+        assets = library(template)
+    used = {"icons": set(), "pictures": set()}
     width, height = template["width"] / 12700, template["height"] / 12700
     tokens = template["tokens"]
     geometry = template.get("geometry", {})
@@ -600,9 +965,27 @@ def compose(outline, template, variant):
     recent: list[int] = []
     usage: dict[int, int] = {}
     for i, content in enumerate(outline["slides"]):
+        mode = slide_mode(content, variant, i, len(outline["slides"]), assets, used)
         pattern, pattern_score = choose_pattern(
-            candidates, content, recent, usage, i, len(outline["slides"])
+            candidates, content, recent, usage, i, len(outline["slides"]), mode
         )
+        if mode and mode["kind"] == "icons":
+            # Карточная страница с местом под значок над каждой карточкой — это
+            # тот же список с иконками, только нарисованный дизайнером. Берём её.
+            body = [s for s in pattern.get("slots") or [] if s["role"] == "body"]
+            grid = card_slots(body, width, height)
+            size = slot_size((body[0] if body else {}).get("style") or {}, scale, 14.0)
+            roomy = all(
+                estimated_text_height({"box": box, "font_size": size, "text": bullet}) <= box[3]
+                and max(len(word) for word in bullet.split()) * size * 0.78 <= box[2] - 12
+                for box, bullet in zip(grid, content["bullets"])
+            )
+            if (
+                roomy
+                and len(grid) == len(content["bullets"])
+                and len(pattern.get("icon_slots") or []) >= len(grid)
+            ):
+                mode = None
         recent = [*recent, pattern["index"]][-3:]
         usage[pattern["index"]] = usage.get(pattern["index"], 0) + 1
         # Слоты прототипа — готовая композиция шаблона: заголовок и текстовые
@@ -651,15 +1034,23 @@ def compose(outline, template, variant):
         # выше первой из них, иначе длинный заголовок ложится прямо на карточку.
         cards = (
             card_slots(body_slots, width, height)
-            if not has_visual and variant != "focus"
+            if not has_visual and variant != "focus" and not mode
             else []
         )
         # Compose around branding the template keeps on every slide: narrow the
         # title away from a corner logo, and drop below a full-width wordmark.
+        # Диаграмма и своя композиция (фактоиды, иконки, картинка) занимают
+        # сцену целиком: стрелки и значки образца рядом с ними — мусор.
+        staged = bool(mode) or content["visual"]["kind"] != "none"
+        # Своя композиция (фактоиды, иконки, картинка) убирает со сцены мелкие
+        # образцы страницы: экспорт их не переносит, обходить их незачем.
+        branding = template.get("branding") or ()
         reserved = [
             (width * b["x"], height * b["y"], width * b["w"], height * b["h"])
             for b in pattern.get("reserved", [])
-            if b["w"] * b["h"] < 0.6 and not b.get("icons")
+            if b["w"] * b["h"] < 0.6
+            and not b.get("icons")
+            and not (staged and stage_clutter(b, branding))
         ]
         special_region = None
         if pattern.get('role') in ('cover', 'closing') and (has_visual or len(content['bullets']) > 1):
@@ -677,6 +1068,10 @@ def compose(outline, template, variant):
         # вариантом для файлов, где типографика не описана.
         current_title_size = slot_size(title_style, scale, title_size, minimum=18)
         slide_body_size = slot_size(body_style, scale, body_size, minimum=10, maximum=40)
+        if mode:
+            # Своя композиция не наследует мелкий кегль подписи образца: тезис
+            # рядом с картинкой или под цифрой набирается кеглем тела шаблона.
+            slide_body_size = max(slide_body_size, body_size)
 
         def title_height(size, title_width=tw, title_text=content["title"]):
             chars = max(1, (title_width - 12) / (size * 0.60))
@@ -706,7 +1101,8 @@ def compose(outline, template, variant):
         bottom = height * min(1.0, safe["y"] + safe["h"])
         if special_region:
             bottom = special_region[3]
-        elif content_slot and content_slot["w"] * content_slot["h"] >= 0.12:
+        # Своей композиции нужна вся рабочая область, а не рамка текста образца.
+        elif not staged and content_slot and content_slot["w"] * content_slot["h"] >= 0.12:
             # Контент занимает ту же область, что и на слайде-прототипе.
             slot_top = height * content_slot["y"]
             slot_bottom = height * (content_slot["y"] + content_slot["h"])
@@ -726,7 +1122,7 @@ def compose(outline, template, variant):
             slot_right = width * (content_slot['x'] + content_slot['w'])
             if slot_right < right - width * 0.08 and slot_right - margin >= width * 0.32:
                 right = slot_right
-        if variant == "focus" or has_visual:
+        if variant == "focus" or has_visual or mode:
             # Крупный блок — одна мысль или диаграмма — не должен ложиться на
             # линии шаблона: ищем свободную полосу, если она достаточно широкая.
             top, bottom = decor_free_band(reserved, top, bottom, margin, right)
@@ -782,7 +1178,42 @@ def compose(outline, template, variant):
                     }
                 )
 
-        if variant == "split" and (not special_region or w >= width * 0.7):
+        if mode and mode["kind"] == "stats":
+            elements.extend(
+                stat_elements(
+                    mode["values"], bullets, variant, [margin, top, w, h],
+                    scale, slide_body_size, height,
+                )
+            )
+        elif mode and mode["kind"] == "icons":
+            elements.extend(
+                icon_rows(bullets, mode["icons"], [margin, top, w, h], slide_body_size, height)
+            )
+            used["icons"].update(icon["id"] for icon in mode["icons"])
+        elif mode and mode["kind"] == "picture":
+            # Текст слева, картинка справа: колонка текста шире, чтобы тезисы
+            # не ломались на короткие строки.
+            column = (w - gap) * (0.52 if variant == "focus" else 0.56)
+            if variant == "focus":
+                text_box("lead", bullets[:1], [margin, top, column, h * (0.55 if len(bullets) > 1 else 1.0)])
+                text_box("body", bullets[1:], [margin, top + h * 0.6, column, h * 0.4])
+            else:
+                text_box("body", bullets, [margin, top, column, h])
+            asset = mode["asset"]
+            elements.append(
+                {
+                    "id": "picture",
+                    "kind": "image",
+                    "role": "picture",
+                    "box": picture_box(asset, [margin + column + gap, top, w - column - gap, h])
+                    if asset["kind"] != "photo"
+                    else [margin + column + gap, top, w - column - gap, h],
+                    "asset": asset_ref(asset),
+                    "fit": "cover" if asset["kind"] == "photo" else "contain",
+                }
+            )
+            used["pictures"].add(asset["id"])
+        elif variant == "split" and (not special_region or w >= width * 0.7):
             bw = (w - gap) / 2
             if has_visual:
                 text_box("body", bullets, [margin, top, bw, h])
@@ -925,6 +1356,16 @@ def compose(outline, template, variant):
                     cover_bottom = height * min(.95, margins['y'] + margins['h'])
                     body['box'] = [cx, by, cw, max(10, cover_bottom - by)]
                     body['from_template'] = True
+        slots = pattern.get("icon_slots") or []
+        if slots:
+            swap_icons(elements, slots, assets, used, width, height)
+        for element in elements:
+            if element["kind"] == "icon":
+                # Пиктограммы схемы — из того же набора, что и списки с иконками.
+                icons, _ = pick_icons(element["data"]["steps"], assets, used["icons"])
+                if icons[0] is not None:
+                    element["icons"] = [asset_ref(icon) for icon in icons]
+                    used["icons"].update(icon["id"] for icon in icons)
         # Resolve the text color once, against this slide's real background, so
         # layout, export and the contrast audit all agree on what will be rendered.
         # Подогнать текст до аудита: пользователь не должен чинить руками то,
@@ -938,7 +1379,7 @@ def compose(outline, template, variant):
             elements,
             scale,
             width * height,
-            target=0.4 if variant == "focus" else 0.3,
+            target=0.4 if variant == "focus" or mode else 0.3,
             maximum=(
                 max(slide_body_size, body_size) * 2.0
                 if variant == "focus"
@@ -949,6 +1390,8 @@ def compose(outline, template, variant):
             focus_accent(elements, scale)
         center_content(elements, top, bottom)
         dodge_decor(elements, reserved, bottom, height * 0.015)
+        align_icons(elements)
+        align_to_picture(elements)
         # Последнее слово за вместимостью рамки: рост кегля и центрирование
         # двигают и рамки, и текст, поэтому блок, который после них перестал
         # помещаться, уменьшается до следующей ступени шкалы, а не выходит за
@@ -1040,6 +1483,11 @@ def compose(outline, template, variant):
                 "background_kind": pattern.get("background_kind", "solid"),
                 "needs_scrim": needs_scrim,
                 "native_cover": native_cover,
+                # Слайд собран своей композицией: мелкие образцы страницы сняты.
+                "clear_stage": staged,
+                # Значки образца страницы: на слайд они не переносятся, на их
+                # местах стоят подобранные иконки (swap_*), если нашлись.
+                "drop_shapes": [slot["id"] for slot in slots],
                 # Kept so the UI and the pitch can answer "why this layout?".
                 "pattern_choice": {
                     "score": pattern_score,

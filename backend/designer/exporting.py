@@ -20,15 +20,18 @@ from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
+from .assets import color_roles, draw_asset
 from .fonts import printable
-from .layout import estimated_text_height
+from .layout import STAT_BAR, STAT_INSET, estimated_text_height
 from .visuals import DIAGRAMS, MIN_LABEL_SIZE
 from .parsing import (
     background_color,
     best_text_color,
+    contrast_ratio,
     is_footer_placeholder,
     preserved_shape,
     shape_key,
+    stage_clutter,
 )
 
 
@@ -89,6 +92,23 @@ def _orphan_icon_row(source, width, height, branding):
     return orphans
 
 
+def _stage_clutter(source, width, height, branding):
+    """Мелкие образцы страницы, которые не переносятся на слайд своей композиции."""
+    found = set()
+    for shape in source.shapes:
+        if shape.is_placeholder or (shape.has_text_frame and shape.text.strip()):
+            continue
+        box = {
+            "x": shape.left / width,
+            "y": shape.top / height,
+            "w": shape.width / width,
+            "h": shape.height / height,
+        }
+        if stage_clutter(box, branding or ()):
+            found.add(shape.shape_id)
+    return frozenset(found)
+
+
 def _resize(element, box, width, height):
     """Переставить скопированную фигуру по исправленной рамке (доли слайда)."""
     transform = element.find(f"{qn('p:spPr')}/{qn('a:xfrm')}")
@@ -137,6 +157,12 @@ def _clone_slide(
         ):
             continue
         element = copy.deepcopy(shape._element)
+        # Значок образца внутри группы (кружок + иконка) снимается отдельно:
+        # подложка остаётся, пример уходит.
+        for picture in element.xpath(".//p:pic"):
+            identifier = picture.xpath("./p:nvPicPr/p:cNvPr/@id")
+            if identifier and int(identifier[0]) in orphans:
+                picture.getparent().remove(picture)
         is_footer = is_footer_placeholder(shape)
         # Groups may contain sample text; do not copy their text into the result.
         for text in element.xpath(".//a:t"):
@@ -350,7 +376,55 @@ def add_value_labels(chart, kind, font, color, unit):
         body.set("wrap", "none")
 
 
-def export_pptx(template_path: Path, template, deck_data, output: Path):
+def stat_colour(accent, background, text_color):
+    """Цвет крупной цифры: акцент, если он читается на фоне; иначе цвет текста.
+
+    Для крупного кегля WCAG допускает контраст 3:1 — поэтому фирменный синий на
+    белом годится для цифры, хотя для мелкого текста его было бы мало.
+    """
+    return accent if contrast_ratio(accent, background) >= 3.0 else text_color
+
+
+def draw_stat(slide, element, font, accent, background, text_color, coverage=None):
+    """Фактоид: акцентная черта, крупное число и подпись под ним."""
+    x, y, w, h = element["box"]
+    bar = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.RECTANGLE,
+        Pt(x),
+        Pt(y + element["value_size"] * 0.18),
+        Pt(STAT_BAR),
+        Pt(max(8.0, h - element["value_size"] * 0.18)),
+    )
+    bar.name = element["id"] + ":bar"
+    bar.fill.solid()
+    bar.fill.fore_color.rgb = RGBColor.from_string(accent)
+    bar.line.fill.background()
+    bar.shadow.inherit = False
+    shape = slide.shapes.add_textbox(Pt(x + STAT_INSET), Pt(y), Pt(w - STAT_INSET), Pt(h))
+    shape.name = element["id"]
+    frame = shape.text_frame
+    frame.word_wrap = True
+    frame.margin_left = frame.margin_right = Pt(6)
+    frame.margin_top = frame.margin_bottom = Pt(0)
+    first = frame.paragraphs[0]
+    first.text = printable(element["value"], font, coverage)
+    first.space_after = Pt(2)
+    first.line_spacing = 1.0
+    colour = stat_colour(accent, background, text_color)
+    _font(first.font, font, element["value_size"], colour, True)
+    for run in first.runs:
+        _font(run.font, font, element["value_size"], colour, True)
+    for line in element["text"].splitlines():
+        p = frame.add_paragraph()
+        p.text = printable(line, font, coverage)
+        p.space_after = Pt(3)
+        _font(p.font, font, element["font_size"], text_color)
+        for run in p.runs:
+            _font(run.font, font, element["font_size"], text_color)
+
+
+def export_pptx(template_path: Path, template, deck_data, output: Path, asset_root=None):
+    """asset_root — корень хранилища, где лежат картинки шаблонов и пакетов."""
     deck = Presentation(template_path)
     originals = list(deck.slides)
     original_ids = list(deck.slides._sldIdLst)
@@ -376,6 +450,10 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
             if any(e.get("from_template") for e in slide_data["elements"])
             else _orphan_icon_row(source, deck.slide_width, deck.slide_height, branding)
         )
+        if slide_data.get("drop_shapes"):
+            orphans = orphans | frozenset(slide_data["drop_shapes"])
+        if slide_data.get("clear_stage"):
+            orphans = orphans | _stage_clutter(source, deck.slide_width, deck.slide_height, branding)
         slide = _clone_slide(
             deck,
             source,
@@ -400,6 +478,12 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
             slide_data.get("image_cover", 0) >= 0.5 and not slide_data.get('native_cover')
         ):
             add_scrim(slide, slide_data["elements"], background)
+        roles = color_roles(
+            next((e["accent"] for e in slide_data["elements"] if e.get("accent")), palette[0] if palette else "000000"),
+            background,
+            text_color,
+            template["tokens"].get("accents") or [],
+        )
         for element in slide_data["elements"]:
             x, y, w, h = [Pt(v) for v in element["box"]]
             kind = element["kind"]
@@ -521,14 +605,46 @@ def export_pptx(template_path: Path, template, deck_data, output: Path):
                         )
                         for p in cell.text_frame.paragraphs:
                             _font(p.font, font, 13, color, r == 0)
+            elif kind == "image":
+                icon = element.get("role") == "icon"
+                draw_asset(
+                    slide.shapes,
+                    (int(x), int(y), int(w), int(h)),
+                    element["asset"],
+                    roles,
+                    asset_root,
+                    element.get("fit", "contain"),
+                    # Значок — акцентом, но только если он читается на фоне.
+                    tint=(element.get("tint") or stat_colour(accent, background, text_color))
+                    if icon
+                    else None,
+                )
+            elif kind == "stat":
+                draw_stat(slide, element, font, accent, background, text_color, coverage)
             elif kind in DIAGRAMS:
+                style = diagram_style(
+                    font, accent, background, text_color, palette, coverage
+                )
+                icons = element.get("icons")
+                if icons:
+
+                    def glyph(shapes, index, box, icons=icons):
+                        if index >= len(icons) or not icons[index]:
+                            return False
+                        return (
+                            draw_asset(
+                                shapes, box, icons[index], roles, asset_root,
+                                tint=stat_colour(accent, background, text_color),
+                            )
+                            is not None
+                        )
+
+                    style["glyph"] = glyph
                 DIAGRAMS[kind](
                     slide.shapes,
                     (int(x), int(y), int(w), int(h)),
                     element["data"],
-                    diagram_style(
-                        font, accent, background, text_color, palette, coverage
-                    ),
+                    style,
                 )
         slide.notes_slide.notes_text_frame.text = slide_data["content"]["notes"]
     for identifier in original_ids:

@@ -11,10 +11,14 @@ Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратны
 | GET | `/api/v1/workflow` | Версия агентов, файлы промптов и SHA-256 |
 | GET | `/api/v1/templates` | `{items: [...]}` — шаблоны, без подробного списка объектов |
 | POST | `/api/v1/templates` | multipart `file` (.pptx), 201, шаблон и токены |
-| GET | `/api/v1/templates/{id}` | Полная декомпозиция: tokens, geometry, patterns, layouts |
+| GET | `/api/v1/templates/{id}` | Полная декомпозиция: tokens, geometry, patterns, layouts, assets |
+| GET | `/api/v1/templates/{id}/assets` | Картинки шаблона: `{counts, items:[{id,kind,tags,label,url…}]}` — иконки, иллюстрации, фото |
+| POST | `/api/v1/templates/{id}/assets/tags` | Подписать картинки шаблона мультимодальной моделью; 503 без `DESIGNER_VLM_MODEL` |
+| GET | `/api/v1/assets/{template\|pack}/{owner}/{file}` | Файл картинки (SVG отдаётся с запрещающим CSP) |
 | GET | `/api/v1/content-packs` | Список загруженных материалов |
-| POST | `/api/v1/content-packs` | multipart `file`, 201, `{id,name,text,sha256}` |
-| GET | `/api/v1/content-packs/{id}` | Извлечённый текст |
+| POST | `/api/v1/content-packs` | multipart `file`, 201, `{id,name,text,assets,asset_counts,sha256}`. Текст (txt, md, csv, json, pdf, docx, pptx), картинка (svg, png, jpg) или zip из них |
+| GET | `/api/v1/content-packs/{id}` | Извлечённый текст и метаданные картинок |
+| GET | `/api/v1/content-packs/{id}/assets` | Картинки пакета со ссылками на файлы |
 | POST | `/api/v1/outlines` | Бриф → Outline; синхронно, до 150 секунд ожидания модели |
 | POST | `/api/v1/generations` | 202, задача генерации трёх вариантов |
 | GET | `/api/v1/jobs/{id}` | Статус, progress 0–100, presentation_ids, error |
@@ -29,6 +33,16 @@ Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратны
 
 Индексы слайдов начинаются с 0. Идентификаторы ресурсов — непрозрачные строки.
 Максимальная загрузка — 50 MB, распакованный ZIP — 300 MB. Сканированный PDF без текстового слоя не поддерживается.
+
+## Визуальный контент-пакет
+
+Zip с картинками и, по желанию, текстами. `manifest.json` в корне задаёт вид и теги:
+
+```json
+{"assets": [{"file": "icons/rocket.svg", "kind": "icon", "tags": ["запуск", "ракета"]}]}
+```
+
+Без манифеста вид берётся из папки (`icons/`, `illustrations/`, `photos/`) или по самой картинке, а теги — из имени файла (`запуск-ракета.svg`). Одноцветные SVG и PNG считаются иконками и перекрашиваются в акцент шаблона; SVG вставляется нативными фигурами, растр — картинкой без растяжения. Пример — `samples/content-pack/visual-pack.zip` (его собирает `tools/make_content_pack.py`).
 
 ## Рекомендуемый сценарий
 

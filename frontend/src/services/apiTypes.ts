@@ -45,7 +45,14 @@ export type ApiTemplateSummary = {
   layouts?: { index: number; name: string }[];
 };
 
-export type ApiContentPack = { id: string; name: string; text: string; sha256: string };
+export type ApiAssetCounts = { icon: number; illustration: number; photo: number; tagged: number };
+export type ApiContentPack = {
+  id: string;
+  name: string;
+  text: string;
+  sha256: string;
+  asset_counts?: ApiAssetCounts;
+};
 
 export type ApiJob = {
   id: string;
