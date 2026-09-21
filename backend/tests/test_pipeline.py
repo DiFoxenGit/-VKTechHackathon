@@ -2347,3 +2347,61 @@ def test_deck_never_exceeds_the_requested_size(monkeypatch):
         generate_outline(request, [{"id": "brief", "text": request.brief}], [])
     )
     assert len(result.slides) == 3
+
+
+def test_file_level_findings_reach_the_report():
+    """Приложение 1: «файл не открывается» и «слайд оказался картинкой»."""
+    from designer.audit import file_issues, merge_file_issues
+
+    broken = file_issues({"opens": False})
+    assert [i["code"] for i in broken] == ["file_broken"]
+    assert broken[0]["severity"] == "error"
+
+    found = file_issues(
+        {
+            "opens": True,
+            "raster_slides": [2],
+            "moved_branding": [{"slide": 1, "name": "Logo", "shift": 0.05}],
+            "charts": [{"slide": 3, "series": 2, "legend": False, "axis_title": True, "value_labels": True}],
+        }
+    )
+    codes = {i["code"]: i for i in found}
+    assert codes["raster_slide"]["slide_index"] == 2
+    assert codes["branding_moved"]["severity"] == "error"
+    assert "Logo" in codes["branding_moved"]["message"]
+    assert "легенды" in codes["chart_labels"]["message"]
+
+    report = {"issues": [], "counts": {"errors": 0, "warnings": 0}}
+    merge_file_issues(report, {"opens": True, "raster_slides": [0]})
+    assert report["counts"]["errors"] == 1 and len(report["issues"]) == 1
+
+
+def test_clean_chart_leaves_no_file_findings():
+    """У подписанной диаграммы претензий быть не должно."""
+    from designer.audit import file_issues
+
+    assert file_issues(
+        {
+            "opens": True,
+            "charts": [{"slide": 1, "series": 1, "legend": False, "axis_title": True, "value_labels": True}],
+        }
+    ) == []
+
+
+def test_export_keeps_template_branding_in_place(tmp_path):
+    """«Логотип или колонтитул сдвинуты» — проверяем по записанному файлу."""
+    from designer.exporting import branding_drift, export_pptx, verify_pptx
+    from designer.layout import compose
+    from designer.models import Outline
+    from designer.parsing import parse_template
+
+    for path in sample_templates() or pytest.skip("нет шаблонов"):
+        template = parse_template(path.read_bytes(), path.name)
+        deck = compose(Outline.model_validate(outline(3)).model_dump(), template, "classic")
+        result = tmp_path / f"{path.stem[:8]}.pptx"
+        export_pptx(path, template, deck, result)
+        assert branding_drift(path, deck, result) == []
+        check = verify_pptx(result, len(deck["slides"]))
+        # Диаграммы разбираются: у каждой видно легенду, подписи осей и значений.
+        assert all({"legend", "axis_title", "value_labels"} <= set(c) for c in check["charts"])
+        assert check["charts"], "в плане есть диаграмма, она должна попасть в отчёт"

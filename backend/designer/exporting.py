@@ -616,13 +616,92 @@ def prune_package(path: Path):
     return len(names) - len(payload)
 
 
+def _chart_labels(chart, slide_index):
+    """Что у диаграммы подписано: легенда, оси, значения.
+
+    Приложение 1 требует подписей осей, единиц и легенды. Проверять это по
+    модели вёрстки нечестно: решение принимает экспорт. Смотрим готовый файл.
+    """
+    try:
+        series = len(chart.plots[0].series)
+        labels = bool(chart.plots[0].data_labels.show_value)
+    except (IndexError, ValueError, AttributeError):
+        series, labels = 0, False
+    axes = []
+    for name in ("value_axis", "category_axis"):
+        try:
+            axes.append(bool(getattr(chart, name).has_title))
+        except (ValueError, AttributeError):
+            axes.append(False)
+    return {
+        "slide": slide_index,
+        "series": series,
+        "legend": bool(chart.has_legend),
+        "axis_title": any(axes),
+        "value_labels": labels,
+    }
+
+
+def branding_drift(template_path: Path, deck_data, output: Path, tolerance=0.004):
+    """Элементы шаблона, которые уехали с места при клонировании.
+
+    Логотип, колонтитул и декор копируются из страницы-прототипа как есть,
+    поэтому сдвинуться они могут только если кто-то тронет экспорт. Приложение 1
+    требует это проверять, и проверка обходится дешевле, чем разбор такого бага
+    на сцене: сравниваем координаты фигур по их идентификаторам.
+    """
+    source = Presentation(template_path)
+    result = Presentation(output)
+    width = float(source.slide_width or 1)
+    height = float(source.slide_height or 1)
+    moved = []
+    originals = list(source.slides)
+    for index, slide in enumerate(result.slides):
+        pattern = deck_data["slides"][index].get("pattern_index")
+        if pattern is None or pattern >= len(originals):
+            continue
+        # Сопоставляем по паре «номер и имя»: новые блоки получают собственные
+        # номера, которые могут совпасть с номерами фигур шаблона.
+        before = {
+            (shape.shape_id, shape.name): (shape.left, shape.top, shape.width, shape.height)
+            for shape in originals[pattern].shapes
+        }
+        for shape in slide.shapes:
+            expected = before.get((shape.shape_id, shape.name))
+            if not expected:
+                continue
+            actual = (shape.left, shape.top, shape.width, shape.height)
+            shift = max(
+                abs(actual[0] - expected[0]) / width,
+                abs(actual[1] - expected[1]) / height,
+                abs(actual[2] - expected[2]) / width,
+                abs(actual[3] - expected[3]) / height,
+            )
+            if shift > tolerance:
+                moved.append(
+                    {
+                        "slide": index,
+                        "name": shape.name,
+                        "shift": round(shift, 4),
+                    }
+                )
+    return moved
+
+
 def verify_pptx(path: Path, expected_slides: int):
     """Confirm the exported deck opens and carries editable objects.
 
     The brief rejects slides exported as one flat image, so the service proves the
     opposite on every export instead of asserting it in documentation.
     """
-    report = {"opens": False, "slides": 0, "native_objects": 0, "raster_slides": []}
+    report = {
+        "opens": False,
+        "slides": 0,
+        "native_objects": 0,
+        "raster_slides": [],
+        "charts": [],
+        "moved_branding": [],
+    }
     with zipfile.ZipFile(path) as archive:
         if archive.testzip() is not None:
             raise RuntimeError("Exported PPTX archive is corrupt")
@@ -641,6 +720,8 @@ def verify_pptx(path: Path, expected_slides: int):
                 pictures += 1
             elif shape.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE:
                 editable += 1
+            if shape.has_chart:
+                report["charts"].append(_chart_labels(shape.chart, index))
         report["native_objects"] += editable
         if not editable and pictures:
             report["raster_slides"].append(index)
