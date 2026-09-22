@@ -101,6 +101,7 @@ export function toIssues(source: ApiPresentation | { audit?: { issues?: ApiAudit
       : `Слайд ${(issue.slide_index ?? 0) + 1}`,
     fixable: Boolean(issue.fixable),
     rule: issue.code,
+    boxed: Boolean(issue.box),
   }));
 }
 

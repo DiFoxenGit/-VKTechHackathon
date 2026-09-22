@@ -20,6 +20,31 @@
   cursor: pointer;
 }
 .audit-fix:hover { background: var(--blue); color: #fff; }
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.preview-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #6d819e;
+  cursor: pointer;
+}
+.preview-toggle input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
+.preview-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #8b98ab;
+}
+.preview-count.has-issues { color: #cf7414; }
+.preview-count svg { flex-shrink: 0; }
 .preview-frame {
   display: block;
   width: 100%;
