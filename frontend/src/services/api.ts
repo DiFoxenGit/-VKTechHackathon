@@ -18,9 +18,6 @@ const BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
 const ROOT = BASE.replace(/\/api\/v1$/, '');
 const TOKEN = import.meta.env.VITE_API_TOKEN ?? '';
 
-/** The UI stays usable without a server: an empty base URL keeps the local demo engine. */
-export const apiConfigured = Boolean(BASE);
-
 export class ApiError extends Error {
   constructor(readonly status: number, message: string) {
     super(message);

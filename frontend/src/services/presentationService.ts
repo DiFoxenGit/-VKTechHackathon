@@ -13,6 +13,7 @@ import type {
   ApiPurpose,
   ApiSlideContent,
   ApiTemplateSummary,
+  ApiWorkflow,
 } from './apiTypes';
 import type { AuditIssue, Brief, Deck, Layout, Slide, Template } from '../types';
 
@@ -164,7 +165,42 @@ export function draftDeck(outline: ApiOutline, templateId: string): Deck {
   };
 }
 
+/** Версия сценария генерации — то, чем именно собрана колода. */
+export type WorkflowInfo = {
+  version: string;
+  agents: { role: string; file: string; sha: string }[];
+  latest: { version: string; why: string } | undefined;
+};
+
+/** Имена агентов на языке пользователя: в API они служебные. */
+const AGENT_ROLES: Record<string, string> = {
+  outline: 'Структура и текст',
+  audit: 'Проверка текста',
+  audit_image: 'Проверка по изображению',
+  condense: 'Сокращение текста',
+  assets: 'Подбор иллюстраций',
+};
+
+function toWorkflow(source: ApiWorkflow): WorkflowInfo {
+  const sha = source.sha256 ?? {};
+  return {
+    version: source.version,
+    agents: Object.entries(source.agents ?? {}).map(([key, file]) => ({
+      role: AGENT_ROLES[key] ?? key,
+      file,
+      // Префикса хватает, чтобы сверить промпт с тем, что лежит в репозитории.
+      sha: (sha[file] ?? '').slice(0, 8),
+    })),
+    latest: source.changelog?.[0],
+  };
+}
+
 export const presentationService = {
+  /** Чем собрана колода: версия сценария, промпты агентов и последнее изменение. */
+  async workflow(): Promise<WorkflowInfo> {
+    return toWorkflow(await api.workflow());
+  },
+
   /** Только структура: быстрый шаг до вёрстки, его показывает экран «Структура». */
   async createOutline(brief: Brief, packIds: string[], purpose: ApiPurpose): Promise<ApiOutline> {
     return api.createOutline({
