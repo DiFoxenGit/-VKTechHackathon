@@ -41,6 +41,16 @@ function readSaved(): Saved {
   return { brief: DEFAULT_BRIEF, decks: [] };
 }
 
+/** «1 замечание», «2 замечания», «5 замечаний»: без этого счётчик выглядит небрежно. */
+function issueWord(count: number): string {
+  const tens = count % 100;
+  if (tens >= 11 && tens <= 14) return 'замечаний';
+  const ones = count % 10;
+  if (ones === 1) return 'замечание';
+  if (ones >= 2 && ones <= 4) return 'замечания';
+  return 'замечаний';
+}
+
 function IconButton({ children, label, ...props }: { children: ReactNode; label: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" className="icon-button" title={label} aria-label={label} {...props}>{children}</button>;
 }
@@ -102,6 +112,9 @@ export default function App() {
   const [dialog, setDialog] = useState<'help' | 'export' | 'preview' | 'settings' | null>(null);
   // Превью слайда рисует сервер: это тот же PDF, что уедет пользователю.
   const [previewUrl, setPreviewUrl] = useState('');
+  // Сервер умеет обводить найденные проблемы прямо на слайде.
+  const [previewHighlight, setPreviewHighlight] = useState(true);
+  const [previewBusy, setPreviewBusy] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   // Чем собрана колода: версия сценария и промпты агентов.
   const [workflow, setWorkflow] = useState<WorkflowInfo | null>(null);
@@ -158,11 +171,16 @@ export default function App() {
     if (dialog !== 'preview' || !project) { setPreviewUrl(''); return; }
     let live = true;
     let url = '';
-    presentationService.preview(project, activeSlide, false)
+    // Прошлая картинка отдаётся по blob-ссылке, которую мы сейчас отзовём:
+    // показывать её дальше нельзя, поэтому уходим на локальный рендер.
+    setPreviewUrl('');
+    setPreviewBusy(true);
+    presentationService.preview(project, activeSlide, previewHighlight)
       .then(value => { if (live) { url = value; setPreviewUrl(value); } else URL.revokeObjectURL(value); })
-      .catch(() => setPreviewUrl(''));
+      .catch(() => setPreviewUrl(''))
+      .finally(() => { if (live) setPreviewBusy(false); });
     return () => { live = false; if (url) URL.revokeObjectURL(url); };
-  }, [dialog, project, activeSlide]);
+  }, [dialog, project, activeSlide, previewHighlight]);
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(''), 4500); return () => clearTimeout(timer); }, [toast]);
   useEffect(() => { setError(''); window.scrollTo({ top: 0 }); }, [screen]);
 
@@ -379,7 +397,7 @@ export default function App() {
     </Modal>}
     {dialog === 'help' && <Modal title="От идеи до готовой презентации" onClose={() => setDialog(null)}><div className="help-steps">{[{ title: 'Опишите идею', body: 'Добавьте основные тезисы, выберите аудиторию и фирменный шаблон. Для быстрого старта воспользуйтесь примером.' }, { title: 'Нажмите «Создать презентацию»', body: 'Откроется готовая презентация. Стиль и количество слайдов подберёт стандартный сценарий; их можно изменить заранее в настройках.' }, { title: 'Скачайте или доработайте', body: 'Редактируйте текст прямо в редакторе. Структура, три варианта оформления и проверка доступны через «Настроить». Скачать можно PPTX, HTML или PDF через печать.' }].map((item, i) => <div key={item.title}><span>{i + 1}</span><section><h3>{item.title}</h3><p>{item.body}</p></section></div>)}</div><div className="modal-note"><Sparkles size={19} /><p><strong>Сейчас это интерактивный деморежим.</strong> ИИ не подключён. Структура собирается по простым правилам, а дизайн использует палитру выбранного шаблона. Материалы и изменения сохраняются только в этом браузере.</p></div><button className="primary-button full-width" onClick={() => setDialog(null)}>Всё понятно<Check size={17} /></button></Modal>}
     {dialog === 'export' && deck && <Modal title="Презентация готова к выходу" onClose={() => setDialog(null)}><p className="modal-subtitle">{deck.slides.length} слайдов · {currentTemplate.name}</p>{issues.length > 0 && <div className="export-warning"><AlertCircle size={18} /><span>В презентации есть замечания: {issues.length}.</span><button onClick={() => { setDialog(null); setAuditOpen(true); }}>Посмотреть</button></div>}<div className="export-options"><button onClick={() => void download('pptx')} disabled={Boolean(busy)}><span className="export-file pptx"><Presentation size={24} /></span><span><strong>PowerPoint <small>.pptx</small></strong><p>Редактируемые заголовки, текст и фигуры</p></span>{busy === 'pptx' ? <LoaderCircle className="spin" size={19} /> : <Download size={19} />}</button><button onClick={() => void download('pdf')} disabled={Boolean(busy)}><span className="export-file pdf"><FileText size={24} /></span><span><strong>PDF <small>через печать</small></strong><p>Выберите «Сохранить как PDF» в браузере</p></span><ArrowUpRight size={19} /></button><button onClick={() => void download('html')} disabled={Boolean(busy)}><span className="export-file html"><Monitor size={24} /></span><span><strong>Веб-презентация <small>.html</small></strong><p>Один файл, открывается в любом браузере</p></span><Download size={19} /></button></div><p className="export-disclosure">Экспорт использует оформление демоверсии. Исходные макеты и графика PPTX-шаблона полностью не переносятся.</p></Modal>}
-    {dialog === 'preview' && deck && slide && <Modal title={`Слайд ${activeSlide + 1} из ${deck.slides.length}`} onClose={() => setDialog(null)} wide>{previewUrl ? <img className="preview-frame" src={previewUrl} alt={`Слайд ${activeSlide + 1}`} /> : <SlideCanvas slide={slide} template={currentTemplate} layout={deck.layout} index={activeSlide} total={deck.slides.length} />}<div className="preview-navigation"><button className="secondary-button" disabled={activeSlide === 0} onClick={() => setActiveSlide(activeSlide - 1)}><ChevronLeft size={17} />Назад</button><button className="secondary-button" disabled={activeSlide === deck.slides.length - 1} onClick={() => setActiveSlide(activeSlide + 1)}>Далее<ChevronRight size={17} /></button></div></Modal>}
+    {dialog === 'preview' && deck && slide && <Modal title={`Слайд ${activeSlide + 1} из ${deck.slides.length}`} onClose={() => setDialog(null)} wide>{(() => { const found = issues.filter(i => i.slideId === slide.id); const boxed = found.filter(i => i.boxed).length; return <div className="preview-toolbar"><label className="preview-toggle"><input type="checkbox" checked={previewHighlight} onChange={e => setPreviewHighlight(e.target.checked)} />Показать замечания</label><span className={`preview-count ${found.length ? 'has-issues' : ''}`}>{previewBusy ? <><LoaderCircle className="spin" size={14} />Рисуем слайд…</> : found.length ? <><AlertCircle size={14} />{found.length} {issueWord(found.length)} на слайде{previewHighlight && !boxed ? ' — без привязки к месту, текст в панели проверки' : ''}</> : <><CheckCircle2 size={14} />Замечаний на слайде нет</>}</span></div>; })()}{previewUrl ? <img className="preview-frame" src={previewUrl} alt={`Слайд ${activeSlide + 1}`} /> : <SlideCanvas slide={slide} template={currentTemplate} layout={deck.layout} index={activeSlide} total={deck.slides.length} />}<div className="preview-navigation"><button className="secondary-button" disabled={activeSlide === 0} onClick={() => setActiveSlide(activeSlide - 1)}><ChevronLeft size={17} />Назад</button><button className="secondary-button" disabled={activeSlide === deck.slides.length - 1} onClick={() => setActiveSlide(activeSlide + 1)}>Далее<ChevronRight size={17} /></button></div></Modal>}
     {deleteId && <Modal title="Удалить презентацию?" onClose={() => setDeleteId(null)}><p className="modal-subtitle">Она исчезнет из этого браузера. Скачанные файлы сохранятся.</p><div className="flow-actions"><button className="secondary-button" onClick={() => setDeleteId(null)}>Оставить</button><button className="danger-button" onClick={() => { setDecks(prev => prev.filter(d => d.id !== deleteId)); if (deck?.id === deleteId) setDeck(null); setDeleteId(null); setToast('Презентация удалена'); }}>Удалить</button></div></Modal>}
   </div>;
 }
