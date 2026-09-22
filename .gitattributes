@@ -1,0 +1,12 @@
+# Скрипты и конфиги, которые исполняются на Linux, всегда с LF: иначе при
+# checkout на Windows они получают CRLF, и сервер отвечает «bash\r: not found».
+* text=auto
+*.sh text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+Dockerfile text eol=lf
+*.pptx binary
+*.pdf binary
+*.png binary
+*.ttf binary
+*.woff2 binary
