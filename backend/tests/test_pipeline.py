@@ -2745,3 +2745,42 @@ def test_template_sample_icons_are_replaced_in_place(tmp_path):
     shapes = Deck(output).slides[1].shapes
     assert not [s for s in shapes if s.shape_type == 13], "образцы значков остались на слайде"
     assert len([s for s in shapes if s.name.startswith("icon:builtin-")]) == 3
+
+
+def _deck_on_background(**background):
+    """Колода на странице шаблона с заданным фоном."""
+    from designer.layout import compose
+    from designer.models import Outline
+
+    page = dict(pattern(0, text_slots=4), background_kind="image", image_cover=1.0, **background)
+    template = synthetic_template([page, dict(page, index=1)])
+    deck = compose(Outline.model_validate(outline(2)).model_dump(), template, "classic")
+    return deck, template
+
+
+def test_calm_measured_background_is_not_a_finding():
+    """Фоновая подложка шаблона — не повод для находки, если фон спокойный."""
+    deck, template = _deck_on_background(bg_luma=0.92, bg_spread=0.04)
+    codes = [i["code"] for i in audit(deck, template, [{"id": "brief", "text": "тест"}])["issues"]]
+    assert "text_over_image" not in codes
+
+
+def test_dark_busy_background_is_reported_with_measurement():
+    """Тёмный пёстрый фон: вёрстка кладёт подложку, аудит просит проверить."""
+    deck, template = _deck_on_background(bg_luma=0.18, bg_spread=0.4)
+    found = [
+        i for i in audit(deck, template, [{"id": "brief", "text": "тест"}])["issues"]
+        if i["code"] == "text_over_image"
+    ]
+    assert found, "на тёмном пёстром фоне находка обязана быть"
+    assert "40%" in found[0]["message"], found[0]["message"]
+
+
+def test_unmeasured_background_still_warns():
+    """Без измерения фон неизвестен — честнее предупредить."""
+    deck, template = _deck_on_background()
+    found = [
+        i for i in audit(deck, template, [{"id": "brief", "text": "тест"}])["issues"]
+        if i["code"] == "text_over_image"
+    ]
+    assert found and "не измерен" in found[0]["message"], found
