@@ -68,11 +68,15 @@ cd backend && uvicorn designer.server:app --port 8000 --workers 1
 
 ```bash
 cd frontend
-cp .env.example .env          # VITE_API_URL=http://localhost:8000/api/v1
+cp .env.example .env          # VITE_API_URL=/api/v1
 npm ci && npm run dev
 ```
 
-Без `VITE_API_URL` интерфейс работает в локальном демо-режиме: структура собирается детерминированно, правила шаблона не применяются.
+Запросы к `/api` vite проксирует на `VITE_DEV_API_PROXY` (по умолчанию `http://localhost:8000`):
+так браузер ходит на свой же адрес и не упирается в политику CORS. Чтобы смотреть интерфейс на
+работающем стенде, достаточно поменять эту переменную на его адрес.
+
+Без `VITE_API_URL` интерфейс не работает: колоду собирает сервис, локального движка в браузере нет.
 
 </details>
 

@@ -4,7 +4,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronR
 import type { Brief, Deck, Layout, Slide, Template } from './types';
 import { EXAMPLE_BRIEF, getSlideTypography } from './engine';
 import { draftDeck, presentationService, toOutline } from './services/presentationService';
-import type { Project } from './services/presentationService';
+import type { Project, WorkflowInfo } from './services/presentationService';
 import type { ApiOutline } from './services/apiTypes';
 
 type Screen = 'create' | 'outline' | 'design' | 'editor' | 'projects' | 'templates';
@@ -103,12 +103,16 @@ export default function App() {
   // Превью слайда рисует сервер: это тот же PDF, что уедет пользователю.
   const [previewUrl, setPreviewUrl] = useState('');
   const [auditOpen, setAuditOpen] = useState(false);
+  // Чем собрана колода: версия сценария и промпты агентов.
+  const [workflow, setWorkflow] = useState<WorkflowInfo | null>(null);
+  const [workflowOpen, setWorkflowOpen] = useState(false);
   const [materialName, setMaterialName] = useState(initial.brief.materials ? 'Сохранённые текстовые материалы' : '');
   const [dragging, setDragging] = useState(false);
   const [projectSearch, setProjectSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const materialInput = useRef<HTMLInputElement>(null);
   const templateInput = useRef<HTMLInputElement>(null);
+  const workflowCard = useRef<HTMLDivElement>(null);
   const briefInput = useRef<HTMLTextAreaElement>(null);
   const allTemplates = templates;
   const currentTemplate = allTemplates.find(t => t.id === (deck && ['outline', 'design', 'editor'].includes(screen) ? deck.templateId : brief.templateId)) || allTemplates[0] || LOADING_TEMPLATE;
@@ -128,6 +132,24 @@ export default function App() {
       })
       .catch(e => setError(e instanceof Error ? e.message : 'Сервис недоступен: не удалось получить шаблоны.'));
   }, []);
+  // Версия сценария — справочная: её отсутствие не повод пугать пользователя ошибкой.
+  useEffect(() => {
+    presentationService.workflow().then(setWorkflow).catch(() => setWorkflow(null));
+  }, []);
+  // Карточка версии закрывается кликом мимо и по Escape — как обычное меню.
+  useEffect(() => {
+    if (!workflowOpen) return;
+    const away = (event: MouseEvent) => {
+      if (!workflowCard.current?.contains(event.target as Node)) setWorkflowOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setWorkflowOpen(false); };
+    document.addEventListener('mousedown', away);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [workflowOpen]);
   useEffect(() => {
     if (!deck) return;
     setDecks(prev => [deck, ...prev.filter(d => d.id !== deck.id)]);
@@ -307,7 +329,7 @@ export default function App() {
       <header className="simple-header">
         <button className="brand" onClick={() => navigate('create')} aria-label="Слайд — на главную"><span className="brand-icon"><Presentation size={23} strokeWidth={1.8} /></span><span>слайд<span className="brand-dot">.</span></span></button>
         <nav aria-label="Основная навигация"><button className={screen === 'projects' ? 'selected' : ''} onClick={() => navigate('projects')}><FolderOpen size={16} />Мои презентации</button><button className={screen === 'templates' ? 'selected' : ''} onClick={() => navigate('templates')}><LayoutTemplate size={16} />Шаблоны</button></nav>
-        <div className="simple-header-right"><span className="demo-badge">{templates.length ? `${templates.length} шаблона` : 'Подключаемся'}</span><IconButton label="Как это работает" onClick={() => setDialog('help')}><CircleHelp size={19} /></IconButton></div>
+        <div className="simple-header-right"><span className="demo-badge">{templates.length ? `${templates.length} шаблона` : 'Подключаемся'}</span>{workflow && <div className="workflow-badge" ref={workflowCard}><button type="button" aria-expanded={workflowOpen} aria-haspopup="dialog" onClick={() => setWorkflowOpen(!workflowOpen)}>Сценарий {workflow.version}</button>{workflowOpen && <div className="workflow-card" role="dialog" aria-label={`Сценарий генерации ${workflow.version}`}><strong>Сценарий генерации {workflow.version}</strong><p>Текст, иллюстрации и проверки готовят разные агенты. Рядом — файл промпта и начало его sha256: по ним видно, какой в точности версией собрана колода.</p><ul>{workflow.agents.map(agent => <li key={agent.file}><span>{agent.role}</span><code>{agent.file}</code>{agent.sha && <em title="Начало sha256 промпта">{agent.sha}</em>}</li>)}</ul>{workflow.latest && <div className="workflow-change"><span>Что изменилось в {workflow.latest.version}</span><p>{workflow.latest.why}</p></div>}</div>}</div>}<IconButton label="Как это работает" onClick={() => setDialog('help')}><CircleHelp size={19} /></IconButton></div>
       </header>
 
       <main className={`main-content ${screen === 'editor' ? 'editor-main' : ''}`}>
