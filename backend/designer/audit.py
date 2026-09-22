@@ -843,17 +843,6 @@ def merge_file_issues(report, check):
     return report
 
 
-def merge_file_issues(report, check):
-    """Дописать находки по файлу в готовый отчёт и пересчитать счётчики."""
-    found = file_issues(check)
-    if not found:
-        return report
-    report["issues"].extend(found)
-    report["counts"]["errors"] += sum(1 for i in found if i["severity"] == "error")
-    report["counts"]["warnings"] += sum(1 for i in found if i["severity"] != "error")
-    return report
-
-
 async def visual_audit(deck, sources, images):
     """Контекстные проверки Приложения 1 по изображению каждого слайда.
 

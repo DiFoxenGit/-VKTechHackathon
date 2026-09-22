@@ -20,6 +20,27 @@
   cursor: pointer;
 }
 .audit-fix:hover { background: var(--blue); color: #fff; }
+.audit-actions {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 4px;
+}
+.audit-actions .secondary-button {
+  justify-content: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  padding: 9px 11px;
+  min-height: 0;
+}
+.audit-origin {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 10px;
+  color: #7e8da0;
+  background: #f1f5fb;
+  border-radius: 5px;
+  padding: 3px 6px;
+}
 .preview-toolbar {
   display: flex;
   align-items: center;
