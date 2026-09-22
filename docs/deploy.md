@@ -73,28 +73,34 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 
 Ключ выдаётся сервисному аккаунту с ролью `ai.languageModels.user`, область действия ключа — `yc.ai.foundationModels.execute`.
 
-## Автодеплой из GitHub Actions
+## Автодеплой из SourceCraft CI
 
-Каждый push в `master` после зелёного этапа **Tests** (`pytest`, `frontend`, `Integration`; см. [tests.yml](../.github/workflows/tests.yml) и [regression.md](regression.md)) запускает job `deploy` в [ci.yml](../.github/workflows/ci.yml). Job передаёт серверу по SSH только команду `deploy <sha>`, код сервер забирает сам.
+Каждый push в `master` запускает рабочий процесс `ci` из [`.sourcecraft/ci.yaml`](../.sourcecraft/ci.yaml): три задания проверок (`pytest`, `frontend`, `integration`; см. [regression.md](regression.md)) идут параллельно, а задание `deploy` объявлено через `needs` и стартует только после того, как все три стали зелёными. Задание передаёт серверу по SSH одну команду `deploy <sha>`, код сервер забирает сам.
 
-1. `~/vk-designer` на сервере — git-клон с read-only deploy-ключом GitHub (`~/.ssh/github_deploy`, прописан в `core.sshCommand`).
-2. Ключ Actions привязан в `authorized_keys` к приёмнику [`deploy/ci-receive.sh`](../deploy/ci-receive.sh) через `restrict,command=...`: по этому ключу нельзя получить shell, можно только попросить выкатить коммит.
+1. `~/vk-designer` на сервере — git-клон приватного репозитория SourceCraft по HTTPS. Токен лежит в `~/.git-credentials` с правами `600`, в remote URL его нет.
+2. Ключ CI привязан в `authorized_keys` к приёмнику [`deploy/ci-receive.sh`](../deploy/ci-receive.sh) через `restrict,command=...`: по этому ключу нельзя получить shell, можно только попросить выкатить коммит.
 3. Приёмник делает `git fetch` (три попытки), принимает коммит, только если он входит в `origin/master`, переключает на него рабочую копию и запускает `deploy/deploy.sh`. `.env` и `templates/` лежат в `.gitignore`, их это не задевает.
-4. Если сборка или `/health` не прошли, приёмник возвращает прошлый коммит и образы `:prev`. Job падает, в логе видно почему.
+4. Если сборка или `/health` не прошли, приёмник возвращает прошлый коммит и образы `:prev`. Задание падает, в логе видно почему.
 
-Параллельные деплои исключены: `concurrency: production` в Actions и `flock` на сервере.
+Параллельные деплои разведены `flock` на сервере.
 
-| Где | Имя | Что |
-|---|---|---|
-| Secrets | `DEPLOY_SSH_KEY` | приватный deploy-ключ ed25519 |
-| Secrets | `DEPLOY_KNOWN_HOSTS` | `ssh-keyscan -t ed25519 <хост>`, чтобы не доверять хосту вслепую |
-| Variables | `DEPLOY_HOST`, `DEPLOY_USER` | адрес сервера и пользователь |
+Секреты репозитория (Настройки репозитория → Секреты):
 
-Приёмник на сервере лежит вне каталога проекта (`~/vk-designer-ci/receive.sh`), поэтому коммит не может его подменить. После правки `deploy/ci-receive.sh` его переустанавливают вручную:
+| Имя | Что |
+|---|---|
+| `DEPLOY_SSH_KEY` | приватный ключ ed25519, публичная половина — в `authorized_keys` сервера |
+| `DEPLOY_KNOWN_HOSTS` | строка `ssh-keyscan -t ed25519 <хост>`, чтобы не доверять хосту вслепую |
+| `DEPLOY_HOST` | адрес сервера |
+| `DEPLOY_USER` | пользователь, от которого идёт деплой |
 
-```bash
-ssh <сервер> 'cat > ~/vk-designer-ci/receive.sh' < deploy/ci-receive.sh
-```
+Токен для чтения репозитория сервером выпускается в **Домой → Доступ → Персональные токены доступа**: область — только этот репозиторий, роль — просмотр, срок ограничен датой. Когда срок подходит к концу, токен нужно перевыпустить и переписать `~/.git-credentials`, иначе деплой встанет на `git fetch`.
+
+Чем отличается от прежнего GitHub Actions:
+
+- Docker-образы в кубиках SourceCraft не собираются, поэтому окружение задаёт образ кубика, а LibreOffice, шрифты и зависимости ставятся теми же командами, что в `backend/Dockerfile`. Сборку образа фронтенда заменяет `npm ci && npm run build` — тот же `tsc -b && vite build`, что внутри `frontend/Dockerfile`.
+- Кеша между запусками нет: каждое задание ставит зависимости заново.
+- Markdown-сводки в интерфейсе запуска нет, поэтому таблица регресса печатается в лог, а `regress.json`, `regress.md` и контакт-листы сохраняются артефактами кубика `regress` (хранятся 14 дней).
+- Лимиты: кубик — 20 минут, задание — час, одновременно выполняется три рабочих процесса.
 
 Пользователь, от которого идёт деплой, должен быть в группе `docker`, а на машине с 2 ГБ RAM нужен swap: без него сборка фронтенда падает по OOM.
 

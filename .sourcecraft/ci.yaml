@@ -1,0 +1,94 @@
+# Проверки и доставка на стенд. Деплой идёт только после трёх зелёных заданий.
+#
+# Отличие от прежнего GitHub Actions: SourceCraft не собирает Docker-образы
+# внутри кубиков, поэтому окружение задаётся образом кубика, а зависимости
+# ставятся так же, как в backend/Dockerfile и frontend/Dockerfile.
+on:
+  push:
+    - workflows: [ci]
+      filter:
+        branches: ["master"]
+  pull_request:
+    - workflows: [ci]
+      filter:
+        target_branches: ["master"]
+
+workflows:
+  ci:
+    tasks:
+      - name: pytest
+        cubes:
+          - name: deps
+            image: python:3.11-bookworm
+            # LibreOffice нужен тестам экспорта в PDF и HTML, шрифты — вёрстке.
+            script:
+              - apt-get update
+              - apt-get install -y --no-install-recommends libreoffice-impress fonts-dejavu-core fonts-liberation fontconfig
+              - pip install --no-cache-dir -r backend/requirements.txt pytest
+          - name: tests
+            image: python:3.11-bookworm
+            needs: [deps]
+            script:
+              - cd backend && python -m pytest -q
+
+      - name: frontend
+        cubes:
+          - name: build
+            image: node:22-bookworm-slim
+            # `npm run build` — это `tsc -b && vite build`: одна команда
+            # проверяет и типы, и то, что фронтенд соберётся.
+            script:
+              - cd frontend && npm ci
+              - cd frontend && npm run build
+
+      - name: integration
+        cubes:
+          - name: deps
+            image: python:3.11-bookworm
+            script:
+              - apt-get update
+              - apt-get install -y --no-install-recommends libreoffice-impress fonts-dejavu-core fonts-liberation fontconfig
+              - pip install --no-cache-dir -r backend/requirements.txt
+              - install -d /usr/share/fonts/truetype/designer
+              - cp backend/designer/assets/fonts/*.ttf /usr/share/fonts/truetype/designer/
+              - fc-cache -f
+          - name: fixtures
+            image: python:3.11-bookworm
+            needs: [deps]
+            script:
+              - PYTHONPATH=backend python tools/make_fixture_templates.py out/templates
+          - name: regress
+            image: python:3.11-bookworm
+            needs: [fixtures]
+            # Регресс гоняет вёрстку по синтетическим шаблонам без обращения
+            # к модели: см. docs/regression.md.
+            script:
+              - PYTHONPATH=backend python tools/bench_templates.py out/templates --outline tools/regress_outline.json --source "samples/source/материал-инициатива.md" --render out/render --sheets out/sheets --json out/regress.json --markdown out/regress.md
+              - cat out/regress.md
+            artifacts:
+              paths:
+                - out/regress.json
+                - out/regress.md
+                - out/sheets
+
+      - name: deploy
+        needs: [pytest, frontend, integration]
+        cubes:
+          - name: ship
+            image: alpine:3.20
+            # Сервер сам забирает коммит из репозитория: по этому ключу нельзя
+            # получить shell, можно только попросить выкатить коммит.
+            if: env.SOURCECRAFT_EVENT == "push" && env.SOURCECRAFT_COMMIT_REF_NAME == "master"
+            env:
+              DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+              DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+              DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+              DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+            script:
+              - apk add --no-cache openssh-client curl
+              - install -m 700 -d ~/.ssh
+              - printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+              - chmod 600 ~/.ssh/deploy_key
+              - printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+              - ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=10 "$DEPLOY_USER@$DEPLOY_HOST" "deploy $SOURCECRAFT_COMMIT_SHA" < /dev/null
+              - curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "http://$DEPLOY_HOST/health"
