@@ -11,22 +11,23 @@
 
 | Шаблон | Вариант | Слайдов | Время | Ошибок аудита | Предупреждения |
 |---|---|---|---|---|---|
-| Шаблон презентации VK Education | Классический | 10 | 58 с | 0 | empty_content × 1, fill_ratio × 4, overlap × 1, word_break × 3 |
-| Шаблон презентации VK Education | Две колонки | 10 | 58 с | 0 | empty_content × 1, fill_ratio × 2 |
-| Шаблон презентации VK Education | Фокус | 10 | 58 с | 0 | empty_content × 1, fill_ratio × 2, text_overflow × 1 |
-| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Классический | 10 | 36 с | 0 | fill_ratio × 3, text_over_image × 2, word_break × 1 |
-| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Две колонки | 10 | 36 с | 0 | fill_ratio × 1, text_over_image × 2 |
-| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Фокус | 10 | 36 с | 0 | fill_ratio × 1, text_over_image × 2 |
-| VK Tech шаблон | Классический | 10 | 26 с | 0 | fill_ratio × 5, overlap × 1, source_reference × 1, text_over_image × 2, text_overflow × 2, word_break × 1 |
-| VK Tech шаблон | Две колонки | 10 | 26 с | 0 | branding_overlap × 1, fill_ratio × 6, source_reference × 1, text_over_image × 2 |
-| VK Tech шаблон | Фокус | 10 | 26 с | 0 | fill_ratio × 5, source_reference × 1, text_over_image × 2, text_overflow × 1, word_break × 1 |
+| Шаблон презентации VK Education | Классический | 12 | 64 с | 0 | fill_ratio × 3 |
+| Шаблон презентации VK Education | Две колонки | 12 | 64 с | 0 | fill_ratio × 2 |
+| Шаблон презентации VK Education | Фокус | 12 | 64 с | 0 | fill_ratio × 2 |
+| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Классический | 12 | 32 с | 0 | empty_content × 1, fill_ratio × 4, source_reference × 5, text_over_image × 3, word_break × 1 |
+| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Две колонки | 12 | 32 с | 0 | empty_content × 1, fill_ratio × 3, source_reference × 5, text_over_image × 3 |
+| VK_WorkSpace_Клиентская_конференция_Шаблон_03 | Фокус | 12 | 32 с | 0 | empty_content × 1, fill_ratio × 3, source_reference × 5, text_over_image × 3, word_break × 1 |
+| VK Tech шаблон | Классический | 12 | 50 с | 0 | fill_ratio × 1 |
+| VK Tech шаблон | Две колонки | 12 | 50 с | 0 | fill_ratio × 1 |
+| VK Tech шаблон | Фокус | 12 | 50 с | 0 | fill_ratio × 1 |
 
 Время — на всю задачу: план колоды моделью, три варианта вёрстки, аудит и экспорт.
 Одна задача делает сразу три варианта, поэтому в таблице оно повторяется.
 
-Пересобрано 20 сентября 2026 на коммите `d549fbc`: все девять колод вышли в запрошенном
-объёме (10 слайдов) и без ошибок аудита. До фиксов этого дня колоды выходили на 7–8
-слайдов, а типографика модели давала ошибку `font_missing_glyphs` в каждой колоде.
+Пересобрано 22 сентября 2026 на коммите `30a9d9c`: все девять колод вышли в запрошенном
+объёме (12 слайдов) и без ошибок аудита. Предупреждений стало заметно меньше, чем в наборе
+от 20 сентября: измеренный фон снял лишние `text_over_image`, а типографика и подбор
+иллюстраций убрали `word_break` и `overlap` почти везде.
 
 ## Как читать предупреждения
 
@@ -40,6 +41,7 @@
 | `text_overflow` | оценка высоты текста близка к границе рамки |
 | `branding_overlap` | блок подошёл близко к декоративному элементу шаблона |
 | `empty_content` | на слайде только заголовок |
+| `word_break` | длинное слово переносится внутри строки |
 | `unverified_number` | число со слайда не найдено в материалах дословно |
 | `source_reference` | слайд не сослался на материал |
 

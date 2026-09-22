@@ -79,7 +79,7 @@ def main(base):
                 "brief": BRIEF,
                 "purpose": "initiative",
                 "language": "ru",
-                "slide_count": 10,
+                "slide_count": 12,
                 "content_pack_ids": [pack["id"]],
             },
         )
