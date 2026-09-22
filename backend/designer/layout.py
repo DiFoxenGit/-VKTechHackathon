@@ -1477,6 +1477,7 @@ def compose(outline, template, variant, assets=None):
             {
                 "background": background,
                 "bg_luma": pattern.get("bg_luma"),
+                "bg_spread": pattern.get("bg_spread"),
                 "index": i,
                 "pattern_index": pattern["index"],
                 "image_cover": pattern.get("image_cover", 0.0),

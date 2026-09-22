@@ -20,6 +20,7 @@ from .generation import (
 )
 from .language import CYRILLIC, LATIN, foreign_labels, script_of, visual_labels
 from .layout import (
+    BUSY_BACKGROUND,
     DEFAULT_MARGINS,
     DEFAULT_SAFE_AREA,
     STAT_INSET,
@@ -365,7 +366,20 @@ def audit(deck, template, sources, language=None):
                     f"{round(FILL_RANGE[0] * 100)}% до {round(FILL_RANGE[1] * 100)}%",
                 )
             )
-        if slide.get("needs_scrim") or slide.get("image_cover", 0) >= IMAGE_COVER_LIMIT:
+        # Фоновая картинка сама по себе не беда: у корпоративных шаблонов
+        # подложка бывает на каждой странице. Мешает пёстрый фон, на котором
+        # теряются буквы. Фон измеряется по рендеру страницы — если измерение
+        # есть, верим ему; если нет, честнее предупредить.
+        spread = slide.get("bg_spread")
+        if spread is None:
+            risky = bool(slide.get("needs_scrim")) or (
+                slide.get("image_cover", 0) >= IMAGE_COVER_LIMIT
+            )
+            detail = "фон не измерен"
+        else:
+            risky = bool(slide.get("needs_scrim")) or spread > BUSY_BACKGROUND
+            detail = f"разброс светлоты {round(spread * 100)}%"
+        if risky:
             kind = slide.get("background_kind", "solid")
             source = {"image": "фотографии", "gradient": "градиенте"}.get(
                 kind, "изображении шаблона"
@@ -375,8 +389,8 @@ def audit(deck, template, sources, language=None):
                     index,
                     None,
                     "text_over_image",
-                    f"Текст лежит на {source}; под него добавлена подложка, "
-                    "проверьте читаемость",
+                    f"Текст лежит на {source}: {detail}; под него добавлена "
+                    "подложка, проверьте читаемость",
                 )
             )
         background = slide.get("background") or template["tokens"]["theme"].get(

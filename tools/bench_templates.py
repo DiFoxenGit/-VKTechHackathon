@@ -9,6 +9,9 @@
 Метрики качества считаются по реально записанному PPTX, а не по модели вёрстки:
 в файл попадает то, что увидит зритель, включая подписи внутри диаграмм.
 
+Фон страниц измеряется по рендеру, как в сервисе: для этого нужен LibreOffice.
+Без него прогон работает, но судит о фоне по XML и предупреждений будет больше.
+
     python tools/bench_templates.py templates                  # отчёт в консоль
     python tools/bench_templates.py templates --render out/    # ещё pptx, pdf и PNG
     python tools/bench_templates.py templates --sheets out/    # и контакт-листы 3xN
@@ -59,6 +62,7 @@ from designer.exporting import (  # noqa: E402
     convert_pdf,
     export_pptx,
     render_slides,
+    sample_backgrounds,
     verify_pptx,
 )
 from designer.layout import compose  # noqa: E402
@@ -273,6 +277,25 @@ def contact_sheet(images, target: Path):
     document.close()
 
 
+def measure(template, path: Path):
+    """Дописать измеренный фон страниц, как это делает сервис при импорте.
+
+    Без этого прогон судит о фоне по XML: у шаблона, где подложка объявлена
+    картинкой на каждой странице, каждый слайд выглядит рискованным, хотя
+    половина страниц спокойная. Нужен LibreOffice; без него честно говорим, что
+    измерения нет.
+    """
+    try:
+        stats = sample_backgrounds(path)
+    except Exception as error:  # noqa: BLE001 - прогон важнее исключения
+        print(f"  фон не измерен ({error.__class__.__name__}): нужен LibreOffice")
+        return False
+    for pattern, measured in zip(template["patterns"], stats):
+        pattern["bg_luma"] = measured["luma"]
+        pattern["bg_spread"] = measured["spread"]
+    return True
+
+
 def deck_name(path: Path, variant):
     return f"{path.stem[:18].strip().replace(' ', '_')}_{variant}"
 
@@ -288,6 +311,7 @@ def run(templates, plan, sources, variants, render: Path | None, sheets: Path | 
             print(f"{path.name:44} разбор не удался: {error}")
             rows.append({"template": path.name, "error": str(error)})
             continue
+        measured = measure(template, path)
         parsed = time.monotonic() - started
         for variant in variants:
             begun = time.monotonic()
@@ -327,6 +351,7 @@ def run(templates, plan, sources, variants, render: Path | None, sheets: Path | 
                     "parse_seconds": round(parsed, 2),
                     "compose_seconds": round(composed, 2),
                     "patterns": len(template["patterns"]),
+                    "background_measured": measured,
                     "card_slides": cards,
                     "errors": errors,
                     "warnings": dict(codes),
