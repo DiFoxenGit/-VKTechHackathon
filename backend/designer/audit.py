@@ -377,7 +377,10 @@ def audit(deck, template, sources, language=None):
             )
             detail = "фон не измерен"
         else:
-            risky = bool(slide.get("needs_scrim")) or spread > BUSY_BACKGROUND
+            # Измеренный фон: риск там, где вёрстка была вынуждена класть
+            # подложку — тёмный и пёстрый. Светлый пёстрый фон с тёмным текстом
+            # читается, а если нет, об этом скажет проверка контраста.
+            risky = bool(slide.get("needs_scrim"))
             detail = f"разброс светлоты {round(spread * 100)}%"
         if risky:
             kind = slide.get("background_kind", "solid")
