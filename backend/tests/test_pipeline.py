@@ -2379,6 +2379,27 @@ def test_file_level_findings_reach_the_report():
     assert report["counts"]["errors"] == 1 and len(report["issues"]) == 1
 
 
+def test_rerun_audit_keeps_file_level_findings(client):
+    """Повторный аудит собирает отчёт заново — проверки файла должны в нём остаться.
+
+    Кнопки «Проверить содержание» и «Проверить по изображению» зовут этот же
+    эндпоинт, и без слияния находки, видные только в pptx, молча исчезали.
+    """
+    _, job = generate(client)
+    identifier = job["presentation_ids"][0]
+    store = client.app.state.store
+    record = store.get("presentations", identifier)
+    record["export_check"] = {"opens": True, "raster_slides": [0], "charts": []}
+    store.put("presentations", record)
+
+    report = client.post(f"/api/v1/presentations/{identifier}/audit").json()
+    assert "raster_slide" in {i["code"] for i in report["issues"]}
+    assert report["counts"]["errors"] >= 1
+    # Отчёт сохраняется, значит и в карточке презентации находка на месте.
+    saved = client.get(f"/api/v1/presentations/{identifier}/audit").json()
+    assert "raster_slide" in {i["code"] for i in saved["issues"]}
+
+
 def test_clean_chart_leaves_no_file_findings():
     """У подписанной диаграммы претензий быть не должно."""
     from designer.audit import file_issues

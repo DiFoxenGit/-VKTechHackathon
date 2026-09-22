@@ -614,6 +614,9 @@ def create_app(data_dir=None, seed_dir=None):
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
             report["contextual"] = {"status": "completed", "input": "structured_text"}
+        # Отчёт собран заново, поэтому проверки самого файла нужно вернуть: иначе
+        # повторный аудит «терял» находки, которые видны только в pptx.
+        merge_file_issues(report, record.get("export_check") or {})
         with store.lock:
             current = store.get("presentations", presentation_id)
             if current["revision"] != record["revision"]:

@@ -102,6 +102,14 @@ export function toIssues(source: ApiPresentation | { audit?: { issues?: ApiAudit
     fixable: Boolean(issue.fixable),
     rule: issue.code,
     boxed: Boolean(issue.box),
+    // Детерминированные правила, текстовый агент и агент по картинке помечают
+    // свои находки по-разному — пользователю полезно знать, кто это нашёл.
+    origin:
+      issue.category !== 'contextual'
+        ? 'rule'
+        : issue.element_id === 'slide_image'
+          ? 'image'
+          : 'text',
   }));
 }
 
