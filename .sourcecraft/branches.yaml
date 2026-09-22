@@ -1,0 +1,10 @@
+# Политики веток. Правило прежнее: в main попадают только предложения
+# изменений, прямой push и force-push закрыты.
+branch_protection:
+  policies:
+    - target: default_branch
+      message: "Прямой push в main запрещён: создайте предложение изменений"
+      rules:
+        - prevent_force_push
+        - prevent_non_pr_changes
+        - prevent_deletion

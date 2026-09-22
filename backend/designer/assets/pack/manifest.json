@@ -1,0 +1,1248 @@
+{
+ "name": "Встроенный визуальный пакет",
+ "version": 1,
+ "neutral_icon": "icons/dot.svg",
+ "assets": [
+  {
+   "file": "icons/growth.svg",
+   "kind": "icon",
+   "tags": [
+    "рост",
+    "растёт",
+    "растет",
+    "вырос",
+    "увелич",
+    "прирост",
+    "динамик",
+    "эффект",
+    "выгод",
+    "growth",
+    "increase"
+   ]
+  },
+  {
+   "file": "icons/decline.svg",
+   "kind": "icon",
+   "tags": [
+    "сниж",
+    "сниз",
+    "паден",
+    "упал",
+    "сократ",
+    "сокращ",
+    "уменьш",
+    "меньше",
+    "decline",
+    "reduce",
+    "decrease"
+   ]
+  },
+  {
+   "file": "icons/clock.svg",
+   "kind": "icon",
+   "tags": [
+    "врем",
+    "срок",
+    "минут",
+    "мин",
+    "час",
+    "длител",
+    "быстр",
+    "дедлайн",
+    "time",
+    "hour",
+    "minute"
+   ]
+  },
+  {
+   "file": "icons/calendar.svg",
+   "kind": "icon",
+   "tags": [
+    "календар",
+    "дата",
+    "дат",
+    "квартал",
+    "месяц",
+    "недел",
+    "дней",
+    "день",
+    "дня",
+    "год",
+    "расписан",
+    "график работ",
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "calendar",
+    "date",
+    "quarter",
+    "week",
+    "month"
+   ]
+  },
+  {
+   "file": "icons/team.svg",
+   "kind": "icon",
+   "tags": [
+    "команд",
+    "отдел",
+    "сотрудник",
+    "люд",
+    "человек",
+    "коллег",
+    "участник",
+    "дизайнер",
+    "специалист",
+    "сообществ",
+    "team",
+    "people",
+    "staff"
+   ]
+  },
+  {
+   "file": "icons/user.svg",
+   "kind": "icon",
+   "tags": [
+    "пользоват",
+    "клиент",
+    "автор",
+    "руководител",
+    "заказчик",
+    "спикер",
+    "user",
+    "client",
+    "customer"
+   ]
+  },
+  {
+   "file": "icons/target.svg",
+   "kind": "icon",
+   "tags": [
+    "цель",
+    "цели",
+    "целей",
+    "целев",
+    "задач",
+    "фокус",
+    "результат",
+    "kpi",
+    "ориентир",
+    "target",
+    "goal",
+    "objective"
+   ]
+  },
+  {
+   "file": "icons/idea.svg",
+   "kind": "icon",
+   "tags": [
+    "идея",
+    "идеи",
+    "идей",
+    "идею",
+    "гипотез",
+    "предлож",
+    "инициатив",
+    "концепц",
+    "инновац",
+    "творч",
+    "idea",
+    "innovation",
+    "proposal"
+   ]
+  },
+  {
+   "file": "icons/document.svg",
+   "kind": "icon",
+   "tags": [
+    "документ",
+    "файл",
+    "отчёт",
+    "отчет",
+    "материал",
+    "регламент",
+    "текст",
+    "заметк",
+    "бриф",
+    "pdf",
+    "docx",
+    "document",
+    "file",
+    "report"
+   ]
+  },
+  {
+   "file": "icons/presentation.svg",
+   "kind": "icon",
+   "tags": [
+    "презентац",
+    "колод",
+    "слайд",
+    "доклад",
+    "выступлен",
+    "pptx",
+    "deck",
+    "slide",
+    "presentation"
+   ]
+  },
+  {
+   "file": "icons/layout.svg",
+   "kind": "icon",
+   "tags": [
+    "шаблон",
+    "макет",
+    "вёрстк",
+    "верстк",
+    "сверст",
+    "структур",
+    "компонов",
+    "layout",
+    "template"
+   ]
+  },
+  {
+   "file": "icons/database.svg",
+   "kind": "icon",
+   "tags": [
+    "данн",
+    "база",
+    "баз",
+    "хранилищ",
+    "источник",
+    "sql",
+    "data",
+    "database",
+    "storage"
+   ]
+  },
+  {
+   "file": "icons/cloud.svg",
+   "kind": "icon",
+   "tags": [
+    "облак",
+    "облач",
+    "saas",
+    "онлайн",
+    "хостинг",
+    "cloud",
+    "online"
+   ]
+  },
+  {
+   "file": "icons/server.svg",
+   "kind": "icon",
+   "tags": [
+    "сервер",
+    "машин",
+    "vcpu",
+    "cpu",
+    "ram",
+    "гб",
+    "памят",
+    "инфраструкт",
+    "мощност",
+    "ресурс",
+    "железо",
+    "server",
+    "hardware",
+    "infrastructure"
+   ]
+  },
+  {
+   "file": "icons/shield.svg",
+   "kind": "icon",
+   "tags": [
+    "безопасн",
+    "защит",
+    "надёжн",
+    "надежн",
+    "соответств",
+    "стил",
+    "фирменн",
+    "security",
+    "protect",
+    "compliance"
+   ]
+  },
+  {
+   "file": "icons/lock.svg",
+   "kind": "icon",
+   "tags": [
+    "доступ",
+    "конфиденц",
+    "приват",
+    "закрыт",
+    "пароль",
+    "шифрован",
+    "lock",
+    "access",
+    "private"
+   ]
+  },
+  {
+   "file": "icons/check.svg",
+   "kind": "icon",
+   "tags": [
+    "готов",
+    "одобр",
+    "решени",
+    "согласов",
+    "выполн",
+    "успех",
+    "успешн",
+    "исправл",
+    "утвер",
+    "done",
+    "approve",
+    "success"
+   ]
+  },
+  {
+   "file": "icons/gears.svg",
+   "kind": "icon",
+   "tags": [
+    "процесс",
+    "автомат",
+    "настрой",
+    "конвейер",
+    "пайплайн",
+    "механизм",
+    "сборк",
+    "генерац",
+    "операц",
+    "process",
+    "automation",
+    "workflow",
+    "pipeline"
+   ]
+  },
+  {
+   "file": "icons/alert.svg",
+   "kind": "icon",
+   "tags": [
+    "риск",
+    "проблем",
+    "ошибк",
+    "угроз",
+    "огранич",
+    "внимани",
+    "опасн",
+    "слаб",
+    "выдум",
+    "risk",
+    "warning",
+    "issue"
+   ]
+  },
+  {
+   "file": "icons/star.svg",
+   "kind": "icon",
+   "tags": [
+    "качеств",
+    "лучш",
+    "оценк",
+    "рейтинг",
+    "преимущ",
+    "ценност",
+    "премиум",
+    "quality",
+    "best",
+    "value"
+   ]
+  },
+  {
+   "file": "icons/rocket.svg",
+   "kind": "icon",
+   "tags": [
+    "запуск",
+    "старт",
+    "релиз",
+    "внедр",
+    "масштаб",
+    "пилот",
+    "раскат",
+    "launch",
+    "release",
+    "rollout",
+    "startup"
+   ]
+  },
+  {
+   "file": "icons/money.svg",
+   "kind": "icon",
+   "tags": [
+    "деньг",
+    "бюджет",
+    "стоим",
+    "стоил",
+    "стоит",
+    "руб",
+    "рубл",
+    "₽",
+    "выручк",
+    "затрат",
+    "цен",
+    "экономи",
+    "инвест",
+    "оплат",
+    "финанс",
+    "cost",
+    "budget",
+    "money",
+    "price",
+    "revenue"
+   ]
+  },
+  {
+   "file": "icons/chart.svg",
+   "kind": "icon",
+   "tags": [
+    "аналит",
+    "показател",
+    "метрик",
+    "статист",
+    "отчётност",
+    "дашборд",
+    "измер",
+    "замер",
+    "analytics",
+    "metric",
+    "dashboard"
+   ]
+  },
+  {
+   "file": "icons/pie.svg",
+   "kind": "icon",
+   "tags": [
+    "доля",
+    "доли",
+    "долю",
+    "долей",
+    "процент",
+    "распредел",
+    "сегмент",
+    "share",
+    "percent",
+    "segment"
+   ]
+  },
+  {
+   "file": "icons/search.svg",
+   "kind": "icon",
+   "tags": [
+    "поиск",
+    "исследован",
+    "анализ",
+    "провер",
+    "найд",
+    "аудит",
+    "search",
+    "research",
+    "audit"
+   ]
+  },
+  {
+   "file": "icons/chat.svg",
+   "kind": "icon",
+   "tags": [
+    "коммуникац",
+    "сообщен",
+    "чат",
+    "обсужд",
+    "отзыв",
+    "обратн",
+    "диалог",
+    "мнени",
+    "chat",
+    "feedback",
+    "message"
+   ]
+  },
+  {
+   "file": "icons/mail.svg",
+   "kind": "icon",
+   "tags": [
+    "почт",
+    "письм",
+    "рассылк",
+    "email",
+    "mail"
+   ]
+  },
+  {
+   "file": "icons/mobile.svg",
+   "kind": "icon",
+   "tags": [
+    "мобил",
+    "телефон",
+    "смартфон",
+    "приложен",
+    "ios",
+    "android",
+    "app",
+    "mobile",
+    "phone"
+   ]
+  },
+  {
+   "file": "icons/monitor.svg",
+   "kind": "icon",
+   "tags": [
+    "компьютер",
+    "экран",
+    "интерфейс",
+    "веб",
+    "сайт",
+    "браузер",
+    "html",
+    "desktop",
+    "web",
+    "interface"
+   ]
+  },
+  {
+   "file": "icons/code.svg",
+   "kind": "icon",
+   "tags": [
+    "код",
+    "разработ",
+    "программ",
+    "api",
+    "open-source",
+    "репозитор",
+    "code",
+    "developer",
+    "software"
+   ]
+  },
+  {
+   "file": "icons/sparkles.svg",
+   "kind": "icon",
+   "tags": [
+    "ии",
+    "нейросет",
+    "модел",
+    "искусствен",
+    "gpt",
+    "llm",
+    "ai",
+    "умн",
+    "интеллект",
+    "машинн"
+   ]
+  },
+  {
+   "file": "icons/cpu.svg",
+   "kind": "icon",
+   "tags": [
+    "процессор",
+    "вычисл",
+    "инференс",
+    "gpu",
+    "видеокарт",
+    "compute",
+    "inference"
+   ]
+  },
+  {
+   "file": "icons/plug.svg",
+   "kind": "icon",
+   "tags": [
+    "интеграц",
+    "подключ",
+    "коннектор",
+    "совместим",
+    "протокол",
+    "плагин",
+    "integration",
+    "connect",
+    "plugin"
+   ]
+  },
+  {
+   "file": "icons/network.svg",
+   "kind": "icon",
+   "tags": [
+    "сеть",
+    "сетев",
+    "связ",
+    "партнёр",
+    "партнер",
+    "экосистем",
+    "распростран",
+    "network",
+    "partner",
+    "ecosystem"
+   ]
+  },
+  {
+   "file": "icons/education.svg",
+   "kind": "icon",
+   "tags": [
+    "обучен",
+    "образован",
+    "студент",
+    "курс",
+    "знани",
+    "учеб",
+    "школ",
+    "education",
+    "learning",
+    "course"
+   ]
+  },
+  {
+   "file": "icons/book.svg",
+   "kind": "icon",
+   "tags": [
+    "книг",
+    "документац",
+    "инструкц",
+    "руководств",
+    "гайд",
+    "справочн",
+    "правил",
+    "guide",
+    "manual",
+    "docs"
+   ]
+  },
+  {
+   "file": "icons/flag.svg",
+   "kind": "icon",
+   "tags": [
+    "этап",
+    "вех",
+    "milestone",
+    "достиж",
+    "финиш",
+    "итог",
+    "стади",
+    "phase",
+    "stage"
+   ]
+  },
+  {
+   "file": "icons/question.svg",
+   "kind": "icon",
+   "tags": [
+    "вопрос",
+    "faq",
+    "неизвест",
+    "уточн",
+    "question",
+    "unknown"
+   ]
+  },
+  {
+   "file": "icons/checklist.svg",
+   "kind": "icon",
+   "tags": [
+    "список",
+    "чек-лист",
+    "требован",
+    "критери",
+    "пункт",
+    "перечен",
+    "checklist",
+    "requirements",
+    "criteria"
+   ]
+  },
+  {
+   "file": "icons/next.svg",
+   "kind": "icon",
+   "tags": [
+    "следующ",
+    "далее",
+    "переход",
+    "дальнейш",
+    "шаг",
+    "план",
+    "next",
+    "step",
+    "plan"
+   ]
+  },
+  {
+   "file": "icons/refresh.svg",
+   "kind": "icon",
+   "tags": [
+    "обновл",
+    "цикл",
+    "итерац",
+    "повтор",
+    "регуляр",
+    "ревизи",
+    "верси",
+    "update",
+    "cycle",
+    "iteration",
+    "version"
+   ]
+  },
+  {
+   "file": "icons/zap.svg",
+   "kind": "icon",
+   "tags": [
+    "скорост",
+    "быстр",
+    "мгновен",
+    "ускор",
+    "производительн",
+    "энерг",
+    "моментал",
+    "fast",
+    "speed",
+    "instant"
+   ]
+  },
+  {
+   "file": "icons/globe.svg",
+   "kind": "icon",
+   "tags": [
+    "домен",
+    "https",
+    "dns",
+    "интернет",
+    "мир",
+    "глобал",
+    "международ",
+    "стран",
+    "рынок",
+    "рынк",
+    "регион",
+    "global",
+    "world",
+    "market"
+   ]
+  },
+  {
+   "file": "icons/building.svg",
+   "kind": "icon",
+   "tags": [
+    "компани",
+    "организац",
+    "офис",
+    "предприят",
+    "бизнес",
+    "корпорат",
+    "холдинг",
+    "company",
+    "business",
+    "enterprise"
+   ]
+  },
+  {
+   "file": "icons/layers.svg",
+   "kind": "icon",
+   "tags": [
+    "слой",
+    "слои",
+    "уровн",
+    "стек",
+    "очеред",
+    "архитектур",
+    "платформ",
+    "layers",
+    "stack",
+    "platform",
+    "queue"
+   ]
+  },
+  {
+   "file": "icons/palette.svg",
+   "kind": "icon",
+   "tags": [
+    "дизайн",
+    "цвет",
+    "бренд",
+    "оформлен",
+    "визуал",
+    "палитр",
+    "гарнитур",
+    "шрифт",
+    "design",
+    "brand",
+    "style"
+   ]
+  },
+  {
+   "file": "icons/image.svg",
+   "kind": "icon",
+   "tags": [
+    "изображ",
+    "картин",
+    "фото",
+    "иллюстрац",
+    "скриншот",
+    "image",
+    "photo",
+    "picture"
+   ]
+  },
+  {
+   "file": "icons/video.svg",
+   "kind": "icon",
+   "tags": [
+    "видео",
+    "ролик",
+    "трансляц",
+    "демо",
+    "запис",
+    "video",
+    "demo",
+    "stream"
+   ]
+  },
+  {
+   "file": "icons/bell.svg",
+   "kind": "icon",
+   "tags": [
+    "уведомл",
+    "оповещ",
+    "напомин",
+    "сигнал",
+    "notification",
+    "alert"
+   ]
+  },
+  {
+   "file": "icons/support.svg",
+   "kind": "icon",
+   "tags": [
+    "поддерж",
+    "помощ",
+    "сопровожд",
+    "сервисн",
+    "support",
+    "help",
+    "service"
+   ]
+  },
+  {
+   "file": "icons/download.svg",
+   "kind": "icon",
+   "tags": [
+    "экспорт",
+    "выгруз",
+    "скача",
+    "download",
+    "export"
+   ]
+  },
+  {
+   "file": "icons/upload.svg",
+   "kind": "icon",
+   "tags": [
+    "импорт",
+    "загруз",
+    "upload",
+    "import"
+   ]
+  },
+  {
+   "file": "icons/expand.svg",
+   "kind": "icon",
+   "tags": [
+    "масштабир",
+    "расшир",
+    "тираж",
+    "распростран",
+    "scale",
+    "expand"
+   ]
+  },
+  {
+   "file": "icons/funnel.svg",
+   "kind": "icon",
+   "tags": [
+    "воронк",
+    "фильтр",
+    "отбор",
+    "конверс",
+    "funnel",
+    "filter",
+    "conversion"
+   ]
+  },
+  {
+   "file": "icons/key.svg",
+   "kind": "icon",
+   "tags": [
+    "ключ",
+    "токен",
+    "авторизац",
+    "key",
+    "token",
+    "auth"
+   ]
+  },
+  {
+   "file": "icons/compass.svg",
+   "kind": "icon",
+   "tags": [
+    "стратег",
+    "направлен",
+    "навигац",
+    "видени",
+    "курс",
+    "strategy",
+    "direction",
+    "vision"
+   ]
+  },
+  {
+   "file": "icons/award.svg",
+   "kind": "icon",
+   "tags": [
+    "наград",
+    "достижен",
+    "признан",
+    "лидер",
+    "победител",
+    "award",
+    "achievement",
+    "leader"
+   ]
+  },
+  {
+   "file": "icons/edit.svg",
+   "kind": "icon",
+   "tags": [
+    "правк",
+    "редакт",
+    "изменен",
+    "ручн",
+    "вручную",
+    "исправлен",
+    "edit",
+    "manual",
+    "change"
+   ]
+  },
+  {
+   "file": "icons/eye.svg",
+   "kind": "icon",
+   "tags": [
+    "контрол",
+    "наблюд",
+    "мониторинг",
+    "прозрачн",
+    "видим",
+    "ревью",
+    "просмотр",
+    "review",
+    "monitor",
+    "visibility"
+   ]
+  },
+  {
+   "file": "icons/cross.svg",
+   "kind": "icon",
+   "tags": [
+    "нарушен",
+    "отказ",
+    "отмен",
+    "отклон",
+    "брак",
+    "запрет",
+    "fail",
+    "reject",
+    "violation"
+   ]
+  },
+  {
+   "file": "icons/pin.svg",
+   "kind": "icon",
+   "tags": [
+    "город",
+    "адрес",
+    "локац",
+    "филиал",
+    "площадк",
+    "location",
+    "city",
+    "office"
+   ]
+  },
+  {
+   "file": "icons/hourglass.svg",
+   "kind": "icon",
+   "tags": [
+    "ожидан",
+    "задерж",
+    "пауза",
+    "простой",
+    "долго",
+    "wait",
+    "delay",
+    "pending"
+   ]
+  },
+  {
+   "file": "icons/dot.svg",
+   "kind": "icon",
+   "tags": []
+  },
+  {
+   "file": "illustrations/growth.svg",
+   "kind": "illustration",
+   "tags": [
+    "рост",
+    "вырос",
+    "увелич",
+    "эффект",
+    "результат",
+    "выгод",
+    "показател",
+    "метрик",
+    "динамик",
+    "прирост",
+    "growth",
+    "result",
+    "effect"
+   ]
+  },
+  {
+   "file": "illustrations/team.svg",
+   "kind": "illustration",
+   "tags": [
+    "команд",
+    "отдел",
+    "сотрудник",
+    "люд",
+    "коллег",
+    "участник",
+    "дизайнер",
+    "специалист",
+    "пользоват",
+    "клиент",
+    "team",
+    "people"
+   ]
+  },
+  {
+   "file": "illustrations/security.svg",
+   "kind": "illustration",
+   "tags": [
+    "безопасн",
+    "защит",
+    "надёжн",
+    "надежн",
+    "риск",
+    "контрол",
+    "аудит",
+    "провер",
+    "соответств",
+    "качеств",
+    "security",
+    "risk",
+    "compliance"
+   ]
+  },
+  {
+   "file": "illustrations/launch.svg",
+   "kind": "illustration",
+   "tags": [
+    "запуск",
+    "старт",
+    "релиз",
+    "внедр",
+    "масштаб",
+    "пилот",
+    "раскат",
+    "следующ",
+    "план",
+    "launch",
+    "release",
+    "rollout",
+    "start"
+   ]
+  },
+  {
+   "file": "illustrations/presentation.svg",
+   "kind": "illustration",
+   "tags": [
+    "презентац",
+    "колод",
+    "слайд",
+    "доклад",
+    "шаблон",
+    "макет",
+    "вёрстк",
+    "верстк",
+    "дизайн",
+    "отчёт",
+    "отчет",
+    "presentation",
+    "slide",
+    "deck",
+    "report"
+   ]
+  },
+  {
+   "file": "illustrations/automation.svg",
+   "kind": "illustration",
+   "tags": [
+    "автомат",
+    "процесс",
+    "конвейер",
+    "пайплайн",
+    "генерац",
+    "сборк",
+    "настрой",
+    "механизм",
+    "интеграц",
+    "automation",
+    "process",
+    "pipeline",
+    "workflow"
+   ]
+  },
+  {
+   "file": "illustrations/data.svg",
+   "kind": "illustration",
+   "tags": [
+    "данн",
+    "база",
+    "хранилищ",
+    "облак",
+    "сервер",
+    "инфраструкт",
+    "источник",
+    "интеграц",
+    "ресурс",
+    "машин",
+    "data",
+    "cloud",
+    "storage",
+    "server"
+   ]
+  },
+  {
+   "file": "illustrations/target.svg",
+   "kind": "illustration",
+   "tags": [
+    "цель",
+    "цели",
+    "целей",
+    "целев",
+    "задач",
+    "фокус",
+    "результат",
+    "kpi",
+    "ориентир",
+    "приоритет",
+    "стратег",
+    "goal",
+    "target",
+    "focus"
+   ]
+  },
+  {
+   "file": "illustrations/idea.svg",
+   "kind": "illustration",
+   "tags": [
+    "идея",
+    "идеи",
+    "идей",
+    "идею",
+    "гипотез",
+    "предлож",
+    "инициатив",
+    "концепц",
+    "инновац",
+    "решени",
+    "возможн",
+    "idea",
+    "proposal",
+    "innovation",
+    "opportunity"
+   ]
+  },
+  {
+   "file": "illustrations/plan.svg",
+   "kind": "illustration",
+   "tags": [
+    "план",
+    "календар",
+    "срок",
+    "квартал",
+    "этап",
+    "дорожн",
+    "график",
+    "расписан",
+    "шаг",
+    "следующ",
+    "roadmap",
+    "plan",
+    "schedule",
+    "timeline"
+   ]
+  },
+  {
+   "file": "illustrations/discussion.svg",
+   "kind": "illustration",
+   "tags": [
+    "вопрос",
+    "обсужд",
+    "коммуникац",
+    "отзыв",
+    "обратн",
+    "диалог",
+    "решени",
+    "просьб",
+    "проси",
+    "руководств",
+    "question",
+    "discussion",
+    "feedback",
+    "ask"
+   ]
+  },
+  {
+   "file": "illustrations/money.svg",
+   "kind": "illustration",
+   "tags": [
+    "деньг",
+    "бюджет",
+    "стоим",
+    "стоил",
+    "стоит",
+    "руб",
+    "рубл",
+    "выручк",
+    "затрат",
+    "цен",
+    "экономи",
+    "инвест",
+    "оплат",
+    "финанс",
+    "money",
+    "budget",
+    "cost",
+    "price"
+   ]
+  },
+  {
+   "file": "illustrations/risk.svg",
+   "kind": "illustration",
+   "tags": [
+    "риск",
+    "проблем",
+    "ошибк",
+    "угроз",
+    "огранич",
+    "опасн",
+    "слаб",
+    "сбо",
+    "risk",
+    "problem",
+    "threat"
+   ]
+  }
+ ]
+}
