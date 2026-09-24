@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import subprocess
+import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -33,6 +34,7 @@ from .exporting import (
     export_pptx,
     render_slides,
     sample_backgrounds,
+    template_thumbnail,
     branding_drift,
     verify_pptx,
 )
@@ -56,6 +58,9 @@ MAX_UPLOAD = 50 * 1024 * 1024
 # Сколько картинок рисовать на колоду: каждая — отдельный платный запрос,
 # а иллюстрация нужна не всякому слайду.
 IMAGE_LIMIT = max(0, int(os.getenv("DESIGNER_IMAGE_LIMIT", "3")))
+# Ширины миниатюр: лента и карточки, холст редактора, крупный просмотр.
+# Набор фиксированный, чтобы кеш на диске не рос от произвольных запросов.
+THUMB_WIDTHS = (320, 640, 1280)
 
 
 async def upload_bytes(file):
@@ -833,6 +838,74 @@ def create_app(data_dir=None, seed_dir=None):
             filename=f"{record['variant']}-r{rev}.{format}",
         )
 
+    render_lock = threading.Lock()
+
+    def revision_pdf(record):
+        """PDF текущей ревизии: из него рисуются превью и миниатюры."""
+        folder = store.directory("presentations", record["id"])
+        pdf = folder / f"r{record['revision']}.pdf"
+        with store.lock:
+            if not pdf.exists():
+                try:
+                    convert_pdf(folder / f"r{record['revision']}.pptx", pdf)
+                except (RuntimeError, subprocess.TimeoutExpired) as exc:
+                    raise HTTPException(503, str(exc)) from exc
+        return pdf
+
+    def thumb_width(width):
+        return min(THUMB_WIDTHS, key=lambda allowed: abs(allowed - width))
+
+    @api.get("/presentations/{presentation_id}/slides/{index}/thumbnail", tags=["Export"])
+    def slide_thumbnail(presentation_id: str, index: int, width: int = 640):
+        """Слайд картинкой — ровно так, как он выглядит в выгруженном файле.
+
+        Рисуется из PDF текущей ревизии сразу для всей колоды и кешируется на
+        диске: лента из двенадцати слайдов — один рендер, а не двенадцать.
+        Параметр revision в адресе клиенту нужен только чтобы сбросить кеш браузера.
+        """
+        record = store.get("presentations", presentation_id)
+        if not 0 <= index < len(record["deck"]["slides"]):
+            raise HTTPException(404, "Slide not found")
+        width = thumb_width(width)
+        folder = store.directory("presentations", presentation_id)
+        target = folder / f"r{record['revision']}-w{width}-{index}.png"
+        if not target.exists():
+            pdf = revision_pdf(record)
+            with render_lock:
+                if not target.exists():
+                    for number, png in enumerate(render_slides(pdf, width)):
+                        (folder / f"r{record['revision']}-w{width}-{number}.png").write_bytes(png)
+        if not target.exists():
+            raise HTTPException(404, "Slide not rendered")
+        return FileResponse(
+            target,
+            media_type="image/png",
+            headers={"Cache-Control": "private, max-age=86400"},
+        )
+
+    @api.get("/templates/{template_id}/thumbnail", tags=["Templates"])
+    def template_thumbnail_image(template_id: str):
+        """Обложка шаблона картинкой: карточки шаблонов должны отличаться друг от друга."""
+        template = store.get("templates", template_id)
+        folder = store.directory("templates", template_id)
+        target = folder / "thumbnail.png"
+        if not target.exists():
+            cover = next(
+                (p.get("index", 0) for p in template.get("patterns") or [] if p.get("role") == "cover"),
+                0,
+            )
+            with render_lock:
+                if not target.exists():
+                    try:
+                        template_thumbnail(folder / "source.pptx", target, cover)
+                    except (RuntimeError, subprocess.TimeoutExpired) as exc:
+                        raise HTTPException(503, str(exc)) from exc
+        return FileResponse(
+            target,
+            media_type="image/png",
+            headers={"Cache-Control": "private, max-age=86400"},
+        )
+
     @api.get("/presentations/{presentation_id}/slides/{index}/preview", tags=["Audit"])
     def preview(presentation_id: str, index: int, highlight: bool = False):
         import html
@@ -842,14 +915,7 @@ def create_app(data_dir=None, seed_dir=None):
         record = store.get("presentations", presentation_id)
         if not 0 <= index < len(record["deck"]["slides"]):
             raise HTTPException(404, "Slide not found")
-        folder = store.directory("presentations", presentation_id)
-        pdf = folder / f"r{record['revision']}.pdf"
-        with store.lock:
-            if not pdf.exists():
-                try:
-                    convert_pdf(folder / f"r{record['revision']}.pptx", pdf)
-                except (RuntimeError, subprocess.TimeoutExpired) as exc:
-                    raise HTTPException(503, str(exc)) from exc
+        pdf = revision_pdf(record)
         with pymupdf.open(pdf) as document:
             page = document[index]
             svg = page.get_svg_image(text_as_path=True)

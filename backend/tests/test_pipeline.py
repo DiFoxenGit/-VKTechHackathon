@@ -388,6 +388,34 @@ def test_failed_generation_visible(client, monkeypatch):
     assert result["error"]
 
 
+def test_slide_and_template_thumbnails_are_real_renders(client):
+    """Интерфейс показывает настоящие слайды и обложки шаблонов, а не CSS-макет."""
+    if not client.get("/health").json()["pdf_available"]:
+        pytest.skip("LibreOffice not installed")
+    import pymupdf
+
+    template, job = generate(client)
+    identifier = job["presentation_ids"][0]
+
+    response = client.get(f"/api/v1/presentations/{identifier}/slides/1/thumbnail?width=320")
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "image/png"
+    image = pymupdf.Pixmap(response.content)
+    assert image.width == 320 and image.height < image.width
+    # Лента из всей колоды рисуется одним рендером и дальше отдаётся с диска.
+    folder = client.app.state.store.directory("presentations", identifier)
+    assert len(list(folder.glob("r1-w320-*.png"))) == 3
+    # Произвольная ширина приводится к ближайшей допустимой.
+    assert pymupdf.Pixmap(
+        client.get(f"/api/v1/presentations/{identifier}/slides/0/thumbnail?width=700").content
+    ).width == 640
+    assert client.get(f"/api/v1/presentations/{identifier}/slides/9/thumbnail").status_code == 404
+
+    cover = client.get(f"/api/v1/templates/{template['id']}/thumbnail")
+    assert cover.status_code == 200, cover.text
+    assert pymupdf.Pixmap(cover.content).width == 640
+
+
 def test_pdf_html_export(client):
     if not client.get("/health").json()["pdf_available"]:
         pytest.skip("LibreOffice not installed")

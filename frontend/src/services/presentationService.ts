@@ -205,6 +205,20 @@ function toWorkflow(source: ApiWorkflow): WorkflowInfo {
   };
 }
 
+/** Ширины миниатюр, которые рисует сервер: лента, холст, крупный просмотр. */
+export type ThumbWidth = 320 | 640 | 1280;
+
+/** Слайд колоды картинкой. Ревизия в адресе сбрасывает кеш после правки. */
+export function slideThumbnail(deckId: string, index: number, width: ThumbWidth, revision?: number | string): string {
+  const version = revision === undefined ? '' : `&revision=${encodeURIComponent(String(revision))}`;
+  return `/presentations/${deckId}/slides/${index}/thumbnail?width=${width}${version}`;
+}
+
+/** Обложка шаблона картинкой. У шаблона-заглушки, пока список не пришёл, её нет. */
+export function templateThumbnail(templateId: string): string | null {
+  return templateId ? `/templates/${templateId}/thumbnail` : null;
+}
+
 export const presentationService = {
   /** Чем собрана колода: версия сценария, промпты агентов и последнее изменение. */
   async workflow(): Promise<WorkflowInfo> {
