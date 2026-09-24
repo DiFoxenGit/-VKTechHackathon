@@ -917,6 +917,22 @@ def render_slides(pdf_path: Path, width=1280):
     return pages
 
 
+def template_thumbnail(pptx_path: Path, destination: Path, page=0, width=640):
+    """Страница шаблона картинкой — чтобы в интерфейсе шаблоны были различимы.
+
+    Рендерит LibreOffice, как и всё остальное: миниатюра совпадает с тем, что
+    пользователь увидит в PowerPoint, а не с нашей догадкой о шаблоне.
+    """
+    with tempfile.TemporaryDirectory(prefix="designer-thumb-") as temp:
+        pdf = Path(temp) / "template.pdf"
+        convert_pdf(pptx_path, pdf)
+        pages = render_slides(pdf, width)
+    if not pages:
+        raise RuntimeError("Template has no pages to render")
+    destination.write_bytes(pages[min(page, len(pages) - 1)])
+    return destination
+
+
 def sample_backgrounds(pptx_path: Path, content_region=(0.05, 0.23, 0.95, 0.87)):
     """Измерить фон каждого слайда шаблона по его реальному рендеру.
 

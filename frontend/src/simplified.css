@@ -44,6 +44,23 @@
   border-radius: 5px;
   padding: 3px 6px;
 }
+/* Настоящий рендер слайда и обложки шаблона вместо CSS-наброска. */
+.slide-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px #1c3a6614;
+}
+.slide-thumb.miniature { border-radius: 6px; }
+.template-thumb {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  background: #eef2f8;
+}
 .preview-toolbar {
   display: flex;
   align-items: center;
