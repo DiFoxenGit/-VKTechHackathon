@@ -42,6 +42,7 @@ from .generation import (
     vision_available,
     workflow,
 )
+from .inference import llm_settings
 from .layout import compose
 from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit
 from .parsing import PARSER_VERSION, parse_content, parse_template
@@ -218,9 +219,7 @@ def create_app(data_dir=None, seed_dir=None):
     def health():
         return {
             "status": "ok",
-            "llm_configured": bool(
-                os.getenv("DESIGNER_LLM_BASE_URL") and os.getenv("DESIGNER_LLM_MODEL")
-            ),
+            "llm_configured": llm_settings().configured,
             "pdf_available": bool(
                 shutil.which("libreoffice")
                 or shutil.which("soffice")
@@ -429,7 +428,8 @@ def create_app(data_dir=None, seed_dir=None):
             "workflow": workflow(),
             "generation": {
                 "mode": "provided_outline" if request.outline else "llm",
-                "model": os.getenv("DESIGNER_LLM_MODEL"),
+                "model": llm_settings().model or None,
+                "provider": llm_settings().profile,
                 "purpose": request.purpose,
                 "language": request.language,
             },

@@ -10,6 +10,7 @@ from pathlib import Path
 import httpx
 from fastapi import HTTPException
 
+from .inference import llm_settings, require_llm
 from .language import CYRILLIC, LATIN, foreign_labels, visual_labels
 from .models import Brief, Outline, Visual
 
@@ -52,14 +53,8 @@ def narrative(purpose):
 
 
 def provider():
-    url = os.getenv("DESIGNER_LLM_BASE_URL", "").rstrip("/")
-    model = os.getenv("DESIGNER_LLM_MODEL", "")
-    if not url or not model:
-        raise HTTPException(
-            503,
-            "Configure DESIGNER_LLM_BASE_URL and DESIGNER_LLM_MODEL, or supply an explicit outline",
-        )
-    return url, model
+    settings = require_llm()
+    return settings.url, settings.model
 
 
 def message_text(message):
@@ -101,20 +96,20 @@ def parse_json(text):
 
 
 async def ask(messages):
-    url, model = provider()
-    async with httpx.AsyncClient(timeout=httpx.Timeout(150, connect=15)) as client:
+    settings = require_llm()
+    payload = {
+        "model": settings.model,
+        "temperature": 0.2,
+        "max_tokens": settings.max_tokens,
+        "messages": messages,
+    }
+    if settings.json_mode:
+        payload["response_format"] = {"type": "json_object"}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(settings.timeout, connect=15)) as client:
         response = await client.post(
-            url + "/chat/completions",
-            headers={
-                "Authorization": "Bearer " + os.getenv("DESIGNER_LLM_API_KEY", "local")
-            },
-            json={
-                "model": model,
-                "temperature": 0.2,
-                "max_tokens": 14000,
-                "messages": messages,
-                "response_format": {"type": "json_object"},
-            },
+            settings.url + "/chat/completions",
+            headers={"Authorization": "Bearer " + settings.key},
+            json=payload,
         )
         response.raise_for_status()
         try:
@@ -125,7 +120,7 @@ async def ask(messages):
 
 def vision_provider():
     """Отдельная модель для проверки по картинке; по умолчанию — основная."""
-    url = (os.getenv("DESIGNER_VLM_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL", "")).rstrip("/")
+    url = (os.getenv("DESIGNER_VLM_BASE_URL") or llm_settings().url).rstrip("/")
     model = os.getenv("DESIGNER_VLM_MODEL", "")
     if not url or not model:
         raise HTTPException(
@@ -138,7 +133,7 @@ def vision_provider():
 def vision_available():
     return bool(
         os.getenv("DESIGNER_VLM_MODEL")
-        and (os.getenv("DESIGNER_VLM_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL"))
+        and (os.getenv("DESIGNER_VLM_BASE_URL") or llm_settings().url)
     )
 
 
@@ -151,7 +146,7 @@ async def ask_vision(prompt, payload, image_png: bytes):
             url + "/chat/completions",
             headers={
                 "Authorization": "Bearer "
-                + (os.getenv("DESIGNER_VLM_API_KEY") or os.getenv("DESIGNER_LLM_API_KEY", "local"))
+                + (os.getenv("DESIGNER_VLM_API_KEY") or llm_settings().key)
             },
             json={
                 "model": model,
