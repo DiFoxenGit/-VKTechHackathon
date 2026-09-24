@@ -45,6 +45,7 @@ from .generation import (
     vision_available,
     workflow,
 )
+from .inference import llm_settings
 from .layout import compose
 from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit
 from .parsing import PARSER_VERSION, parse_content, parse_template
@@ -224,9 +225,7 @@ def create_app(data_dir=None, seed_dir=None):
     def health():
         return {
             "status": "ok",
-            "llm_configured": bool(
-                os.getenv("DESIGNER_LLM_BASE_URL") and os.getenv("DESIGNER_LLM_MODEL")
-            ),
+            "llm_configured": llm_settings().configured,
             "pdf_available": bool(
                 shutil.which("libreoffice")
                 or shutil.which("soffice")
@@ -492,7 +491,8 @@ def create_app(data_dir=None, seed_dir=None):
             "workflow": workflow(),
             "generation": {
                 "mode": "provided_outline" if request.outline else "llm",
-                "model": os.getenv("DESIGNER_LLM_MODEL"),
+                "model": llm_settings().model or None,
+                "provider": llm_settings().profile,
                 "purpose": request.purpose,
                 "language": request.language,
             },
@@ -684,7 +684,7 @@ def create_app(data_dir=None, seed_dir=None):
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
             report["contextual"] = {"status": "completed", "input": "slide_images"}
-        elif contextual:
+        if contextual:
             findings = await contextual_audit(record["deck"], record["sources"])
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
@@ -696,6 +696,22 @@ def create_app(data_dir=None, seed_dir=None):
             current = store.get("presentations", presentation_id)
             if current["revision"] != record["revision"]:
                 raise HTTPException(409, "Presentation changed during audit; retry")
+            # Keep the other model check for this revision. Re-running a mode
+            # replaces its findings instead of accumulating them. Read under the
+            # lock so concurrent text/image checks do not overwrite each other.
+            retained = [
+                copy.deepcopy(issue)
+                for issue in current.get("audit", {}).get("issues", [])
+                if issue.get("category") == "contextual"
+                and not (visual if issue.get("element_id") == "slide_image" else contextual)
+            ]
+            report["issues"].extend(retained)
+            report["counts"] = {
+                "errors": sum(i["severity"] == "error" for i in report["issues"]),
+                "warnings": sum(i["severity"] != "error" for i in report["issues"]),
+            }
+            if retained and not (contextual or visual) and "contextual" in current.get("audit", {}):
+                report["contextual"] = copy.deepcopy(current["audit"]["contextual"])
             current["audit"] = report
             store.put("presentations", current)
         return {"revision": record["revision"], **report}

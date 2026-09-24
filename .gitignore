@@ -30,3 +30,6 @@ Thumbs.db
 
 # Артефакты сборки TypeScript
 *.tsbuildinfo
+
+# Скриншоты и отчёты локальных прогонов браузера
+output/
