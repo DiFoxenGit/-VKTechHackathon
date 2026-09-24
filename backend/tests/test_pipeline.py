@@ -2942,3 +2942,45 @@ def test_last_attempt_drops_the_chart_without_data(client, monkeypatch):
     response = client.post("/api/v1/outlines", json=CHART_BRIEF)
     assert response.status_code == 200, response.text
     assert response.json()["slides"][0]["visual"]["kind"] == "none"
+
+
+def test_body_type_stays_below_the_title():
+    """Тезис не крупнее заголовка: вёрстка держит иерархию, аудит её проверяет."""
+    from designer.audit import apply_fixes
+    from designer.layout import grow_text, keep_below_title
+
+    scale = [12.0, 16.0, 20.0, 24.0, 32.0]
+    title = {"id": "title", "kind": "text", "role": "title", "text": "Итог",
+             "box": [0, 0, 800, 60], "font_size": 20.0}
+    body = {"id": "body", "kind": "text", "role": "body", "text": "Короткий тезис",
+            "box": [0, 80, 800, 300], "font_size": 16.0}
+    lead = dict(body, id="lead", font_size=16.0, box=[0, 400, 800, 100])
+    # Рост кегля ради заливки останавливается ступенью ниже заголовка, акцент
+    # focus растёт свободно.
+    grow_text([title, body, lead], scale, 960 * 540, target=0.9, maximum=32)
+    assert body["font_size"] < title["font_size"]
+    assert lead["font_size"] >= title["font_size"]
+    # Подгонка всё же сравняла — страховка опускает тезис на ступень.
+    body["font_size"] = title["font_size"]
+    keep_below_title([title, body], scale)
+    assert body["font_size"] == max(s for s in scale if s < title["font_size"])
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    from designer.models import Outline
+
+    deck = compose(Outline.model_validate(outline(2)).model_dump(), template, "classic")
+    slide = deck["slides"][1]
+    heading = next(e for e in slide["elements"] if e["role"] == "title")
+    text = next(e for e in slide["elements"] if e["role"] == "body")
+    assert text["font_size"] < heading["font_size"]
+    # У синтетического шаблона шкалы нет; задаём её, чтобы исправлению было
+    # на какую ступень опуститься.
+    scale = template["tokens"]["font_sizes"] = [12.0, 16.0, 20.0, 24.0]
+    heading["font_size"] = text["font_size"] = 24.0
+    report = audit(deck, template, [{"id": "brief", "text": "10 20"}])
+    found = [i for i in report["issues"] if i["code"] == "body_over_title"]
+    assert [(i["slide_index"], i["element_id"], i["fixable"]) for i in found] == [
+        (1, text["id"], True)
+    ]
+    apply_fixes(deck, report, [found[0]["id"]], template)
+    assert text["font_size"] == max(s for s in scale if s < heading["font_size"])
