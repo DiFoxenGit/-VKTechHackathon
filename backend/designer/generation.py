@@ -185,6 +185,67 @@ async def ask_vision(prompt, payload, image_png: bytes):
     return parse_json(answer)
 
 
+def image_provider():
+    """Провайдер генерации изображений; по умолчанию — адрес основной модели.
+
+    Контракт — OpenAI-совместимый `/images/generations`, поэтому подключается
+    любой сервис с таким эндпоинтом: хватает адреса, модели и ключа в окружении.
+    """
+    url = (
+        os.getenv("DESIGNER_IMAGE_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL", "")
+    ).rstrip("/")
+    model = os.getenv("DESIGNER_IMAGE_MODEL", "")
+    if not url or not model:
+        raise HTTPException(
+            503,
+            "Configure DESIGNER_IMAGE_MODEL (and DESIGNER_IMAGE_BASE_URL) for image generation",
+        )
+    return url, model
+
+
+def image_available():
+    return bool(
+        os.getenv("DESIGNER_IMAGE_MODEL")
+        and (os.getenv("DESIGNER_IMAGE_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL"))
+    )
+
+
+async def draw_image(prompt, size=None) -> bytes:
+    """Одна картинка по текстовому описанию. Возвращает байты PNG.
+
+    Провайдеры отвечают по-разному: кто-то кладёт base64 в ответ, кто-то отдаёт
+    ссылку со сроком жизни. Поддержаны оба варианта, иначе половина совместимых
+    сервисов не подключилась бы.
+    """
+    url, model = image_provider()
+    size = size or os.getenv("DESIGNER_IMAGE_SIZE", "1024x1024")
+    key = os.getenv("DESIGNER_IMAGE_API_KEY") or os.getenv("DESIGNER_LLM_API_KEY", "local")
+    async with httpx.AsyncClient(timeout=httpx.Timeout(180, connect=15)) as client:
+        response = await client.post(
+            url + "/images/generations",
+            headers={"Authorization": "Bearer " + key},
+            json={
+                "model": model,
+                "prompt": prompt,
+                "n": 1,
+                "size": size,
+                "response_format": "b64_json",
+            },
+        )
+        response.raise_for_status()
+        try:
+            item = response.json()["data"][0]
+        except (ValueError, KeyError, IndexError, TypeError) as exc:
+            raise InvalidCompletion(f"Ответ генератора без картинки: {exc}") from exc
+        if item.get("b64_json"):
+            return base64.b64decode(item["b64_json"])
+        if item.get("url"):
+            loaded = await client.get(item["url"])
+            loaded.raise_for_status()
+            return loaded.content
+    raise InvalidCompletion("Генератор не вернул ни b64_json, ни ссылки")
+
+
 async def vision_completion(prompt, payload, image_png, attempts=2):
     """Проверка по картинке с повтором: пустой ответ модели не должен терять слайд."""
     last = None

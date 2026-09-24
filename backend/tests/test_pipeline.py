@@ -2457,6 +2457,183 @@ def png_photo(width=400, height=300):
     return pix.tobytes("png")
 
 
+def test_drawn_illustration_reaches_the_slide(client, monkeypatch):
+    """Задача со звёздочкой целиком: нарисовали, проверили, поставили на слайд."""
+    import designer.generation as generation
+
+    prompts = []
+
+    async def fake_draw(prompt, size=None):
+        prompts.append(prompt)
+        return png_photo()
+
+    monkeypatch.setenv("DESIGNER_IMAGE_MODEL", "image-model")
+    monkeypatch.setenv("DESIGNER_IMAGE_BASE_URL", "http://images.invalid/v1")
+    monkeypatch.delenv("DESIGNER_VLM_MODEL", raising=False)
+    monkeypatch.setattr(generation, "draw_image", fake_draw)
+
+    content = outline(3)
+    # Слайду без своей визуализации иллюстрация и нужна.
+    content["slides"][1]["visual"] = {"kind": "none"}
+    content["slides"][1]["title"] = "Курьеры доставляют заказы за час"
+    content["slides"][1]["bullets"] = ["Среднее время доставки час"]
+    template = client.post(
+        "/api/v1/templates", files={"file": ("template.pptx", template_bytes())}
+    ).json()
+    response = client.post(
+        "/api/v1/generations",
+        json={
+            "template_id": template["id"],
+            "brief": "Курьерская доставка",
+            "slide_count": 3,
+            "outline": content,
+        },
+    )
+    assert response.status_code == 202, response.text
+    job = wait_job(client, response.json()["id"])
+    assert prompts and "Курьеры доставляют" in prompts[0]
+
+    record = client.app.state.store.get("presentations", job["presentation_ids"][0])
+    assert record["illustrations_id"], "колода должна помнить, где лежат картинки"
+    drawn = [
+        element
+        for slide in record["deck"]["slides"]
+        for element in slide["elements"]
+        if element.get("kind") == "image"
+        and (element.get("asset") or {}).get("source") == "generated"
+    ]
+    assert drawn, "нарисованная картинка не доехала до слайда"
+    assert drawn[0]["asset"]["ref"].startswith("generated:")
+
+    # Файл лежит там, где его найдёт экспорт.
+    from designer.assets import resolve
+
+    assert resolve(drawn[0]["asset"]["ref"], client.app.state.store.root).exists()
+
+
+def test_illustration_prompt_carries_topic_and_palette():
+    """Промпт собирается из темы слайда и цветов шаблона, и запрещает буквы."""
+    from designer.assets import illustration_prompt
+
+    prompt = illustration_prompt(
+        "Нагрузка на дизайнеров выросла",
+        ["27 запросов в неделю", "закрыто 11"],
+        {"background": "#0B1A2B", "accent": "#1478F4", "secondary": "#8A83D1"},
+    )
+    assert "Нагрузка на дизайнеров" in prompt
+    assert "27 запросов" in prompt
+    assert "#0B1A2B" in prompt and "#1478F4" in prompt and "#8A83D1" in prompt
+    assert "без текста" in prompt and "без букв" in prompt
+
+
+def test_illustration_targets_skip_cover_closing_and_busy_slides():
+    """Картинку рисуем туда, куда вёрстка её и поставит."""
+    from designer.assets import illustration_targets
+
+    slides = [
+        {"title": "Обложка", "bullets": ["раз"], "visual": {"kind": "none"}},
+        {"title": "Подходит", "bullets": ["раз", "два"], "visual": {"kind": "none"}},
+        {"title": "Своя диаграмма", "bullets": ["раз"], "visual": {"kind": "bar"}},
+        {"title": "Слишком много тезисов", "bullets": ["раз"] * 6, "visual": {"kind": "none"}},
+        {"title": "Тоже подходит", "bullets": ["раз"], "visual": {"kind": "none"}},
+        {"title": "Спасибо", "bullets": ["раз"], "visual": {"kind": "none"}},
+    ]
+    picked = illustration_targets(slides, limit=5)
+    assert [index for index, _ in picked] == [1, 4]
+    assert len(illustration_targets(slides, limit=1)) == 1
+
+
+def test_generated_illustration_is_saved_and_picked_for_its_slide(tmp_path, monkeypatch):
+    """Нарисованная картинка попадает в библиотеку и встаёт на свой слайд."""
+    import asyncio
+
+    import designer.assets as assets
+
+    async def fake_draw(prompt, size=None):
+        assert "Мобильное приложение" in prompt
+        return png_photo()
+
+    monkeypatch.setenv("DESIGNER_IMAGE_MODEL", "image-model")
+    monkeypatch.setenv("DESIGNER_IMAGE_BASE_URL", "http://images.invalid/v1")
+    monkeypatch.setattr(assets_generation(), "draw_image", fake_draw)
+
+    owner = "a" * 32
+    folder = tmp_path / "illustrations" / owner / "assets"
+    slides = [
+        {"title": "Обложка", "bullets": ["раз"], "visual": {"kind": "none"}},
+        {
+            "title": "Мобильное приложение для курьеров",
+            "bullets": ["Доставка за час"],
+            "visual": {"kind": "none"},
+        },
+    ]
+    metas = asyncio.run(
+        assets.generate_illustrations(slides, {"accent": "#1478F4"}, folder, owner, limit=2)
+    )
+    assert len(metas) == 1
+    meta = metas[0]
+    assert meta["kind"] == "illustration" and meta["format"] == "png"
+    assert meta["source"] == "generated" and meta["ref"].startswith(f"generated:{owner}:")
+    assert (folder / meta["file"]).exists()
+    assert assets.resolve(meta["ref"], tmp_path) == folder / meta["file"]
+
+    # Теги — слова самого слайда, поэтому подбор ставит картинку туда же.
+    chosen = assets.pick_picture(
+        "Доставка за час", [meta], title="Мобильное приложение для курьеров"
+    )
+    assert chosen and chosen["id"] == meta["id"]
+
+
+def test_illustration_with_letters_is_dropped(tmp_path, monkeypatch):
+    """Если генератор написал на картинке текст, она не поедет на слайд."""
+    import asyncio
+
+    import designer.assets as assets
+
+    monkeypatch.setenv("DESIGNER_VLM_MODEL", "vlm")
+    monkeypatch.setenv("DESIGNER_VLM_BASE_URL", "http://vlm.invalid/v1")
+    folder = tmp_path / "assets"
+    folder.mkdir(parents=True)
+    metas = []
+    for name, has_text in (("clean", False), ("lettered", True)):
+        path = folder / f"{name}.png"
+        path.write_bytes(png_photo())
+        metas.append({"id": name, "file": path.name, "has_text": has_text})
+
+    async def fake_vision(prompt, payload, image, attempts=2):
+        target = next(m for m in metas if m["id"] == payload["id"])
+        return {"has_text": target["has_text"]}
+
+    monkeypatch.setattr(assets_generation(), "vision_completion", fake_vision)
+    kept = asyncio.run(assets.drop_lettered(metas, folder))
+    assert [m["id"] for m in kept] == ["clean"]
+    assert (folder / "clean.png").exists() and not (folder / "lettered.png").exists()
+
+
+def test_image_generation_stays_off_without_a_model(monkeypatch):
+    """Без DESIGNER_IMAGE_MODEL генератор не зовётся и колода собирается как раньше."""
+    import asyncio
+
+    import designer.assets as assets
+    from designer.generation import image_available
+
+    monkeypatch.delenv("DESIGNER_IMAGE_MODEL", raising=False)
+    assert image_available() is False
+
+    async def explode(*args, **kwargs):
+        raise AssertionError("Генератор не должен вызываться без модели")
+
+    monkeypatch.setattr(assets_generation(), "draw_image", explode)
+    slides = [{"title": "Тема", "bullets": ["раз"], "visual": {"kind": "none"}}] * 3
+    assert asyncio.run(assets.generate_illustrations(slides, {}, Path("."), "b" * 32)) == []
+
+
+def assets_generation():
+    import designer.generation as generation
+
+    return generation
+
+
 def test_svg_paths_become_contours_with_colour_roles():
     from designer.assets import parse_svg
 

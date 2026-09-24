@@ -1087,7 +1087,11 @@ def resolve(ref, root=None):
     owner, _, name = rest.partition(":")
     if root is None or not re.fullmatch(r"[a-f0-9]{32}", owner) or not STORED_NAME.fullmatch(name):
         raise ValueError("Unknown asset reference")
-    kind = {"template": "templates", "pack": "content_packs"}.get(source)
+    kind = {
+        "template": "templates",
+        "pack": "content_packs",
+        "generated": "illustrations",
+    }.get(source)
     if not kind:
         raise ValueError("Unknown asset source")
     return Path(root) / kind / owner / "assets" / name
@@ -1287,6 +1291,153 @@ def contact_sheet(blobs, cell=150, columns=4):
             continue
         page.insert_text((frame.x0 + 6, frame.y0 + 16), str(index + 1), fontsize=13, color=(0.8, 0.1, 0.1))
     return page.get_pixmap(matrix=pymupdf.Matrix(1, 1)).tobytes("png")
+
+
+# ---------------------------------------------------------------- генерация картинок
+
+
+# Что просим у генератора всегда: картинка идёт на слайд рядом с текстом, поэтому
+# букв на ней быть не должно, а композиция — спокойной и в цветах шаблона.
+IMAGE_STYLE = (
+    "минималистичная векторная иллюстрация, плоские заливки, без текста, "
+    "без букв, без цифр, без логотипов, без рамок, спокойная композиция, "
+    "много свободного места, фон {background}, основные цвета {accent} и {secondary}"
+)
+
+
+def illustration_prompt(title, bullets, palette):
+    """Описание картинки для слайда: тема из заголовка, цвета — из шаблона.
+
+    Промпт собирается детерминированно, а не моделью: лишний вызов на каждый
+    слайд стоит денег и времени, а тема слайда уже сформулирована в заголовке.
+    """
+    idea = " ".join([title or ""] + [b for b in (bullets or [])][:2]).strip()
+    idea = re.sub(r"\s+", " ", idea)[:220]
+    style = IMAGE_STYLE.format(
+        background=palette.get("background", "#FFFFFF"),
+        accent=palette.get("accent", "#1478F4"),
+        secondary=palette.get("secondary", palette.get("accent", "#1478F4")),
+    )
+    return f"{idea}. {style}"
+
+
+def illustration_targets(slides, limit):
+    """Слайды, которым картинка нужнее всего.
+
+    Берём те, где нет своей визуализации и мало текста: именно туда вёрстка
+    ставит иллюстрацию. Обложку и финал пропускаем — там композицию задаёт
+    страница шаблона.
+    """
+    chosen = []
+    total = len(slides)
+    for index, content in enumerate(slides):
+        if index == 0 or (total > 2 and index == total - 1):
+            continue
+        if (content.get("visual") or {}).get("kind", "none") != "none":
+            continue
+        bullets = content.get("bullets") or []
+        if not bullets or len(bullets) > 4 or sum(len(b) for b in bullets) > 320:
+            continue
+        chosen.append((index, content))
+        if len(chosen) >= limit:
+            break
+    return chosen
+
+
+async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, size=None):
+    """Нарисовать иллюстрации к слайдам и сохранить их как ассеты колоды.
+
+    Возвращает метаданные в том же виде, в каком их отдаёт библиотека: вёрстка
+    подбирает картинку по тегам, а теги здесь — слова самого слайда, поэтому
+    сгенерированная картинка встаёт именно на тот слайд, для которого нарисована.
+    Ошибка генератора не роняет колоду: слайд просто останется без картинки.
+    """
+    import asyncio
+
+    from .generation import draw_image, image_available
+
+    if not image_available():
+        return []
+    targets = illustration_targets(slides, limit)
+    if not targets:
+        return []
+
+    async def one(index, content):
+        prompt = illustration_prompt(content.get("title"), content.get("bullets"), palette)
+        try:
+            blob = await draw_image(prompt, size)
+            info = inspect_image(blob)
+        except Exception as exc:  # noqa: BLE001 - без картинки слайд собирается как раньше
+            LOGGER.warning("Illustration for slide %s failed: %s", index, exc)
+            return None
+        identifier = hashlib.sha256(blob).hexdigest()[:24]
+        label = [w for w in words(content.get("title") or "") if len(w) > 2][:5]
+        return (
+            {
+                "id": identifier,
+                "kind": "illustration",
+                "format": "png",
+                "file": f"{identifier}.png",
+                "ratio": round((info["w"] or 1) / (info["h"] or 1), 4),
+                "mono": False,
+                "color": info.get("color"),
+                "slide": index,
+                "label": label,
+                "tags": tag_roots(label),
+                "prompt": prompt,
+            },
+            blob,
+        )
+
+    drawn = await asyncio.gather(*(one(index, content) for index, content in targets))
+    harvested = [item for item in drawn if item]
+    if not harvested:
+        return []
+    metas = save_assets(folder, harvested)
+    for meta in metas:
+        meta["source"] = "generated"
+        meta["family"] = "generated:" + owner
+        meta["ref"] = f"generated:{owner}:{meta['file']}"
+    return metas
+
+
+async def drop_lettered(metas, folder: Path):
+    """Убрать картинки, на которых генератор всё-таки написал текст.
+
+    Буквы на иллюстрации — это чужой язык, опечатки и бессмысленные слова рядом
+    с выверенным текстом слайда. Проверяет мультимодальная модель, та же, что
+    смотрит слайды в аудите; без неё картинки остаются как есть.
+    """
+    import asyncio
+
+    from .generation import PROMPTS, vision_available, vision_completion, workflow
+
+    if not metas or not vision_available():
+        return metas
+    agent = workflow()["agents"].get("image_check")
+    if not agent:
+        return metas
+    prompt = (PROMPTS / agent).read_text(encoding="utf-8")
+
+    async def check(meta):
+        try:
+            answer = await vision_completion(
+                prompt, {"id": meta["id"]}, (folder / meta["file"]).read_bytes()
+            )
+        except Exception as exc:  # noqa: BLE001 - проверка не должна ронять колоду
+            LOGGER.warning("Cannot check illustration %s: %s", meta["id"], exc)
+            return True
+        return not bool(answer.get("has_text"))
+
+    keep = await asyncio.gather(*(check(meta) for meta in metas))
+    clean = []
+    for meta, ok in zip(metas, keep):
+        if ok:
+            clean.append(meta)
+            continue
+        LOGGER.info("Illustration %s dropped: generator wrote text on it", meta["id"])
+        (folder / meta["file"]).unlink(missing_ok=True)
+    return clean
 
 
 async def tag_assets(assets, load, budget=None):
