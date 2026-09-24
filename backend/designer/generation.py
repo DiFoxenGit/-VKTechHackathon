@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from .inference import llm_settings, require_llm
 from .language import CYRILLIC, LATIN, foreign_labels, visual_labels
-from .models import Brief, Outline, Visual
+from .models import Brief, Outline, SlideContent, Visual
 
 PROMPTS = Path(__file__).parent / "prompts"
 LOGGER = logging.getLogger("designer.generation")
@@ -50,6 +50,44 @@ def narrative(purpose):
         return None
     frames = json.loads(path.read_text(encoding="utf-8"))
     return frames.get(purpose)
+
+
+def fit_schema_limits(result):
+    """Обрезать списки плана до пределов схемы — только для последней попытки.
+
+    Модель иногда присылает седьмой шаг процесса при пределе в шесть. На первых
+    попытках это причина переспросить, а на последней — не повод остаться без
+    колоды: лишнее отрезается, остальное проходит проверку как обычно.
+    """
+    from annotated_types import MaxLen
+
+    def limit(model, name):
+        field = model.model_fields.get(name)
+        if field is None:
+            return None
+        return next((m.max_length for m in field.metadata if isinstance(m, MaxLen)), None)
+
+    if not isinstance(result, dict):
+        return result
+    slides = result.get("slides")
+    if isinstance(slides, list):
+        cap = limit(Outline, "slides")
+        if cap is not None:
+            del slides[cap:]
+        for slide in slides:
+            if not isinstance(slide, dict):
+                continue
+            cap = limit(SlideContent, "bullets")
+            if cap is not None and isinstance(slide.get("bullets"), list):
+                slide["bullets"] = slide["bullets"][:cap]
+            visual = slide.get("visual")
+            if not isinstance(visual, dict):
+                continue
+            for name, value in list(visual.items()):
+                cap = limit(Visual, name)
+                if cap is not None and isinstance(value, list):
+                    visual[name] = value[:cap]
+    return result
 
 
 def narrative_beats():
@@ -712,7 +750,15 @@ async def generate_outline(request, sources, warnings=None):
     def validate(result):
         attempt["n"] += 1
         last_chance = attempt["n"] >= MAX_ATTEMPTS
+        if last_chance:
+            # Последняя попытка: лишний шаг схемы или строка таблицы не повод
+            # остаться без колоды — обрезаем до пределов схемы.
+            result = fit_schema_limits(result)
         outline = Outline.model_validate(result)
+        # Замечания собираются за один проход и уходят модели одним сообщением:
+        # по одному за попытку три попытки кончаются раньше, чем модель исправит
+        # всё, и на последней приходится соглашаться на меньший объём.
+        reasons = []
         count = len(outline.slides)
         # ТЗ задаёт целевой объём, и пользователь задаёт его явно. Перебор не
         # принимаем никогда: это верхняя граница. Недобор возвращаем модели с
@@ -721,33 +767,35 @@ async def generate_outline(request, sources, warnings=None):
         # когда попытки кончились.
         if count > request.slide_count:
             if not last_chance:
-                raise ValueError(
+                reasons.append(
                     f"Слайдов {count}, а просили не больше {request.slide_count}. "
                     "Объедини близкие мысли, не выбрасывая факты."
                 )
-            outline.slides = outline.slides[: request.slide_count]
-            count = len(outline.slides)
+            else:
+                outline.slides = outline.slides[: request.slide_count]
+                count = len(outline.slides)
         if count < request.slide_count:
             if not last_chance:
-                raise ValueError(
+                reasons.append(
                     f"Слайдов {count}, а нужно {request.slide_count}. "
                     "Разбей самые насыщенные слайды на два по смыслу или добавь "
                     "слайды с таблицей либо схемой по материалам: сравнение "
                     "показателей, этапы, сроки. Новые слайды несут факты из "
                     "источников, а не воду."
                 )
-            LOGGER.warning(
-                "Model insisted on %s slides instead of %s", count, request.slide_count
-            )
-            if warnings is not None:
-                warnings.append(
-                    f"Модель собрала {count} слайдов вместо {request.slide_count}: "
-                    "в материалах не нашлось содержания на остальные. Добавьте "
-                    "материалы или уменьшите запрошенный объём."
+            else:
+                LOGGER.warning(
+                    "Model insisted on %s slides instead of %s", count, request.slide_count
                 )
+                if warnings is not None:
+                    warnings.append(
+                        f"Модель собрала {count} слайдов вместо {request.slide_count}: "
+                        "в материалах не нашлось содержания на остальные. Добавьте "
+                        "материалы или уменьшите запрошенный объём."
+                    )
         unknown = {ref for slide in outline.slides for ref in slide.source_refs} - allowed
         if unknown:
-            raise ValueError(
+            reasons.append(
                 "Неизвестные source_refs: "
                 + ", ".join(sorted(unknown))
                 + ". Допустимые: "
@@ -767,12 +815,12 @@ async def generate_outline(request, sources, warnings=None):
             }
         )
         if strangers and not last_chance:
-            raise ValueError(
+            reasons.append(
                 "Подписи в визуализациях на другом языке: "
                 + ", ".join(strangers[:8])
                 + ". Переведи все подписи, названия серий и единицы на язык колоды."
             )
-        if strangers:
+        elif strangers:
             # Последняя попытка: колода без одной диаграммы лучше, чем ошибка
             # вместо колоды. Снимаем визуализации с чужими подписями и говорим
             # об этом в логе — аудит потом отметит слайд без визуализации.
@@ -788,7 +836,7 @@ async def generate_outline(request, sources, warnings=None):
         ]
         if labelled and not last_chance:
             # Приложение 1, вопрос 1: заголовок содержит вывод, а не называет тему.
-            raise ValueError(
+            reasons.append(
                 "Заголовки называют раздел, а не вывод: "
                 + "; ".join(f"слайд {index + 1} «{title}»" for index, title in labelled[:6])
                 + ". Шаги каркаса — это порядок мыслей, а не текст заголовка: убери "
@@ -799,7 +847,7 @@ async def generate_outline(request, sources, warnings=None):
         if repeated:
             # Повтор заголовка — это два слайда об одном и том же: аудит потом
             # отметит дубль, но лучше не доводить до готовой колоды.
-            raise ValueError(
+            reasons.append(
                 "Заголовки повторяются: "
                 + ", ".join(sorted(repeated)[:4])
                 + ". Каждый слайд несёт свою мысль."
@@ -812,7 +860,7 @@ async def generate_outline(request, sources, warnings=None):
         if unitless and not last_chance:
             # Приложение 1: «у диаграммы нет подписей осей, единиц или легенды».
             # Единица становится подписью оси значений, без неё ось немая.
-            raise ValueError(
+            reasons.append(
                 "У диаграмм на слайдах "
                 + ", ".join(map(str, unitless))
                 + " не указана единица измерения (unit). Напиши, что измеряют значения: "
@@ -824,18 +872,19 @@ async def generate_outline(request, sources, warnings=None):
         ]
         charts = [(index, reason) for index, reason in charts if reason]
         if charts and not last_chance:
-            raise ValueError(
+            reasons.append(
                 "; ".join(f"слайд {index + 1}: диаграмма без данных, {reason}" for index, reason in charts)
                 + ". Значения диаграммы — только числа из материалов дословно. "
                 "Нет данных — нет диаграммы: возьми схему, таблицу или список."
             )
-        for index, reason in charts:
-            # Последняя попытка: слайд без диаграммы лучше выдуманного графика.
-            LOGGER.warning("Dropped chart without data on slide %s: %s", index + 1, reason)
-            outline.slides[index].visual = Visual()
+        elif charts:
+            for index, reason in charts:
+                # Последняя попытка: слайд без диаграммы лучше выдуманного графика.
+                LOGGER.warning("Dropped chart without data on slide %s: %s", index + 1, reason)
+                outline.slides[index].visual = Visual()
         repeats = repeated_items([slide.model_dump() for slide in outline.slides])
         if repeats and not last_chance:
-            raise ValueError(
+            reasons.append(
                 "; ".join(
                     f"слайд {index + 1}: «{item}» уже есть в заголовке или на другом слайде"
                     for index, item in repeats[:6]
@@ -843,7 +892,7 @@ async def generate_outline(request, sources, warnings=None):
                 + ". Каждый факт звучит в колоде один раз, а тезис не повторяет "
                 "заголовок. Если материала мало, лучше меньше слайдов."
             )
-        if repeats:
+        elif repeats:
             before = len(outline.slides)
             LOGGER.warning("Dropping repeated items on the last attempt: %s", repeats[:6])
             drop_repeats(outline)
@@ -865,20 +914,25 @@ async def generate_outline(request, sources, warnings=None):
             ),
             known,
         )
-        if invented and last_chance:
-            # Последняя попытка: колода с помеченным числом полезнее, чем ошибка
-            # вместо колоды. Детерминированный аудит покажет это число
-            # пользователю как неподтверждённое — там его и видно.
-            LOGGER.warning("Shipping outline with unverified numbers: %s", invented[:8])
-        elif invented:
+        if invented and not last_chance:
             # Ask again instead of shipping the figure: the audit would flag it and
             # the user would have to rewrite the slide by hand.
-            raise ValueError(
+            reasons.append(
                 "Числа отсутствуют в источниках: "
                 + ", ".join(invented[:8])
                 + ". Используй только те цифры, что есть в материалах дословно, "
                 "и не вычисляй проценты, кратности и суммы."
             )
+        elif invented:
+            # Последняя попытка: колода с помеченным числом полезнее, чем ошибка
+            # вместо колоды. Детерминированный аудит покажет это число
+            # пользователю как неподтверждённое — там его и видно.
+            LOGGER.warning("Shipping outline with unverified numbers: %s", invented[:8])
+        # Неизвестный источник и повтор заголовка не чинятся сами: на последней
+        # попытке они по-прежнему роняют план, как и раньше.
+        fatal = [reason for reason in reasons if reason.startswith(("Неизвестные source_refs", "Заголовки повторяются"))]
+        if reasons and (not last_chance or fatal):
+            raise ValueError("\n".join(f"{number}. {reason}" for number, reason in enumerate(reasons, 1)))
         outline.title = tidy_line(outline.title)
         for slide in outline.slides:
             slide.title = tidy_line(slide.title)
