@@ -73,9 +73,12 @@ def foreign_labels(labels, cyrillic_deck):
         # «gpt-oss-20b» — термины, которые промпт прямо разрешает писать
         # латиницей. Раньше проверка сверялась только со словарём сокращений и
         # отправляла модель переделывать подписи, в которых всё было верно.
+        # Типографика ставит в «gpt‑oss‑20b» неразрывный дефис: для проверки он
+        # такой же дефис, иначе название модели распадается на «gpt» и «oss».
+        plain = re.sub(r"[\u2010-\u2015]", "-", label)
         words = [
             w
-            for w in re.split(r"[^A-Za-z0-9_.-]+", label)
+            for w in re.split(r"[^A-Za-z0-9_.-]+", plain)
             if w and any(c.isalpha() for c in w)
         ]
         if words and all(technical_token(word) for word in words):

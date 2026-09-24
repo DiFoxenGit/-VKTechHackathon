@@ -1229,6 +1229,46 @@ def test_technical_terms_in_labels_are_not_a_foreign_language():
     assert foreign_labels(english, True) == english
 
 
+def test_non_breaking_hyphen_keeps_model_name_technical():
+    """Типографика ставит в «gpt‑oss‑20b» неразрывный дефис — это всё ещё название модели."""
+    from designer.language import foreign_labels
+
+    assert foreign_labels(["gpt‑oss‑20b", "Модель gpt‑oss‑20b"], True) == []
+
+
+def test_retry_reminds_to_keep_the_slide_count(client, monkeypatch):
+    """Исправляя подписи, модель норовит сжать колоду — повтор напоминает про объём."""
+    english = outline(1)
+    english["slides"][0]["visual"]["categories"] = ["Before", "After"]
+    good = outline(1)
+    captured = mock_provider(monkeypatch, [json.dumps(english), json.dumps(good)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Продажи А 10 Б 20 млн руб.", "slide_count": 1},
+    )
+    assert response.status_code == 200, response.text
+    assert "сохрани 1 слайдов" in captured[-1]["messages"][-1]["content"]
+
+
+def test_last_attempt_strips_section_name_from_title(client, monkeypatch):
+    """Если модель так и не убрала название раздела, его снимаем и предупреждаем."""
+    from designer.generation import strip_beat
+
+    assert strip_beat("Ожидаемый эффект: скорость сборки выросла в 46 раз") == "Скорость сборки выросла в 46 раз"
+    assert strip_beat("Предложение: сервис") == ""  # огрызок хуже подписи раздела
+    assert strip_beat("Итог: сборка ускорилась") == ""  # не шаг каркаса
+
+    labelled = outline(2)
+    labelled["slides"][1]["title"] = "Ожидаемый эффект: команд стало 20 вместо 10"
+    mock_provider(monkeypatch, [json.dumps(labelled)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Пилот: 10 команд, после запуска 20 команд", "slide_count": 2},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][1]["title"] == "Команд стало 20 вместо 10"
+
+
 def test_english_labels_send_the_model_back(client, monkeypatch):
     """Русская колода с английскими подписями осей не доходит до вёрстки."""
     english = outline(1)
