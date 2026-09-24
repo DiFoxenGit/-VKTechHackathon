@@ -1153,6 +1153,44 @@ def test_chart_without_unit_sends_the_model_back(client, monkeypatch):
     assert "единица измерения" in captured[-1]["messages"][-1]["content"]
 
 
+def test_all_problems_go_back_to_the_model_in_one_retry(client, monkeypatch):
+    """Замечания уходят модели разом: иначе три попытки кончаются раньше исправлений."""
+    messy = outline(2)
+    messy["slides"][1]["title"] = "Ожидаемый эффект: рост команд"
+    messy["slides"][0]["visual"]["unit"] = ""
+    good = outline(2)
+    good["slides"][1]["title"] = "Команд стало 20 вместо 10"
+    captured = mock_provider(monkeypatch, [json.dumps(messy), json.dumps(good)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Пилот: 10 команд, после запуска 20 команд. Продажи А 10 Б 20 млн руб.", "slide_count": 2},
+    )
+    assert response.status_code == 200, response.text
+    assert len(captured) == 2
+    retry = captured[-1]["messages"][-1]["content"]
+    assert "называют раздел" in retry and "единица измерения" in retry
+
+
+def test_last_attempt_trims_schema_overflow_instead_of_failing(client, monkeypatch):
+    """Седьмой шаг процесса при пределе в шесть не должен оставить пользователя без колоды."""
+    overflow = outline(3)
+    overflow["slides"][2]["visual"] = {
+        "kind": "process",
+        "steps": ["Шаблон", "Материалы", "План", "Вёрстка", "Аудит", "Правки", "Экспорт"],
+    }
+    captured = mock_provider(monkeypatch, [json.dumps(overflow)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Продажи А 10 Б 20 млн руб.", "slide_count": 3},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][2]["visual"]["steps"] == [
+        "Шаблон", "Материалы", "План", "Вёрстка", "Аудит", "Правки",
+    ]
+    # Первые попытки всё равно переспрашивали — обрезка только на последней.
+    assert len(captured) == 3
+
+
 def test_focus_variant_fills_the_slide_with_larger_type():
     """Один тезис на слайд — это крупный кегль, а не четверть пустой страницы."""
     from designer.layout import ink_area
