@@ -600,6 +600,36 @@ def slot_size(style, scale, fallback, minimum=12, maximum=96):
     return min(scale, key=lambda s: abs(s - size)) if scale else size
 
 
+def card_depth(box, cards, reserved, bottom, gap=8.0):
+    """Высота текстовой рамки карточки с учётом места под ней.
+
+    Рамка текста в карточке шаблона обычно рассчитана на подпись в две строки,
+    а сама карточка — фигура или просто колонка — тянется ниже. PowerPoint
+    растит такую рамку вниз по мере набора; мы делаем то же заранее, но не
+    дальше следующей карточки в колонке, не дальше фигуры, внутри которой лежит
+    рамка, и не за рабочую область. Тогда кеглю есть куда расти, и три коротких
+    тезиса не остаются мелкой строкой посреди пустого слайда.
+    """
+    x, y, w, h = box
+    limit = bottom
+    for other in cards:
+        if other is box or other[1] <= y + 1:
+            continue
+        if other[0] < x + w and other[0] + other[2] > x:
+            limit = min(limit, other[1] - gap)
+    for bx, by, bw, bh in reserved:
+        overlaps = bx < x + w and bx + bw > x
+        if not overlaps:
+            continue
+        if by >= y + h - 1:
+            # Значок или линия ниже рамки — дальше неё не идём.
+            limit = min(limit, by - gap)
+        elif by <= y + 1 and by + bh >= y + h - 1 and bx <= x + 1 and bx + bw >= x + w - 1:
+            # Фигура-подложка карточки: текст остаётся внутри неё.
+            limit = min(limit, by + bh)
+    return max(h, limit - y)
+
+
 def card_slots(body_slots, width, height, minimum=2, maximum=6):
     """Одинаковые блоки прототипа — готовая карточная сетка шаблона.
 
@@ -1115,7 +1145,11 @@ def compose(outline, template, variant, assets=None):
                 # к середине слайда, и колода читается как полупустая.
                 top = max(slot_top, ty + th + height * 0.02)
                 top = min(top, ty + th + height * 0.1)
-                bottom = max(top + height * 0.2, slot_bottom)
+                # Нижнюю границу прототипа focus не наследует: у страницы с
+                # рядом мелких подписей она отрезает полосу в пятую часть
+                # слайда, и одна крупная мысль набирается кеглем подписи.
+                if variant != "focus":
+                    bottom = max(top + height * 0.2, slot_bottom)
             # Шаблон отдал правую часть страницы под иллюстрацию — текст идёт
             # по ширине своего слота, а не на всю полосу: иначе он ложится
             # поверх картинки, которую клонирование сохранило.
@@ -1330,7 +1364,12 @@ def compose(outline, template, variant, assets=None):
                 text_box(
                     f"card_{index}",
                     group,
-                    [box[0] + pad, box[1] + pad, box[2] - pad * 2, box[3] - pad * 2],
+                    [
+                        box[0] + pad,
+                        box[1] + pad,
+                        box[2] - pad * 2,
+                        card_depth(box, cards, reserved, bottom) - pad * 2,
+                    ],
                     marker=False,
                 )
                 elements[-1]["from_template"] = True
@@ -1348,12 +1387,31 @@ def compose(outline, template, variant, assets=None):
                 ch = min(height * cover_box['h'], height * .9 - cy)
                 elements[0]['box'] = [cx, cy, cw, ch]
                 elements[0]['from_template'] = True
+                # Кегль обложки — тот, что задал дизайнер в рамке заголовка
+                # титульной страницы (обычно 48–60 pt), а не кегль заголовка
+                # обычного слайда, подобранный под ширину полосы. Рамка растёт
+                # вниз, как у заголовка с автоподбором в PowerPoint, но
+                # оставляет место подзаголовку; не влезло — ступень шкалы ниже.
+                cover_bottom = height * min(.95, margins['y'] + margins['h'])
+                room = cover_bottom - cy - (height * .12 if bullets else 0)
+                cover_size = slot_size(title_style, scale, current_title_size, minimum=18)
+                title = elements[0]
+                for size in sorted({s for s in scale if s <= cover_size} | {cover_size}, reverse=True):
+                    if size <= title['font_size']:
+                        break
+                    candidate = dict(title, font_size=size)
+                    longest = max((len(word) for word in title['text'].split()), default=1)
+                    if (estimated_text_height(candidate) <= max(ch, room)
+                            and longest * size * WORD_CHAR_WIDTH <= cw - 12):
+                        title['font_size'] = size
+                        title['box'][3] = max(ch, estimated_text_height(candidate))
+                        break
+                ch = title['box'][3]
                 if bullets:
                     below = [s for s in body_slots if s['box']['y'] >= cover_box['y'] + cover_box['h'] * .8]
                     subtitle = min(below, key=lambda s: s['box']['y'])['box'] if below else None
                     by = max(cy + ch + height * .02, height * subtitle['y'] if subtitle else 0)
                     body = next(e for e in elements if e['id'] != 'title')
-                    cover_bottom = height * min(.95, margins['y'] + margins['h'])
                     body['box'] = [cx, by, cw, max(10, cover_bottom - by)]
                     body['from_template'] = True
         slots = pattern.get("icon_slots") or []
@@ -1386,8 +1444,23 @@ def compose(outline, template, variant, assets=None):
                 else max(slide_body_size, body_size) * 1.25
             ),
         )
+        # Карточки одного ряда читаются как равные: кегль у всех один, по
+        # самой тесной. Иначе рост кегля по рамкам даёт 18, 24 и 18 рядом.
+        cards_text = [e for e in elements if e["id"].startswith("card_")]
+        if cards_text:
+            size = min(e["font_size"] for e in cards_text)
+            for element in cards_text:
+                element["font_size"] = size
         if variant == "focus":
             focus_accent(elements, scale)
+        if i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1:
+            # На обложке подзаголовок подчинён заголовку: рост кегля и акцент
+            # focus не должны сделать его крупнее названия колоды.
+            title_size = elements[0]["font_size"]
+            ceiling = max([s for s in scale if s <= title_size * 0.75] or [MIN_BODY_SIZE])
+            for element in elements[1:]:
+                if element["kind"] == "text" and element["font_size"] > ceiling:
+                    element["font_size"] = ceiling
         center_content(elements, top, bottom)
         dodge_decor(elements, reserved, bottom, height * 0.015)
         align_icons(elements)
