@@ -26,7 +26,7 @@ const LOADING_TEMPLATE: Template = {
 };
 const STAGES: Record<string, string> = {
   queued: 'В очереди', outline: 'Собираем структуру', balance: 'Подгоняем текст под шаблон',
-  assets: 'Подписываем картинки шаблона', contextual_audit: 'Проверяем содержание', compose: 'Верстаем варианты', audit: 'Аудит', export: 'Готовим файлы',
+  assets: 'Подписываем картинки шаблона', illustrations: 'Рисуем иллюстрации', contextual_audit: 'Проверяем содержание', compose: 'Верстаем варианты', audit: 'Аудит', export: 'Готовим файлы',
 };
 const DEFAULT_BRIEF: Brief = { text: '', audience: 'Коллеги и команда', goal: 'Представить идею', slideCount: 10, templateId: 'tech', materials: '' };
 

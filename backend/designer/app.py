@@ -16,6 +16,8 @@ from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 from .assets import (
+    drop_lettered,
+    generate_illustrations,
     harvest_pptx,
     library,
     parse_pack_zip,
@@ -37,6 +39,7 @@ from .exporting import (
 from .generation import (
     balance_outline,
     generate_outline,
+    image_available,
     provider,
     sources_for,
     vision_available,
@@ -49,6 +52,9 @@ from .storage import Store
 
 LOGGER = logging.getLogger(__name__)
 MAX_UPLOAD = 50 * 1024 * 1024
+# Сколько картинок рисовать на колоду: каждая — отдельный платный запрос,
+# а иллюстрация нужна не всякому слайду.
+IMAGE_LIMIT = max(0, int(os.getenv("DESIGNER_IMAGE_LIMIT", "3")))
 
 
 async def upload_bytes(file):
@@ -312,15 +318,61 @@ def create_app(data_dir=None, seed_dir=None):
             ]
         }
 
-    def deck_library(template, pack_ids):
-        """Картинки колоды: пакеты запроса, шаблон и встроенный набор."""
+    def deck_library(template, pack_ids, generated=None):
+        """Картинки колоды: нарисованные моделью, пакеты запроса, шаблон и встроенный набор."""
         packs = []
         for identifier in pack_ids or []:
             try:
                 packs.append(store.get("content_packs", identifier))
             except HTTPException:
                 continue
-        return library(template, packs)
+        return list(generated or []) + library(template, packs)
+
+    def stored_illustrations(owner):
+        """Картинки, нарисованные при сборке колоды: нужны и при правке слайда."""
+        if not owner:
+            return []
+        try:
+            return store.get("illustrations", owner).get("assets") or []
+        except HTTPException:
+            return []
+
+    async def draw_illustrations(outline, template):
+        """Нарисовать иллюстрации к слайдам, если генератор изображений настроен.
+
+        Картинки рисуются один раз на колоду и достаются всем трём вариантам:
+        так они не разъезжаются между вариантами и не тратится лишний запрос.
+        """
+        if not image_available():
+            return None, []
+        owner = store.new_id()
+        folder = store.directory("illustrations", owner) / "assets"
+        tokens = template["tokens"]
+        accents = tokens.get("accents") or []
+        palette = {
+            # Те же цвета, по которым верстается слайд: картинка не должна
+            # выбиваться из фирменного стиля шаблона.
+            "background": "#" + tokens.get("theme", {}).get("lt1", "FFFFFF"),
+            "accent": "#" + (accents[0] if accents else tokens.get("theme", {}).get("accent1", "1478F4")),
+            "secondary": "#" + (accents[1] if len(accents) > 1 else (accents[0] if accents else "1478F4")),
+        }
+        try:
+            async with asyncio.timeout(180):
+                metas = await generate_illustrations(
+                    [s["content"] if "content" in s else s for s in outline["slides"]],
+                    palette,
+                    folder,
+                    owner,
+                    limit=IMAGE_LIMIT,
+                )
+                metas = await drop_lettered(metas, folder)
+        except TimeoutError:
+            LOGGER.warning("Illustration generation timed out; deck goes without drawn pictures")
+            return None, []
+        if not metas:
+            return None, []
+        store.put("illustrations", {"id": owner, "assets": metas})
+        return owner, metas
 
     @api.get("/templates/{template_id}/assets", tags=["Templates"])
     def template_assets(template_id: str):
@@ -408,10 +460,21 @@ def create_app(data_dir=None, seed_dir=None):
         return await generate_outline(request, sources_for(store, request))
 
     def generate_variant(
-        request, outline, template, sources, variant, contextual_findings=None
+        request,
+        outline,
+        template,
+        sources,
+        variant,
+        contextual_findings=None,
+        illustrations=None,
     ):
         identifier = store.new_id()
-        deck = compose(outline, template, variant, deck_library(template, request.content_pack_ids))
+        deck = compose(
+            outline,
+            template,
+            variant,
+            deck_library(template, request.content_pack_ids, illustrations[1] if illustrations else None),
+        )
         report = audit(deck, template, sources, request.language)
         if contextual_findings is not None:
             report["issues"].extend(copy.deepcopy(contextual_findings))
@@ -436,6 +499,8 @@ def create_app(data_dir=None, seed_dir=None):
             "created_at": time.time(),
             # Пакеты с картинками нужны снова при правке слайда и исправлениях.
             "content_pack_ids": list(request.content_pack_ids),
+            # То же для нарисованных моделью иллюстраций.
+            "illustrations_id": illustrations[0] if illustrations else None,
         }
         folder = store.directory("presentations", identifier)
         source = store.directory("templates", template["id"]) / "source.pptx"
@@ -470,6 +535,15 @@ def create_app(data_dir=None, seed_dir=None):
                         job.update(stage="assets", progress=14)
                         store.put("jobs", job)
                         await label_assets(template, request.content_pack_ids)
+                    illustrations = None
+                    if image_available():
+                        job.update(stage="illustrations", progress=15)
+                        store.put("jobs", job)
+                        owner, metas = await draw_illustrations(
+                            {"slides": [{"content": s.model_dump()} for s in outline.slides]},
+                            template,
+                        )
+                        illustrations = (owner, metas) if metas else None
                     contextual_findings = None
                     if request.contextual_audit:
                         job.update(stage="contextual_audit", progress=15)
@@ -493,6 +567,7 @@ def create_app(data_dir=None, seed_dir=None):
                             sources,
                             variant["id"],
                             contextual_findings,
+                            illustrations,
                         )
                         job["presentation_ids"].append(result["id"])
                     job.update(status="completed", stage="completed", progress=100)
@@ -685,7 +760,11 @@ def create_app(data_dir=None, seed_dir=None):
                 outline,
                 template,
                 record["variant"],
-                deck_library(template, record.get("content_pack_ids")),
+                deck_library(
+                    template,
+                    record.get("content_pack_ids"),
+                    stored_illustrations(record.get("illustrations_id")),
+                ),
             )
             record["deck"]["slides"][index] = rebuilt["slides"][index]
             return save_revision(record)

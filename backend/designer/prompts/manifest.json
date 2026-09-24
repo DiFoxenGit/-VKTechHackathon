@@ -1,6 +1,6 @@
 {
-  "version": "1.9.0",
-  "agents": {"outline": "outline.v3.txt", "audit": "audit.v1.txt", "audit_image": "audit.image.v1.txt", "condense": "condense.v1.txt", "assets": "assets.v1.txt"},
+  "version": "1.10.0",
+  "agents": {"outline": "outline.v3.txt", "audit": "audit.v1.txt", "audit_image": "audit.image.v1.txt", "condense": "condense.v1.txt", "assets": "assets.v1.txt", "image_check": "image.check.v1.txt"},
   "narratives": "narratives.v1.json",
   "variants": [
     {"id": "classic", "description": "Вертикальный рассказ: текст сверху, визуализация снизу"},
@@ -8,6 +8,13 @@
     {"id": "focus", "description": "Акцент: визуализация сверху, краткие выводы снизу"}
   ],
   "changelog": [
+    {
+      "version": "1.10.0",
+      "agents": {
+        "image_check": "v1"
+      },
+      "why": "Задача со звёздочкой: слайду, где нет своей визуализации, картинку теперь можно нарисовать. Описание собирается детерминированно из заголовка слайда и палитры шаблона, а сгенерированная картинка проходит проверку агентом image_check: если генератор написал на ней буквы, картинка отбрасывается — чужие слова рядом с выверенным текстом слайда хуже, чем отсутствие иллюстрации. Генерация включается переменными DESIGNER_IMAGE_MODEL и DESIGNER_IMAGE_BASE_URL; без них колода собирается как раньше."
+    },
     {
       "version": "1.9.0",
       "agents": {
