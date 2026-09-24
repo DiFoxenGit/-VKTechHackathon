@@ -32,6 +32,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      # Юнит-тесты фронтенда — node:test без зависимостей; TypeScript Node 24
+      # понимает сам, поэтому npm ci для них не нужен.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Frontend unit tests
+        working-directory: frontend
+        run: npm test
       - uses: docker/setup-buildx-action@v3
       # Образ фронтенда сам запускает npm ci, tsc -b и vite build: одна сборка
       # проверяет и типы, и то, что соберётся на сервере.

@@ -6,6 +6,7 @@
  * видно на экране, совпадает с тем, что уедет в pptx.
  */
 import { api, waitForJob } from './api';
+import { count } from '../plural';
 import type {
   ApiAuditIssue,
   ApiOutline,
@@ -53,7 +54,7 @@ export function toTemplate(source: ApiTemplateSummary): Template {
     id: source.id,
     name: source.name.replace(/\.pptx$/i, ''),
     description: fonts.length
-      ? `${fonts.slice(0, 2).join(', ')} · ${sizes.length} кеглей · ${colors.length} цветов`
+      ? `${fonts.slice(0, 2).join(', ')} · ${count(sizes.length, 'кегль', 'кегля', 'кеглей')} · ${count(colors.length, 'цвет', 'цвета', 'цветов')}`
       : 'Дизайн-система разобрана из файла',
     color: hex(accents[0] ?? colors[0], '#0674ff'),
     secondary: hex(accents[1] ?? colors[1], '#8a83d1'),
@@ -264,10 +265,14 @@ export const presentationService = {
     return toProject(await api.presentation(id));
   },
 
-  async recent(limit = 12): Promise<Project[]> {
-    const { items } = await api.listPresentations(0, limit);
+  /** Колоды этого браузера. Пользователей у сервиса нет, поэтому весь список
+   *  сервера — это чужие презентации; показываем только созданные здесь. */
+  async recent(own: ReadonlySet<string>, limit = 12): Promise<Project[]> {
+    if (!own.size) return [];
+    const { items } = await api.listPresentations(0, 200);
+    const mine = items.filter(item => own.has(item.id)).slice(0, limit);
     // The list endpoint returns summaries without slide geometry or audit.
-    const presentations = await Promise.all(items.map(item => api.presentation(item.id)));
+    const presentations = await Promise.all(mine.map(item => api.presentation(item.id)));
     return presentations.map(toProject);
   },
 

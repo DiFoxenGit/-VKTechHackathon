@@ -506,16 +506,35 @@ def title_background(slide, box, width, height, base_color):
     return None
 
 
+# Сколько архив может занять в памяти после распаковки. Python не распакует
+# файл больше заявленного в заголовке размера, поэтому сумма заголовков —
+# честная верхняя граница. Коэффициент сжатия отсекает архивы, которые
+# собраны, чтобы раздуться: у обычных PPTX и картинок он не выше нескольких десятков.
+ZIP_MAX_TOTAL = 300 * 1024 * 1024
+ZIP_MAX_ENTRY = 100 * 1024 * 1024
+ZIP_MAX_ENTRIES = 10000
+ZIP_MAX_RATIO = 200
+ZIP_RATIO_FLOOR = 1024 * 1024
+
+
 def check_zip(data: bytes):
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         entries = archive.infolist()
         if (
-            len(entries) > 10000
-            or sum(x.file_size for x in entries) > 300 * 1024 * 1024
+            len(entries) > ZIP_MAX_ENTRIES
+            or sum(x.file_size for x in entries) > ZIP_MAX_TOTAL
         ):
             raise ValueError("Archive expands beyond 300 MB or 10000 entries")
         if any(x.flag_bits & 1 for x in entries):
             raise ValueError("Encrypted archives are not supported")
+        for entry in entries:
+            if entry.file_size > ZIP_MAX_ENTRY:
+                raise ValueError(f"Archive entry {entry.filename} expands beyond 100 MB")
+            if (
+                entry.file_size > ZIP_RATIO_FLOOR
+                and entry.file_size > ZIP_MAX_RATIO * max(entry.compress_size, 1)
+            ):
+                raise ValueError(f"Archive entry {entry.filename} is compressed suspiciously well")
 
 
 def color_value(color, theme):

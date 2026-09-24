@@ -2779,6 +2779,38 @@ def test_slides_get_stats_icons_and_pictures(tmp_path, variant):
     assert any(name.startswith(("icon:", "illustration:")) for name in groups) or variant == "focus"
 
 
+def test_zip_that_inflates_too_much_is_rejected():
+    """Архив, собранный чтобы раздуться, отклоняется до распаковки."""
+    from designer.parsing import check_zip
+
+    def archive(files):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as out:
+            for name, payload in files:
+                out.writestr(name, payload)
+        return buffer.getvalue()
+
+    # Обычный пакет с текстом и картинкой проходит.
+    check_zip(archive([("brief.md", "Тезис 10 и 20".encode() * 200), ("pic.png", os.urandom(4096))]))
+
+    # 20 МБ нулей сжимаются в десятки килобайт — так выглядит бомба.
+    with pytest.raises(ValueError, match="suspiciously"):
+        check_zip(archive([("zeros.txt", b"0" * (20 * 1024 * 1024))]))
+
+
+def test_zip_upload_bomb_gets_readable_error(client):
+    """Через API такой архив возвращает понятную ошибку, а не роняет сервис."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as out:
+        out.writestr("zeros.md", b"0" * (20 * 1024 * 1024))
+    response = client.post(
+        "/api/v1/content-packs",
+        files={"file": ("pack.zip", buffer.getvalue(), "application/zip")},
+    )
+    assert response.status_code == 413, response.text
+    assert "suspiciously" in response.json()["detail"]
+
+
 def test_visual_content_pack_zip_is_imported_and_used(client):
     archive = io.BytesIO()
     with zipfile.ZipFile(archive, "w") as z:
