@@ -26,6 +26,9 @@
   margin: 12px 0 4px;
 }
 .audit-actions .secondary-button {
+  white-space: normal;
+  min-width: 0;
+  text-align: left;
   justify-content: flex-start;
   gap: 8px;
   font-size: 12px;
@@ -90,3 +93,5 @@
   font-size: 12px;
   line-height: 1.45;
 }
+
+.audit-wait { margin: 8px 0; color: #526377; font-size: 12px; line-height: 1.5; }
