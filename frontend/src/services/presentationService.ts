@@ -99,7 +99,7 @@ export function toIssues(source: ApiPresentation | { audit?: { issues?: ApiAudit
     description: issue.element_id
       ? `Блок «${issue.element_id}», слайд ${(issue.slide_index ?? 0) + 1}`
       : `Слайд ${(issue.slide_index ?? 0) + 1}`,
-    fixable: Boolean(issue.fixable),
+    fixable: issue.category !== 'contextual' && Boolean(issue.fixable),
     rule: issue.code,
     boxed: Boolean(issue.box),
     // Детерминированные правила, текстовый агент и агент по картинке помечают
@@ -266,7 +266,9 @@ export const presentationService = {
 
   async recent(limit = 12): Promise<Project[]> {
     const { items } = await api.listPresentations(0, limit);
-    return items.map(toProject);
+    // The list endpoint returns summaries without slide geometry or audit.
+    const presentations = await Promise.all(items.map(item => api.presentation(item.id)));
+    return presentations.map(toProject);
   },
 
   async saveSlide(project: Project, index: number, slide: Slide): Promise<Project> {

@@ -609,7 +609,7 @@ def create_app(data_dir=None, seed_dir=None):
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
             report["contextual"] = {"status": "completed", "input": "slide_images"}
-        elif contextual:
+        if contextual:
             findings = await contextual_audit(record["deck"], record["sources"])
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
@@ -621,6 +621,22 @@ def create_app(data_dir=None, seed_dir=None):
             current = store.get("presentations", presentation_id)
             if current["revision"] != record["revision"]:
                 raise HTTPException(409, "Presentation changed during audit; retry")
+            # Keep the other model check for this revision. Re-running a mode
+            # replaces its findings instead of accumulating them. Read under the
+            # lock so concurrent text/image checks do not overwrite each other.
+            retained = [
+                copy.deepcopy(issue)
+                for issue in current.get("audit", {}).get("issues", [])
+                if issue.get("category") == "contextual"
+                and not (visual if issue.get("element_id") == "slide_image" else contextual)
+            ]
+            report["issues"].extend(retained)
+            report["counts"] = {
+                "errors": sum(i["severity"] == "error" for i in report["issues"]),
+                "warnings": sum(i["severity"] != "error" for i in report["issues"]),
+            }
+            if retained and not (contextual or visual) and "contextual" in current.get("audit", {}):
+                report["contextual"] = copy.deepcopy(current["audit"]["contextual"])
             current["audit"] = report
             store.put("presentations", current)
         return {"revision": record["revision"], **report}
