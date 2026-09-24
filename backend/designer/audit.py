@@ -15,6 +15,7 @@ from .generation import (
     vision_completion,
     completion,
     known_numbers,
+    repeated_items,
     unsupported_numbers,
     workflow,
 )
@@ -192,6 +193,18 @@ def audit(deck, template, sources, language=None):
     # The script the deck is written in decides what counts as a foreign label.
     cyrillic_deck = len(CYRILLIC.findall(deck_text)) > len(LATIN.findall(deck_text))
     source_numbers = known_numbers(sources)
+    # Повтор между слайдами виден только на всей колоде, поэтому считается до
+    # цикла. Приложение 1: «два слайда дублируют друг друга» — duplicate_slide
+    # ловит полный дубль, эта проверка — один и тот же тезис в разных местах.
+    for index, item in repeated_items([s["content"] for s in deck["slides"]]):
+        issues.append(
+            issue(
+                index,
+                None,
+                "repeated_content",
+                f"«{item}» уже сказано в заголовке или на другом слайде",
+            )
+        )
     for slide in deck["slides"]:
         index = slide["index"]
         content = slide["content"]

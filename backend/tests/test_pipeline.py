@@ -53,12 +53,16 @@ def outline(count=3):
         "slides": [
             {
                 "title": f"Вывод {i + 1}",
-                "bullets": ["Первый тезис", "Второй тезис"],
+                # Тезисы у каждого слайда свои: повтор между слайдами — находка
+                # repeated_content, фикстура не должна её провоцировать.
+                "bullets": [f"Первый тезис {topic}", f"Второй тезис {topic}"],
                 "source_refs": ["brief"],
                 "visual": visual,
             }
-            for i, visual in enumerate(
-                [
+            for i, (topic, visual) in enumerate(
+                zip(
+                    ("о продажах", "о сроках", "об итогах"),
+                    [
                     {
                         "kind": "bar",
                         "categories": ["А", "Б"],
@@ -71,7 +75,8 @@ def outline(count=3):
                         "rows": [["А", "10"], ["Б", "20"]],
                     },
                     {"kind": "process", "steps": ["План", "Работа", "Итог"]},
-                ][:count]
+                    ][:count],
+                )
             )
         ],
     }
@@ -2805,3 +2810,67 @@ def test_unmeasured_background_still_warns():
         if i["code"] == "text_over_image"
     ]
     assert found and "не измерен" in found[0]["message"], found
+
+
+def repeating_outline():
+    """Растянутый бриф: заголовок одного слайда — тезис другого, тезис дважды."""
+    plan = outline(3)
+    plan["slides"][1]["bullets"] = ["Вывод 1", "Второй тезис о сроках"]
+    plan["slides"][2]["bullets"] = ["Первый тезис о продажах", "Второй тезис об итогах"]
+    return plan
+
+
+def test_repeated_items_catch_titles_and_bullets_said_twice():
+    from designer.generation import repeated_items
+
+    slides = repeating_outline()["slides"]
+    assert repeated_items(slides) == [(1, "Вывод 1"), (2, "Первый тезис о продажах")]
+    # Регистр, «ё» и пунктуация повтора не прячут.
+    slides[2]["bullets"][0] = "первый ТЕЗИС о продажах."
+    assert repeated_items(slides)[-1] == (2, "первый ТЕЗИС о продажах.")
+    # Тезис, повторяющий свой же заголовок, — тоже повтор.
+    assert repeated_items([{"title": "Итог", "bullets": ["итог"], "visual": {}}]) == [
+        (0, "итог")
+    ]
+    assert repeated_items(outline(3)["slides"]) == []
+
+
+def test_content_audit_reports_repeated_content():
+    from designer.models import Outline
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    deck = compose(Outline.model_validate(repeating_outline()).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "10 20"}])
+    flagged = sorted(i["slide_index"] for i in report["issues"] if i["code"] == "repeated_content")
+    assert flagged == [1, 2]
+
+
+def test_repeats_are_sent_back_to_the_model(client, monkeypatch):
+    captured = mock_provider(
+        monkeypatch, [json.dumps(repeating_outline()), json.dumps(outline(3))]
+    )
+    response = client.post(
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
+    )
+    assert response.status_code == 200, response.text
+    assert len(captured) == 2
+    feedback = captured[1]["messages"][-1]["content"]
+    assert "«Вывод 1» уже есть в заголовке или на другом слайде" in feedback
+
+
+def test_last_attempt_drops_repeats_instead_of_failing(client, monkeypatch):
+    plan = repeating_outline()
+    # Третий слайд — сплошной повтор: после чистки у него не остаётся ничего.
+    plan["slides"][2]["bullets"] = ["Первый тезис о продажах"]
+    plan["slides"][2]["visual"] = {"kind": "none"}
+    mock_provider(monkeypatch, [json.dumps(plan)])
+    response = client.post(
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
+    )
+    assert response.status_code == 200, response.text
+    slides = response.json()["slides"]
+    from designer.generation import repeated_items
+
+    assert repeated_items(slides) == []
+    assert len(slides) == 2
+    assert slides[1]["bullets"] == ["Второй тезис о сроках"]
