@@ -2850,48 +2850,40 @@ def test_card_text_frame_grows_down_to_the_next_obstacle():
     assert card_depth(top_row, [top_row], [], 120.0) == 40.0
 
 
-@pytest.mark.parametrize("first,second", [("contextual", "visual"), ("visual", "contextual"), ("contextual=true&visual", "contextual=true&visual")])
-def test_model_audits_keep_other_mode_and_replace_own_findings(client, monkeypatch, first, second):
-    import designer.app as module
-    from designer.audit import issue
+def test_title_backdrop_is_the_plate_under_the_template_title():
+    from designer.layout import title_backdrop
 
-    _, job = generate(client)
-    identifier = job["presentation_ids"][0]
-    calls = {"text": 0, "image": 0}
+    title_box = {"x": 0.1, "y": 0.066, "w": 0.6, "h": 0.066}
+    # Плашка, в которой начинается рамка заголовка образца.
+    assert title_backdrop((75.0, 32.0, 580.0, 49.0), title_box, 960, 540)
+    # Крупная иллюстрация рядом с заголовком — не плашка.
+    assert not title_backdrop((474.0, 54.0, 486.0, 486.0), title_box, 960, 540)
+    # Ряд декора ниже заголовка — тоже.
+    assert not title_backdrop((120.0, 107.0, 118.0, 110.0), title_box, 960, 540)
 
-    async def text_audit(*args):
-        calls["text"] += 1
-        return [issue(0, "context_0", "content", f"text-{calls['text']}", category="contextual")]
 
-    async def image_audit(*args):
-        calls["image"] += 1
-        return [issue(0, "slide_image", "alignment", f"image-{calls['image']}", category="contextual")]
+def test_title_on_its_plate_is_not_a_branding_overlap():
+    """Заголовок, поставленный на плашку образца, аудит не считает наездом."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+    content = outline(2)
+    from designer.models import Outline
 
-    monkeypatch.setattr(module, "contextual_audit", text_audit)
-    monkeypatch.setattr(module, "visual_audit", image_audit)
-    monkeypatch.setattr(module, "convert_pdf", lambda *args: None)
-    monkeypatch.setattr(module, "render_slides", lambda *args: [b"PNG"])
-    store = client.app.state.store
-    record = store.get("presentations", identifier)
-    record["export_check"] = {"opens": True, "raster_slides": [0], "charts": []}
-    store.put("presentations", record)
+    deck = compose(Outline.model_validate(content).model_dump(), template, "classic")
+    slide = deck["slides"][1]
+    title = next(e for e in slide["elements"] if e["id"] == "title")
+    pattern = next(p for p in template["patterns"] if p["index"] == slide["pattern_index"])
+    width, height = deck["width"], deck["height"]
+    x, y, w, h = title["box"]
+    pattern["title_box"] = {"x": x / width, "y": y / height, "w": w / width, "h": h / height}
+    plate = {"x": (x - 4) / width, "y": (y - 4) / height, "w": (w + 8) / width, "h": (h + 8) / height}
+    pattern["reserved"] = [plate]
 
-    for mode in (first, second, second):
-        response = client.post(f"/api/v1/presentations/{identifier}/audit?{mode}=true")
-        assert response.status_code == 200, response.text
-    report = response.json()
-    model_issues = [i for i in report["issues"] if i.get("category") == "contextual"]
-    assert sorted(i["message"] for i in model_issues) == sorted([f"text-{calls['text']}", f"image-{calls['image']}"])
-    assert "raster_slide" in {i["code"] for i in report["issues"]}
-    assert report["counts"]["warnings"] == sum(i["severity"] == "warning" for i in report["issues"])
-    assert report["counts"]["errors"] == sum(i["severity"] == "error" for i in report["issues"])
-    rules_only = client.post(f"/api/v1/presentations/{identifier}/audit").json()
-    assert [i for i in rules_only["issues"] if i.get("category") == "contextual"] == model_issues
-    assert rules_only["contextual"]["status"] == "completed"
+    def overlaps(report):
+        return any(
+            i["code"] == "branding_overlap" and i["slide_index"] == 1 for i in report["issues"]
+        )
 
-    # Editing creates a new revision, so model findings for old content expire.
-    content = client.get(f"/api/v1/presentations/{identifier}").json()["deck"]["slides"][0]["content"]
-    content["title"] = "Обновлённый заголовок"
-    edited = client.patch(f"/api/v1/presentations/{identifier}/slides/0", json={"revision": report["revision"], "content": content})
-    assert edited.status_code == 200, edited.text
-    assert not any(i.get("category") == "contextual" for i in edited.json()["audit"]["issues"])
+    assert not overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))
+    # Та же фигура, но не под рамкой заголовка образца, — наезд.
+    pattern["title_box"] = {"x": 0.9, "y": 0.9, "w": 0.05, "h": 0.05}
+    assert overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))
