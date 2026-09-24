@@ -630,10 +630,15 @@ def test_density_and_chart_checks_fire():
     assert "chart_labels" in audited(template, content_mutator=unlabelled)[2]
 
     def sparse(content):
-        content["slides"][0]["bullets"] = ["Мало"]
-        content["slides"][0]["visual"] = {"kind": "none"}
+        content["slides"][1]["bullets"] = ["Мало"]
+        content["slides"][1]["visual"] = {"kind": "none"}
 
-    assert "fill_ratio" in audited(template, content_mutator=sparse)[2]
+    # Первый слайд — обложка в рамках шаблона, её заливку задаёт дизайнер;
+    # разреженность ловится на обычном слайде.
+    _, report, _ = audited(template, content_mutator=sparse, count=2)
+    assert any(
+        i["code"] == "fill_ratio" and i["slide_index"] == 1 for i in report["issues"]
+    )
 
 
 def test_new_fixes_repair_the_deck():
@@ -2984,3 +2989,79 @@ def test_body_type_stays_below_the_title():
     ]
     apply_fixes(deck, report, [found[0]["id"]], template)
     assert text["font_size"] == max(s for s in scale if s < heading["font_size"])
+
+def test_cover_fill_is_left_to_the_template():
+    """Обложка в рамках шаблона не судится по заливке, обычный слайд — судится."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+
+    def sparse(content):
+        for slide in content["slides"]:
+            slide["bullets"] = ["Мало"]
+            slide["visual"] = {"kind": "none"}
+
+    deck, report, _ = audited(template, content_mutator=sparse, count=2)
+    assert deck["slides"][0]["native_cover"]
+    flagged = {i["slide_index"] for i in report["issues"] if i["code"] == "fill_ratio"}
+    assert 0 not in flagged and 1 in flagged
+
+    # Мера та же: сними с обложки признак — и находка вернётся.
+    deck["slides"][0]["native_cover"] = False
+    report = audit(deck, template, [{"id": "brief", "text": "Мало"}])
+    assert any(
+        i["code"] == "fill_ratio" and i["slide_index"] == 0 for i in report["issues"]
+    )
+
+
+def test_card_text_frame_grows_down_to_the_next_obstacle():
+    from designer.layout import card_depth
+
+    top_row = [10.0, 100.0, 200.0, 40.0]
+    below = [10.0, 300.0, 200.0, 40.0]
+    # Следующая карточка в колонке — предел.
+    assert card_depth(top_row, [top_row, below], [], 500.0) == 300.0 - 8.0 - 100.0
+    # Фигура-подложка карточки — тоже.
+    assert card_depth(top_row, [top_row], [(0.0, 90.0, 220.0, 150.0)], 500.0) == 140.0
+    # Значок ниже рамки — тоже.
+    assert card_depth(top_row, [top_row], [(50.0, 200.0, 30.0, 30.0)], 500.0) == 92.0
+    # Свободно до низа рабочей области; но рамка никогда не уменьшается.
+    assert card_depth(top_row, [top_row], [], 500.0) == 400.0
+    assert card_depth(top_row, [top_row], [], 120.0) == 40.0
+
+
+def test_title_backdrop_is_the_plate_under_the_template_title():
+    from designer.layout import title_backdrop
+
+    title_box = {"x": 0.1, "y": 0.066, "w": 0.6, "h": 0.066}
+    # Плашка, в которой начинается рамка заголовка образца.
+    assert title_backdrop((75.0, 32.0, 580.0, 49.0), title_box, 960, 540)
+    # Крупная иллюстрация рядом с заголовком — не плашка.
+    assert not title_backdrop((474.0, 54.0, 486.0, 486.0), title_box, 960, 540)
+    # Ряд декора ниже заголовка — тоже.
+    assert not title_backdrop((120.0, 107.0, 118.0, 110.0), title_box, 960, 540)
+
+
+def test_title_on_its_plate_is_not_a_branding_overlap():
+    """Заголовок, поставленный на плашку образца, аудит не считает наездом."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+    content = outline(2)
+    from designer.models import Outline
+
+    deck = compose(Outline.model_validate(content).model_dump(), template, "classic")
+    slide = deck["slides"][1]
+    title = next(e for e in slide["elements"] if e["id"] == "title")
+    pattern = next(p for p in template["patterns"] if p["index"] == slide["pattern_index"])
+    width, height = deck["width"], deck["height"]
+    x, y, w, h = title["box"]
+    pattern["title_box"] = {"x": x / width, "y": y / height, "w": w / width, "h": h / height}
+    plate = {"x": (x - 4) / width, "y": (y - 4) / height, "w": (w + 8) / width, "h": (h + 8) / height}
+    pattern["reserved"] = [plate]
+
+    def overlaps(report):
+        return any(
+            i["code"] == "branding_overlap" and i["slide_index"] == 1 for i in report["issues"]
+        )
+
+    assert not overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))
+    # Та же фигура, но не под рамкой заголовка образца, — наезд.
+    pattern["title_box"] = {"x": 0.9, "y": 0.9, "w": 0.05, "h": 0.05}
+    assert overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))

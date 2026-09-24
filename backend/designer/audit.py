@@ -29,6 +29,7 @@ from .layout import (
     estimated_text_height,
     ink_area,
     subordinate,
+    title_backdrop,
 )
 from .parsing import best_text_color, contrast_ratio, stage_clutter
 from .fonts import missing_glyphs
@@ -385,7 +386,15 @@ def audit(deck, template, sources, language=None):
                 )
             )
         fill = sum(ink_area(e) for e in elements) / slide_area if slide_area else 0
-        if fill < FILL_RANGE[0] or fill > FILL_RANGE[1]:
+        # Титульная страница собрана в рамках самого шаблона: заголовок и
+        # подзаголовок стоят там, где их поставил дизайнер, и набраны его
+        # кеглем, а остальное место — фирменная графика, которую мы не
+        # считаем (она лежит в картинке фона или в мастере). Доля заливки там —
+        # решение автора шаблона, не вёрстки; пустоту обложки ловит
+        # empty_content, если на слайде один заголовок.
+        if slide.get("native_cover"):
+            fill = None
+        if fill is not None and (fill < FILL_RANGE[0] or fill > FILL_RANGE[1]):
             issues.append(
                 issue(
                     index,
@@ -542,6 +551,17 @@ def audit(deck, template, sources, language=None):
                 # это карточка, а не наезд на декор.
                 if element.get("from_template"):
                     break
+                # Заголовок на плашке, на которую его поставил дизайнер
+                # образца, — это композиция страницы, а не наезд. Засчитываем
+                # только если заголовок целиком внутри плашки.
+                title_box = patterns.get(slide.get("pattern_index"), {}).get("title_box")
+                if (
+                    element["id"] == "title"
+                    and title_box
+                    and title_backdrop(box, title_box, width, height)
+                    and inside(element["box"], box, 1.0)
+                ):
+                    continue
                 overlap_area = intersection(element["box"], box)
                 # Мелкий объект образца, целиком попавший под блок, экспорт не
                 # переносит на готовый слайд: он не деталь оформления, а остаток
