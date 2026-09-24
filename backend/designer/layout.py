@@ -62,6 +62,36 @@ def ink_area(element):
     return w * h
 
 
+def subordinate(element):
+    """Текст, который обязан быть мельче заголовка.
+
+    Акцент focus (lead) — одна мысль на слайд, крупнее заголовка по замыслу
+    варианта; всё остальное тело слайда — тезисы, карточки, пункты списка —
+    подчинено заголовку.
+    """
+    return element.get("kind") == "text" and element.get("role") == "body" and element.get("id") != "lead"
+
+
+def keep_below_title(elements, scale, minimum=MIN_BODY_SIZE):
+    """Вернуть тезисам кегль ниже заголовка, если подгонка их сравняла.
+
+    Кегль тезиса берётся из рамки образца, растёт при заполнении и уменьшается
+    при подгонке — каждый шаг по отдельности разумен, а вместе они иногда дают
+    тезис размером с заголовок. Опускаем до ближайшей ступени шкалы ниже
+    заголовка, но не мельче минимума.
+    """
+    title = next((e for e in elements if e.get("role") == "title"), None)
+    if title is None:
+        return elements
+    below = [s for s in scale if minimum <= s < title["font_size"]]
+    if not below:
+        return elements
+    for element in elements:
+        if subordinate(element) and element["font_size"] >= title["font_size"]:
+            element["font_size"] = max(below)
+    return elements
+
+
 def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
     """Raise the type size while the slide still reads as empty.
 
@@ -72,6 +102,7 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
     if not slide_area:
         return elements
     steps = sorted(s for s in scale if s <= maximum)
+    title = next((e for e in elements if e.get("role") == "title"), None)
     for _ in range(4):
         if sum(ink_area(e) for e in elements) / slide_area >= target:
             break
@@ -80,6 +111,10 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
             if element["kind"] != "text":
                 continue
             larger = [s for s in steps if s > element["font_size"]]
+            if title is not None and subordinate(element):
+                # Тезис растёт, но остаётся мельче заголовка: заголовок в этом
+                # же круге вырос первым, если было куда.
+                larger = [s for s in larger if s < title["font_size"]]
             if not larger:
                 continue
             candidate = dict(element, font_size=larger[0])
@@ -600,6 +635,48 @@ def slot_size(style, scale, fallback, minimum=12, maximum=96):
     return min(scale, key=lambda s: abs(s - size)) if scale else size
 
 
+def card_depth(box, cards, reserved, bottom, gap=8.0):
+    """Высота текстовой рамки карточки с учётом места под ней.
+
+    Рамка текста в карточке шаблона обычно рассчитана на подпись в две строки,
+    а сама карточка — фигура или просто колонка — тянется ниже. PowerPoint
+    растит такую рамку вниз по мере набора; мы делаем то же заранее, но не
+    дальше следующей карточки в колонке, не дальше фигуры, внутри которой лежит
+    рамка, и не за рабочую область. Тогда кеглю есть куда расти, и три коротких
+    тезиса не остаются мелкой строкой посреди пустого слайда.
+    """
+    x, y, w, h = box
+    limit = bottom
+    for other in cards:
+        if other is box or other[1] <= y + 1:
+            continue
+        if other[0] < x + w and other[0] + other[2] > x:
+            limit = min(limit, other[1] - gap)
+    for bx, by, bw, bh in reserved:
+        overlaps = bx < x + w and bx + bw > x
+        if not overlaps:
+            continue
+        if by >= y + h - 1:
+            # Значок или линия ниже рамки — дальше неё не идём.
+            limit = min(limit, by - gap)
+        elif by <= y + 1 and by + bh >= y + h - 1 and bx <= x + 1 and bx + bw >= x + w - 1:
+            # Фигура-подложка карточки: текст остаётся внутри неё.
+            limit = min(limit, by + bh)
+    return max(h, limit - y)
+
+def title_backdrop(box, title_box, width, height):
+    """Фигура, на которой стоит заголовок образца страницы.
+
+    Верхний левый угол рамки заголовка шаблона лежит внутри невысокой фигуры:
+    это подложка-плашка под заголовок, а не декор, от которого надо уходить.
+    Крупная иллюстрация рядом с заголовком плашкой не считается.
+    """
+    bx, by, bw, bh = box
+    ty = height * title_box["y"]
+    tx = width * title_box["x"]
+    return by <= ty < by + bh and bx <= tx < bx + bw and bh <= height * 0.2
+
+
 def card_slots(body_slots, width, height, minimum=2, maximum=6):
     """Одинаковые блоки прототипа — готовая карточная сетка шаблона.
 
@@ -1094,7 +1171,36 @@ def compose(outline, template, variant, assets=None):
                     if title_height(size) <= limit:
                         break
                 th = min(th, limit)
+        # Плашка под заголовком образца: дизайнер поставил заголовок на неё.
+        # Уводить заголовок ниже — значит уронить его на следующий ряд декора
+        # (круги, линии), где он и правда наедет, а плашку оставить пустой.
+        plates = [
+            b for b in reserved
+            if from_template_title and title_backdrop(b, title_box, width, height)
+        ]
+        passed = []
+        for px, py, pw, ph in plates:
+            if pw * ph < 0.5 * tw * th:
+                # Плашка мельче заголовка: он её накроет, и экспорт её не
+                # перенесёт (_buried) — обходить нечего.
+                passed.append((px, py, pw, ph))
+                continue
+            # Заголовок встаёт на плашку: по ширине — до её правого края, по
+            # высоте — от верха рамки образца до низа плашки; кегль — самый
+            # крупный из шкалы, при котором текст в неё помещается.
+            plate_w = min(tw, px + pw - tx - width * 0.01)
+            plate_h = py + ph - height * title_box["y"]
+            fitting = [
+                size for size in sorted(scale, reverse=True)
+                if size <= current_title_size and title_height(size, plate_w) <= plate_h
+            ]
+            if fitting and plate_w > 0 and plate_h > 0:
+                current_title_size = fitting[0]
+                ty, tw, th = height * title_box["y"], plate_w, plate_h
+                passed.append((px, py, pw, ph))
         for bx, by, bw, bh in reserved:
+            if (bx, by, bw, bh) in passed:
+                continue
             if by < ty + th and by + bh > ty and bx < tx + tw and bx + bw > tx:
                 ty = min(height * 0.35, max(ty, by + bh + height * 0.02))
         top = max(height * 0.26, ty + th + height * 0.035)
@@ -1115,7 +1221,11 @@ def compose(outline, template, variant, assets=None):
                 # к середине слайда, и колода читается как полупустая.
                 top = max(slot_top, ty + th + height * 0.02)
                 top = min(top, ty + th + height * 0.1)
-                bottom = max(top + height * 0.2, slot_bottom)
+                # Нижнюю границу прототипа focus не наследует: у страницы с
+                # рядом мелких подписей она отрезает полосу в пятую часть
+                # слайда, и одна крупная мысль набирается кеглем подписи.
+                if variant != "focus":
+                    bottom = max(top + height * 0.2, slot_bottom)
             # Шаблон отдал правую часть страницы под иллюстрацию — текст идёт
             # по ширине своего слота, а не на всю полосу: иначе он ложится
             # поверх картинки, которую клонирование сохранило.
@@ -1330,7 +1440,12 @@ def compose(outline, template, variant, assets=None):
                 text_box(
                     f"card_{index}",
                     group,
-                    [box[0] + pad, box[1] + pad, box[2] - pad * 2, box[3] - pad * 2],
+                    [
+                        box[0] + pad,
+                        box[1] + pad,
+                        box[2] - pad * 2,
+                        card_depth(box, cards, reserved, bottom) - pad * 2,
+                    ],
                     marker=False,
                 )
                 elements[-1]["from_template"] = True
@@ -1348,12 +1463,31 @@ def compose(outline, template, variant, assets=None):
                 ch = min(height * cover_box['h'], height * .9 - cy)
                 elements[0]['box'] = [cx, cy, cw, ch]
                 elements[0]['from_template'] = True
+                # Кегль обложки — тот, что задал дизайнер в рамке заголовка
+                # титульной страницы (обычно 48–60 pt), а не кегль заголовка
+                # обычного слайда, подобранный под ширину полосы. Рамка растёт
+                # вниз, как у заголовка с автоподбором в PowerPoint, но
+                # оставляет место подзаголовку; не влезло — ступень шкалы ниже.
+                cover_bottom = height * min(.95, margins['y'] + margins['h'])
+                room = cover_bottom - cy - (height * .12 if bullets else 0)
+                cover_size = slot_size(title_style, scale, current_title_size, minimum=18)
+                title = elements[0]
+                for size in sorted({s for s in scale if s <= cover_size} | {cover_size}, reverse=True):
+                    if size <= title['font_size']:
+                        break
+                    candidate = dict(title, font_size=size)
+                    longest = max((len(word) for word in title['text'].split()), default=1)
+                    if (estimated_text_height(candidate) <= max(ch, room)
+                            and longest * size * WORD_CHAR_WIDTH <= cw - 12):
+                        title['font_size'] = size
+                        title['box'][3] = max(ch, estimated_text_height(candidate))
+                        break
+                ch = title['box'][3]
                 if bullets:
                     below = [s for s in body_slots if s['box']['y'] >= cover_box['y'] + cover_box['h'] * .8]
                     subtitle = min(below, key=lambda s: s['box']['y'])['box'] if below else None
                     by = max(cy + ch + height * .02, height * subtitle['y'] if subtitle else 0)
                     body = next(e for e in elements if e['id'] != 'title')
-                    cover_bottom = height * min(.95, margins['y'] + margins['h'])
                     body['box'] = [cx, by, cw, max(10, cover_bottom - by)]
                     body['from_template'] = True
         slots = pattern.get("icon_slots") or []
@@ -1386,8 +1520,23 @@ def compose(outline, template, variant, assets=None):
                 else max(slide_body_size, body_size) * 1.25
             ),
         )
+        # Карточки одного ряда читаются как равные: кегль у всех один, по
+        # самой тесной. Иначе рост кегля по рамкам даёт 18, 24 и 18 рядом.
+        cards_text = [e for e in elements if e["id"].startswith("card_")]
+        if cards_text:
+            size = min(e["font_size"] for e in cards_text)
+            for element in cards_text:
+                element["font_size"] = size
         if variant == "focus":
             focus_accent(elements, scale)
+        if i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1:
+            # На обложке подзаголовок подчинён заголовку: рост кегля и акцент
+            # focus не должны сделать его крупнее названия колоды.
+            title_size = elements[0]["font_size"]
+            ceiling = max([s for s in scale if s <= title_size * 0.75] or [MIN_BODY_SIZE])
+            for element in elements[1:]:
+                if element["kind"] == "text" and element["font_size"] > ceiling:
+                    element["font_size"] = ceiling
         center_content(elements, top, bottom)
         dodge_decor(elements, reserved, bottom, height * 0.015)
         align_icons(elements)
@@ -1423,6 +1572,7 @@ def compose(outline, template, variant, assets=None):
             needed += 0.5
             element["box"][1] = max(ceiling, min(element["box"][1], bottom - needed))
             element["box"][3] = min(needed, bottom - element["box"][1])
+        keep_below_title(elements, scale)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         luma = pattern.get("bg_luma")
         if luma is not None:  # noqa: SIM108 - читаемее развёрнуто

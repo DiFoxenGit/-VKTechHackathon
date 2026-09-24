@@ -340,7 +340,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${deck.title.replace(/[^\wа-яё\s.-]/gi, ' ').trim() || 'Презентация'}.${format}`;
+      link.download = `${deck.title.replace(/[^\wа-яё\s.-]/gi, ' ').replace(/\s+/g, ' ').trim() || 'Презентация'}.${format}`;
       link.click();
       URL.revokeObjectURL(url);
       setToast('Файл готов — проверьте загрузки браузера');
