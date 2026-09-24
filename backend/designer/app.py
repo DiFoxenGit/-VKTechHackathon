@@ -284,6 +284,15 @@ def create_app(data_dir=None, seed_dir=None):
         name = file.filename or ""
         try:
             text, assets = await run_in_threadpool(read_pack, data, name)
+        except ValueError as exc:
+            # Отказ по размеру или устройству архива — пользователю нужна причина.
+            if str(exc).startswith(("Archive", "Encrypted", "Content pack holds")):
+                raise HTTPException(413, str(exc)) from exc
+            raise HTTPException(
+                422,
+                "Cannot extract content; use UTF-8 text, CSV, JSON, DOCX, PPTX, a text PDF, "
+                "images (SVG, PNG, JPEG) or a ZIP of them",
+            ) from exc
         except Exception as exc:
             raise HTTPException(
                 422,
