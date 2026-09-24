@@ -26,6 +26,7 @@ from .layout import (
     STAT_INSET,
     estimated_text_height,
     ink_area,
+    title_backdrop,
 )
 from .parsing import best_text_color, contrast_ratio, stage_clutter
 from .fonts import missing_glyphs
@@ -521,6 +522,17 @@ def audit(deck, template, sources, language=None):
                 # это карточка, а не наезд на декор.
                 if element.get("from_template"):
                     break
+                # Заголовок на плашке, на которую его поставил дизайнер
+                # образца, — это композиция страницы, а не наезд. Засчитываем
+                # только если заголовок целиком внутри плашки.
+                title_box = patterns.get(slide.get("pattern_index"), {}).get("title_box")
+                if (
+                    element["id"] == "title"
+                    and title_box
+                    and title_backdrop(box, title_box, width, height)
+                    and inside(element["box"], box, 1.0)
+                ):
+                    continue
                 overlap_area = intersection(element["box"], box)
                 # Мелкий объект образца, целиком попавший под блок, экспорт не
                 # переносит на готовый слайд: он не деталь оформления, а остаток

@@ -629,6 +629,18 @@ def card_depth(box, cards, reserved, bottom, gap=8.0):
             limit = min(limit, by + bh)
     return max(h, limit - y)
 
+def title_backdrop(box, title_box, width, height):
+    """Фигура, на которой стоит заголовок образца страницы.
+
+    Верхний левый угол рамки заголовка шаблона лежит внутри невысокой фигуры:
+    это подложка-плашка под заголовок, а не декор, от которого надо уходить.
+    Крупная иллюстрация рядом с заголовком плашкой не считается.
+    """
+    bx, by, bw, bh = box
+    ty = height * title_box["y"]
+    tx = width * title_box["x"]
+    return by <= ty < by + bh and bx <= tx < bx + bw and bh <= height * 0.2
+
 
 def card_slots(body_slots, width, height, minimum=2, maximum=6):
     """Одинаковые блоки прототипа — готовая карточная сетка шаблона.
@@ -1124,7 +1136,36 @@ def compose(outline, template, variant, assets=None):
                     if title_height(size) <= limit:
                         break
                 th = min(th, limit)
+        # Плашка под заголовком образца: дизайнер поставил заголовок на неё.
+        # Уводить заголовок ниже — значит уронить его на следующий ряд декора
+        # (круги, линии), где он и правда наедет, а плашку оставить пустой.
+        plates = [
+            b for b in reserved
+            if from_template_title and title_backdrop(b, title_box, width, height)
+        ]
+        passed = []
+        for px, py, pw, ph in plates:
+            if pw * ph < 0.5 * tw * th:
+                # Плашка мельче заголовка: он её накроет, и экспорт её не
+                # перенесёт (_buried) — обходить нечего.
+                passed.append((px, py, pw, ph))
+                continue
+            # Заголовок встаёт на плашку: по ширине — до её правого края, по
+            # высоте — от верха рамки образца до низа плашки; кегль — самый
+            # крупный из шкалы, при котором текст в неё помещается.
+            plate_w = min(tw, px + pw - tx - width * 0.01)
+            plate_h = py + ph - height * title_box["y"]
+            fitting = [
+                size for size in sorted(scale, reverse=True)
+                if size <= current_title_size and title_height(size, plate_w) <= plate_h
+            ]
+            if fitting and plate_w > 0 and plate_h > 0:
+                current_title_size = fitting[0]
+                ty, tw, th = height * title_box["y"], plate_w, plate_h
+                passed.append((px, py, pw, ph))
         for bx, by, bw, bh in reserved:
+            if (bx, by, bw, bh) in passed:
+                continue
             if by < ty + th and by + bh > ty and bx < tx + tw and bx + bw > tx:
                 ty = min(height * 0.35, max(ty, by + bh + height * 0.02))
         top = max(height * 0.26, ty + th + height * 0.035)
