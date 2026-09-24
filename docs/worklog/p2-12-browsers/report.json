@@ -1,0 +1,234 @@
+[
+  {
+    "browser": "chromium",
+    "version": "153.0.8010.12",
+    "steps": [
+      {
+        "title": "home",
+        "seconds": 1.2
+      },
+      {
+        "title": "brief",
+        "seconds": 0.1
+      },
+      {
+        "title": "outline",
+        "seconds": 48.8
+      },
+      {
+        "title": "variants",
+        "seconds": 6.5
+      },
+      {
+        "title": "editor",
+        "seconds": 0.1
+      },
+      {
+        "title": "edit-title",
+        "seconds": 2.7
+      },
+      {
+        "title": "preview",
+        "seconds": 10.1
+      },
+      {
+        "title": "preview-closed",
+        "seconds": 0.1
+      },
+      {
+        "title": "audit",
+        "seconds": 0.2
+      },
+      {
+        "title": "export",
+        "seconds": 5.2
+      }
+    ],
+    "consoleErrors": [],
+    "failed": [],
+    "variants": 3,
+    "editedTitle": "Слайд 2: Проверка правки в браузере",
+    "dialogClosedByEscape": true,
+    "pptx": {
+      "name": "Инициатива  сервис автоматической вёрстки презентаций.pptx",
+      "bytes": 431266,
+      "zip": true
+    },
+    "ok": true,
+    "seconds": 75
+  },
+  {
+    "browser": "chrome",
+    "version": "153.0.8010.53",
+    "steps": [
+      {
+        "title": "home",
+        "seconds": 3
+      },
+      {
+        "title": "brief",
+        "seconds": 0.6
+      },
+      {
+        "title": "outline",
+        "seconds": 32.7
+      },
+      {
+        "title": "variants",
+        "seconds": 7
+      },
+      {
+        "title": "editor",
+        "seconds": 0.1
+      },
+      {
+        "title": "edit-title",
+        "seconds": 2.7
+      },
+      {
+        "title": "preview",
+        "seconds": 10.5
+      },
+      {
+        "title": "preview-closed",
+        "seconds": 0.3
+      },
+      {
+        "title": "audit",
+        "seconds": 0.2
+      },
+      {
+        "title": "export",
+        "seconds": 3.5
+      }
+    ],
+    "consoleErrors": [],
+    "failed": [],
+    "variants": 3,
+    "editedTitle": "Слайд 2: Проверка правки в браузере",
+    "dialogClosedByEscape": true,
+    "pptx": {
+      "name": "Сервис автоматической вёрстки презентаций.pptx",
+      "bytes": 425369,
+      "zip": true
+    },
+    "ok": true,
+    "seconds": 61
+  },
+  {
+    "browser": "firefox",
+    "version": "155.0",
+    "steps": [
+      {
+        "title": "home",
+        "seconds": 1.2
+      },
+      {
+        "title": "brief",
+        "seconds": 0.1
+      },
+      {
+        "title": "outline",
+        "seconds": 49.3
+      },
+      {
+        "title": "variants",
+        "seconds": 7.8
+      },
+      {
+        "title": "editor",
+        "seconds": 0.1
+      },
+      {
+        "title": "edit-title",
+        "seconds": 2.8
+      },
+      {
+        "title": "preview",
+        "seconds": 11.1
+      },
+      {
+        "title": "preview-closed",
+        "seconds": 0.1
+      },
+      {
+        "title": "audit",
+        "seconds": 0.2
+      },
+      {
+        "title": "export",
+        "seconds": 3.7
+      }
+    ],
+    "consoleErrors": [],
+    "failed": [],
+    "variants": 3,
+    "editedTitle": "Слайд 2: Проверка правки в браузере",
+    "dialogClosedByEscape": true,
+    "pptx": {
+      "name": "Инициатива сервис автоматической вёрстки презентаций.pptx",
+      "bytes": 426090,
+      "zip": true
+    },
+    "ok": true,
+    "seconds": 76
+  },
+  {
+    "browser": "webkit",
+    "version": "26.6",
+    "steps": [
+      {
+        "title": "home",
+        "seconds": 4.1
+      },
+      {
+        "title": "brief",
+        "seconds": 0.1
+      },
+      {
+        "title": "outline",
+        "seconds": 25.1
+      },
+      {
+        "title": "variants",
+        "seconds": 8.4
+      },
+      {
+        "title": "editor",
+        "seconds": 0.1
+      },
+      {
+        "title": "edit-title",
+        "seconds": 2.7
+      },
+      {
+        "title": "preview",
+        "seconds": 5
+      },
+      {
+        "title": "preview-closed",
+        "seconds": 0.1
+      },
+      {
+        "title": "audit",
+        "seconds": 0.1
+      },
+      {
+        "title": "export",
+        "seconds": 4.8
+      }
+    ],
+    "consoleErrors": [],
+    "failed": [],
+    "variants": 3,
+    "editedTitle": "Слайд 2: Проверка правки в браузере",
+    "dialogClosedByEscape": true,
+    "pptx": {
+      "name": "Инициатива  сервис автоматической вёрстки презентаций.pptx",
+      "bytes": 427267,
+      "zip": true
+    },
+    "ok": true,
+    "seconds": 50
+  }
+]

@@ -53,12 +53,16 @@ def outline(count=3):
         "slides": [
             {
                 "title": f"Вывод {i + 1}",
-                "bullets": ["Первый тезис", "Второй тезис"],
+                # Тезисы у каждого слайда свои: повтор между слайдами — находка
+                # repeated_content, фикстура не должна её провоцировать.
+                "bullets": [f"Первый тезис {topic}", f"Второй тезис {topic}"],
                 "source_refs": ["brief"],
                 "visual": visual,
             }
-            for i, visual in enumerate(
-                [
+            for i, (topic, visual) in enumerate(
+                zip(
+                    ("о продажах", "о сроках", "об итогах"),
+                    [
                     {
                         "kind": "bar",
                         "categories": ["А", "Б"],
@@ -71,7 +75,8 @@ def outline(count=3):
                         "rows": [["А", "10"], ["Б", "20"]],
                     },
                     {"kind": "process", "steps": ["План", "Работа", "Итог"]},
-                ][:count]
+                    ][:count],
+                )
             )
         ],
     }
@@ -625,10 +630,15 @@ def test_density_and_chart_checks_fire():
     assert "chart_labels" in audited(template, content_mutator=unlabelled)[2]
 
     def sparse(content):
-        content["slides"][0]["bullets"] = ["Мало"]
-        content["slides"][0]["visual"] = {"kind": "none"}
+        content["slides"][1]["bullets"] = ["Мало"]
+        content["slides"][1]["visual"] = {"kind": "none"}
 
-    assert "fill_ratio" in audited(template, content_mutator=sparse)[2]
+    # Первый слайд — обложка в рамках шаблона, её заливку задаёт дизайнер;
+    # разреженность ловится на обычном слайде.
+    _, report, _ = audited(template, content_mutator=sparse, count=2)
+    assert any(
+        i["code"] == "fill_ratio" and i["slide_index"] == 1 for i in report["issues"]
+    )
 
 
 def test_new_fixes_repair_the_deck():
@@ -2982,3 +2992,253 @@ def test_unmeasured_background_still_warns():
         if i["code"] == "text_over_image"
     ]
     assert found and "не измерен" in found[0]["message"], found
+
+
+def repeating_outline():
+    """Растянутый бриф: заголовок одного слайда — тезис другого, тезис дважды."""
+    plan = outline(3)
+    plan["slides"][1]["bullets"] = ["Вывод 1", "Второй тезис о сроках"]
+    plan["slides"][2]["bullets"] = ["Первый тезис о продажах", "Второй тезис об итогах"]
+    return plan
+
+
+def test_repeated_items_catch_titles_and_bullets_said_twice():
+    from designer.generation import repeated_items
+
+    slides = repeating_outline()["slides"]
+    assert repeated_items(slides) == [(1, "Вывод 1"), (2, "Первый тезис о продажах")]
+    # Регистр, «ё» и пунктуация повтора не прячут.
+    slides[2]["bullets"][0] = "первый ТЕЗИС о продажах."
+    assert repeated_items(slides)[-1] == (2, "первый ТЕЗИС о продажах.")
+    # Тезис, повторяющий свой же заголовок, — тоже повтор.
+    assert repeated_items([{"title": "Итог", "bullets": ["итог"], "visual": {}}]) == [
+        (0, "итог")
+    ]
+    assert repeated_items(outline(3)["slides"]) == []
+
+
+def test_content_audit_reports_repeated_content():
+    from designer.models import Outline
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    deck = compose(Outline.model_validate(repeating_outline()).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "10 20"}])
+    flagged = sorted(i["slide_index"] for i in report["issues"] if i["code"] == "repeated_content")
+    assert flagged == [1, 2]
+
+
+def test_repeats_are_sent_back_to_the_model(client, monkeypatch):
+    captured = mock_provider(
+        monkeypatch, [json.dumps(repeating_outline()), json.dumps(outline(3))]
+    )
+    response = client.post(
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
+    )
+    assert response.status_code == 200, response.text
+    assert len(captured) == 2
+    feedback = captured[1]["messages"][-1]["content"]
+    assert "«Вывод 1» уже есть в заголовке или на другом слайде" in feedback
+
+
+def test_last_attempt_drops_repeats_instead_of_failing(client, monkeypatch):
+    plan = repeating_outline()
+    # Третий слайд — сплошной повтор: после чистки у него не остаётся ничего.
+    plan["slides"][2]["bullets"] = ["Первый тезис о продажах"]
+    plan["slides"][2]["visual"] = {"kind": "none"}
+    mock_provider(monkeypatch, [json.dumps(plan)])
+    response = client.post(
+        "/api/v1/outlines", json={"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
+    )
+    assert response.status_code == 200, response.text
+    slides = response.json()["slides"]
+    from designer.generation import repeated_items
+
+    assert repeated_items(slides) == []
+    assert len(slides) == 2
+    assert slides[1]["bullets"] == ["Второй тезис о сроках"]
+
+
+def test_chart_values_are_checked_against_the_materials():
+    from designer.generation import fabricated_chart
+
+    chart = {
+        "kind": "bar",
+        "categories": ["Пилот", "Запуск"],
+        "series": [{"name": "Команды", "values": [10, 20.0]}],
+    }
+    assert fabricated_chart(chart, {"10", "20"}) == ("", False)
+    reason, ordinal = fabricated_chart(chart, {"10"})
+    assert "значений 20 нет в материалах" in reason and not ordinal
+    # Столбики по номерам этапов — выдумка, даже если цифры есть в тексте.
+    steps = {
+        "kind": "line",
+        "categories": ["А", "Б", "В"],
+        "series": [{"name": "Этап", "values": [1, 2, 3]}],
+    }
+    reason, ordinal = fabricated_chart(steps, {"1", "2", "3"})
+    assert "порядковые номера 1…3" in reason and ordinal
+    # Дробные и схемы: 4,5 из текста — это 4.5; у схемы значений нет.
+    assert fabricated_chart(
+        {"kind": "bar", "series": [{"name": "Ч", "values": [4.5]}]}, {"4.5"}
+    ) == ("", False)
+    assert fabricated_chart({"kind": "process", "steps": ["А"]}, set()) == ("", False)
+
+
+def ordinal_chart_outline():
+    plan = outline(3)
+    plan["slides"][0]["visual"]["series"][0]["values"] = [1, 2, 3]
+    plan["slides"][0]["visual"]["categories"] = ["План", "Работа", "Итог"]
+    return plan
+
+
+def test_content_audit_reports_chart_without_data():
+    from designer.models import Outline
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    deck = compose(Outline.model_validate(ordinal_chart_outline()).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "Этапы 1, 2, 3; 10 и 20"}])
+    found = [i for i in report["issues"] if i["code"] == "chart_without_data"]
+    assert [(i["slide_index"], i["severity"]) for i in found] == [(0, "error")]
+
+    plan = outline(3)
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "Только 10"}])
+    found = [i for i in report["issues"] if i["code"] == "chart_without_data"]
+    assert [(i["slide_index"], i["severity"]) for i in found] == [(0, "warning")]
+
+
+CHART_BRIEF = {"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
+
+
+def test_chart_without_data_is_sent_back_to_the_model(client, monkeypatch):
+    captured = mock_provider(
+        monkeypatch, [json.dumps(ordinal_chart_outline()), json.dumps(outline(3))]
+    )
+    response = client.post("/api/v1/outlines", json=CHART_BRIEF)
+    assert response.status_code == 200, response.text
+    assert "порядковые номера" in captured[1]["messages"][-1]["content"]
+
+
+def test_last_attempt_drops_the_chart_without_data(client, monkeypatch):
+    mock_provider(monkeypatch, [json.dumps(ordinal_chart_outline())])
+    response = client.post("/api/v1/outlines", json=CHART_BRIEF)
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][0]["visual"]["kind"] == "none"
+
+
+def test_body_type_stays_below_the_title():
+    """Тезис не крупнее заголовка: вёрстка держит иерархию, аудит её проверяет."""
+    from designer.audit import apply_fixes
+    from designer.layout import grow_text, keep_below_title
+
+    scale = [12.0, 16.0, 20.0, 24.0, 32.0]
+    title = {"id": "title", "kind": "text", "role": "title", "text": "Итог",
+             "box": [0, 0, 800, 60], "font_size": 20.0}
+    body = {"id": "body", "kind": "text", "role": "body", "text": "Короткий тезис",
+            "box": [0, 80, 800, 300], "font_size": 16.0}
+    lead = dict(body, id="lead", font_size=16.0, box=[0, 400, 800, 100])
+    # Рост кегля ради заливки останавливается ступенью ниже заголовка, акцент
+    # focus растёт свободно.
+    grow_text([title, body, lead], scale, 960 * 540, target=0.9, maximum=32)
+    assert body["font_size"] < title["font_size"]
+    assert lead["font_size"] >= title["font_size"]
+    # Подгонка всё же сравняла — страховка опускает тезис на ступень.
+    body["font_size"] = title["font_size"]
+    keep_below_title([title, body], scale)
+    assert body["font_size"] == max(s for s in scale if s < title["font_size"])
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    from designer.models import Outline
+
+    deck = compose(Outline.model_validate(outline(2)).model_dump(), template, "classic")
+    slide = deck["slides"][1]
+    heading = next(e for e in slide["elements"] if e["role"] == "title")
+    text = next(e for e in slide["elements"] if e["role"] == "body")
+    assert text["font_size"] < heading["font_size"]
+    # У синтетического шаблона шкалы нет; задаём её, чтобы исправлению было
+    # на какую ступень опуститься.
+    scale = template["tokens"]["font_sizes"] = [12.0, 16.0, 20.0, 24.0]
+    heading["font_size"] = text["font_size"] = 24.0
+    report = audit(deck, template, [{"id": "brief", "text": "10 20"}])
+    found = [i for i in report["issues"] if i["code"] == "body_over_title"]
+    assert [(i["slide_index"], i["element_id"], i["fixable"]) for i in found] == [
+        (1, text["id"], True)
+    ]
+    apply_fixes(deck, report, [found[0]["id"]], template)
+    assert text["font_size"] == max(s for s in scale if s < heading["font_size"])
+
+def test_cover_fill_is_left_to_the_template():
+    """Обложка в рамках шаблона не судится по заливке, обычный слайд — судится."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+
+    def sparse(content):
+        for slide in content["slides"]:
+            slide["bullets"] = ["Мало"]
+            slide["visual"] = {"kind": "none"}
+
+    deck, report, _ = audited(template, content_mutator=sparse, count=2)
+    assert deck["slides"][0]["native_cover"]
+    flagged = {i["slide_index"] for i in report["issues"] if i["code"] == "fill_ratio"}
+    assert 0 not in flagged and 1 in flagged
+
+    # Мера та же: сними с обложки признак — и находка вернётся.
+    deck["slides"][0]["native_cover"] = False
+    report = audit(deck, template, [{"id": "brief", "text": "Мало"}])
+    assert any(
+        i["code"] == "fill_ratio" and i["slide_index"] == 0 for i in report["issues"]
+    )
+
+
+def test_card_text_frame_grows_down_to_the_next_obstacle():
+    from designer.layout import card_depth
+
+    top_row = [10.0, 100.0, 200.0, 40.0]
+    below = [10.0, 300.0, 200.0, 40.0]
+    # Следующая карточка в колонке — предел.
+    assert card_depth(top_row, [top_row, below], [], 500.0) == 300.0 - 8.0 - 100.0
+    # Фигура-подложка карточки — тоже.
+    assert card_depth(top_row, [top_row], [(0.0, 90.0, 220.0, 150.0)], 500.0) == 140.0
+    # Значок ниже рамки — тоже.
+    assert card_depth(top_row, [top_row], [(50.0, 200.0, 30.0, 30.0)], 500.0) == 92.0
+    # Свободно до низа рабочей области; но рамка никогда не уменьшается.
+    assert card_depth(top_row, [top_row], [], 500.0) == 400.0
+    assert card_depth(top_row, [top_row], [], 120.0) == 40.0
+
+
+def test_title_backdrop_is_the_plate_under_the_template_title():
+    from designer.layout import title_backdrop
+
+    title_box = {"x": 0.1, "y": 0.066, "w": 0.6, "h": 0.066}
+    # Плашка, в которой начинается рамка заголовка образца.
+    assert title_backdrop((75.0, 32.0, 580.0, 49.0), title_box, 960, 540)
+    # Крупная иллюстрация рядом с заголовком — не плашка.
+    assert not title_backdrop((474.0, 54.0, 486.0, 486.0), title_box, 960, 540)
+    # Ряд декора ниже заголовка — тоже.
+    assert not title_backdrop((120.0, 107.0, 118.0, 110.0), title_box, 960, 540)
+
+
+def test_title_on_its_plate_is_not_a_branding_overlap():
+    """Заголовок, поставленный на плашку образца, аудит не считает наездом."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+    content = outline(2)
+    from designer.models import Outline
+
+    deck = compose(Outline.model_validate(content).model_dump(), template, "classic")
+    slide = deck["slides"][1]
+    title = next(e for e in slide["elements"] if e["id"] == "title")
+    pattern = next(p for p in template["patterns"] if p["index"] == slide["pattern_index"])
+    width, height = deck["width"], deck["height"]
+    x, y, w, h = title["box"]
+    pattern["title_box"] = {"x": x / width, "y": y / height, "w": w / width, "h": h / height}
+    plate = {"x": (x - 4) / width, "y": (y - 4) / height, "w": (w + 8) / width, "h": (h + 8) / height}
+    pattern["reserved"] = [plate]
+
+    def overlaps(report):
+        return any(
+            i["code"] == "branding_overlap" and i["slide_index"] == 1 for i in report["issues"]
+        )
+
+    assert not overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))
+    # Та же фигура, но не под рамкой заголовка образца, — наезд.
+    pattern["title_box"] = {"x": 0.9, "y": 0.9, "w": 0.05, "h": 0.05}
+    assert overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))
