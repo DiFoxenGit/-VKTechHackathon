@@ -413,6 +413,98 @@ def unsupported_numbers(text, known, minimum=10):
     )
 
 
+def number_label(value):
+    """Число так, как его пишут в тексте: 4.0 → «4», 1.5 → «1.5»."""
+    value = float(value)
+    return str(int(value)) if value.is_integer() else repr(value)
+
+
+def fabricated_chart(visual, known):
+    """Диаграмма, чьи значения не взяты из материалов: (причина, порядковый ряд).
+
+    Пустая причина — диаграмма построена по данным.
+
+    Модели, которой нечего рисовать, проще всего пронумеровать этапы — 1, 2, 3,
+    4 — и построить по номерам столбики. Проверка тезисов однозначные числа
+    пропускает («три команды» и «3 команды» — одно и то же), поэтому значения
+    диаграммы сверяются с материалами все, а порядковый ряд отклоняется, даже
+    если такие цифры в тексте случайно встречаются.
+    """
+    data = visual if isinstance(visual, dict) else visual.model_dump()
+    if data.get("kind") not in ("bar", "line"):
+        return "", False
+    for series in data.get("series") or []:
+        values = [float(v) for v in series.get("values") or []]
+        name = series.get("name") or "без названия"
+        if len(values) >= 3 and values == [float(i + 1) for i in range(len(values))]:
+            return f"ряд «{name}» — порядковые номера 1…{len(values)}, а не данные", True
+        missing = sorted({number_label(v) for v in values} - known, key=float)
+        if missing:
+            return f"в ряду «{name}» значений {', '.join(missing[:5])} нет в материалах", False
+    return "", False
+
+
+def same_text(text):
+    """Ключ для сравнения фраз: регистр, «ё», пунктуация и пробелы не в счёт."""
+    value = text.lower().replace("ё", "е")
+    return " ".join(re.sub(r"[^\w%]+", " ", value).split())
+
+
+def repeated_items(slides):
+    """Повторы внутри колоды: тезис, уже сказанный на другом слайде или в заголовке.
+
+    Короткий бриф, растянутый на десять слайдов, выдаёт себя именно так: одна и
+    та же строка стоит заголовком на одном слайде и тезисом на двух других.
+    Сравнение точное с точностью до регистра и пунктуации — перефразирование
+    не ловим, зато и ложных находок нет. Возвращает пары (номер слайда, текст)
+    для каждого повтора после первого упоминания.
+    """
+    titles = {}
+    for index, slide in enumerate(slides):
+        titles.setdefault(same_text(slide["title"]), index)
+    seen, repeats = {}, []
+    for index, slide in enumerate(slides):
+        own_title = same_text(slide["title"])
+        visual = slide.get("visual") or {}
+        for item in [*slide["bullets"], *visual.get("steps", [])]:
+            key = same_text(item)
+            if not key:
+                continue
+            if key == own_title or titles.get(key, index) != index:
+                # Тезис повторяет заголовок — свой или чужого слайда.
+                repeats.append((index, item))
+            elif seen.get(key, index) != index:
+                repeats.append((index, item))
+            else:
+                seen.setdefault(key, index)
+    return repeats
+
+
+def drop_repeats(outline):
+    """Последняя попытка: убрать повторы, а не ронять колоду.
+
+    Слайд, у которого после чистки не осталось ни тезисов, ни визуализации, уходит
+    целиком — он и был повтором. Обложка остаётся всегда.
+    """
+    found = {}
+    for index, item in repeated_items([s.model_dump() for s in outline.slides]):
+        found.setdefault(index, set()).add(item)
+    for index, items in found.items():
+        slide = outline.slides[index]
+        slide.bullets = [b for b in slide.bullets if b not in items]
+        if slide.visual.kind in ("process", "icon", "cycle", "pyramid", "timeline"):
+            steps = [step for step in slide.visual.steps if step not in items]
+            slide.visual = (
+                slide.visual.model_copy(update={"steps": steps}) if steps else Visual()
+            )
+    outline.slides = [
+        slide
+        for index, slide in enumerate(outline.slides)
+        if index == 0 or slide.bullets or slide.visual.kind != "none"
+    ]
+    return outline
+
+
 def sources_for(store, request: Brief):
     result = [{"id": "brief", "text": request.brief}]
     for identifier in request.content_pack_ids:
@@ -602,6 +694,40 @@ async def generate_outline(request, sources, warnings=None):
                 + ", ".join(sorted(repeated)[:4])
                 + ". Каждый слайд несёт свою мысль."
             )
+        charts = [
+            (index, fabricated_chart(slide.visual, known)[0])
+            for index, slide in enumerate(outline.slides)
+        ]
+        charts = [(index, reason) for index, reason in charts if reason]
+        if charts and not last_chance:
+            raise ValueError(
+                "; ".join(f"слайд {index + 1}: диаграмма без данных, {reason}" for index, reason in charts)
+                + ". Значения диаграммы — только числа из материалов дословно. "
+                "Нет данных — нет диаграммы: возьми схему, таблицу или список."
+            )
+        for index, reason in charts:
+            # Последняя попытка: слайд без диаграммы лучше выдуманного графика.
+            LOGGER.warning("Dropped chart without data on slide %s: %s", index + 1, reason)
+            outline.slides[index].visual = Visual()
+        repeats = repeated_items([slide.model_dump() for slide in outline.slides])
+        if repeats and not last_chance:
+            raise ValueError(
+                "; ".join(
+                    f"слайд {index + 1}: «{item}» уже есть в заголовке или на другом слайде"
+                    for index, item in repeats[:6]
+                )
+                + ". Каждый факт звучит в колоде один раз, а тезис не повторяет "
+                "заголовок. Если материала мало, лучше меньше слайдов."
+            )
+        if repeats:
+            before = len(outline.slides)
+            LOGGER.warning("Dropping repeated items on the last attempt: %s", repeats[:6])
+            drop_repeats(outline)
+            if warnings is not None and len(outline.slides) < before:
+                warnings.append(
+                    f"Модель повторяла одни и те же тезисы: {before - len(outline.slides)} "
+                    "слайд(ов) без собственного содержания убраны."
+                )
         invented = unsupported_numbers(
             "\n".join(
                 slide.title + "\n" + "\n".join(slide.bullets)

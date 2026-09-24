@@ -62,6 +62,36 @@ def ink_area(element):
     return w * h
 
 
+def subordinate(element):
+    """Текст, который обязан быть мельче заголовка.
+
+    Акцент focus (lead) — одна мысль на слайд, крупнее заголовка по замыслу
+    варианта; всё остальное тело слайда — тезисы, карточки, пункты списка —
+    подчинено заголовку.
+    """
+    return element.get("kind") == "text" and element.get("role") == "body" and element.get("id") != "lead"
+
+
+def keep_below_title(elements, scale, minimum=MIN_BODY_SIZE):
+    """Вернуть тезисам кегль ниже заголовка, если подгонка их сравняла.
+
+    Кегль тезиса берётся из рамки образца, растёт при заполнении и уменьшается
+    при подгонке — каждый шаг по отдельности разумен, а вместе они иногда дают
+    тезис размером с заголовок. Опускаем до ближайшей ступени шкалы ниже
+    заголовка, но не мельче минимума.
+    """
+    title = next((e for e in elements if e.get("role") == "title"), None)
+    if title is None:
+        return elements
+    below = [s for s in scale if minimum <= s < title["font_size"]]
+    if not below:
+        return elements
+    for element in elements:
+        if subordinate(element) and element["font_size"] >= title["font_size"]:
+            element["font_size"] = max(below)
+    return elements
+
+
 def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
     """Raise the type size while the slide still reads as empty.
 
@@ -72,6 +102,7 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
     if not slide_area:
         return elements
     steps = sorted(s for s in scale if s <= maximum)
+    title = next((e for e in elements if e.get("role") == "title"), None)
     for _ in range(4):
         if sum(ink_area(e) for e in elements) / slide_area >= target:
             break
@@ -80,6 +111,10 @@ def grow_text(elements, scale, slide_area, target=0.3, maximum=60):
             if element["kind"] != "text":
                 continue
             larger = [s for s in steps if s > element["font_size"]]
+            if title is not None and subordinate(element):
+                # Тезис растёт, но остаётся мельче заголовка: заголовок в этом
+                # же круге вырос первым, если было куда.
+                larger = [s for s in larger if s < title["font_size"]]
             if not larger:
                 continue
             candidate = dict(element, font_size=larger[0])
@@ -1537,6 +1572,7 @@ def compose(outline, template, variant, assets=None):
             needed += 0.5
             element["box"][1] = max(ceiling, min(element["box"][1], bottom - needed))
             element["box"][3] = min(needed, bottom - element["box"][1])
+        keep_below_title(elements, scale)
         background = pattern.get("background") or tokens["theme"].get("lt1", "FFFFFF")
         luma = pattern.get("bg_luma")
         if luma is not None:  # noqa: SIM108 - читаемее развёрнуто

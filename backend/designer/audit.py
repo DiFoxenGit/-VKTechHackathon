@@ -14,7 +14,9 @@ from .generation import (
     ask_vision,
     vision_completion,
     completion,
+    fabricated_chart,
     known_numbers,
+    repeated_items,
     unsupported_numbers,
     workflow,
 )
@@ -26,6 +28,7 @@ from .layout import (
     STAT_INSET,
     estimated_text_height,
     ink_area,
+    subordinate,
     title_backdrop,
 )
 from .parsing import best_text_color, contrast_ratio, stage_clutter
@@ -193,6 +196,18 @@ def audit(deck, template, sources, language=None):
     # The script the deck is written in decides what counts as a foreign label.
     cyrillic_deck = len(CYRILLIC.findall(deck_text)) > len(LATIN.findall(deck_text))
     source_numbers = known_numbers(sources)
+    # Повтор между слайдами виден только на всей колоде, поэтому считается до
+    # цикла. Приложение 1: «два слайда дублируют друг друга» — duplicate_slide
+    # ловит полный дубль, эта проверка — один и тот же тезис в разных местах.
+    for index, item in repeated_items([s["content"] for s in deck["slides"]]):
+        issues.append(
+            issue(
+                index,
+                None,
+                "repeated_content",
+                f"«{item}» уже сказано в заголовке или на другом слайде",
+            )
+        )
     for slide in deck["slides"]:
         index = slide["index"]
         content = slide["content"]
@@ -311,6 +326,20 @@ def audit(deck, template, sources, language=None):
                         "visual",
                         "chart_single_value",
                         "В диаграмме одно значение: число на слайде читается лучше графика",
+                    )
+                )
+            # Выдуманная диаграмма хуже отсутствующей: столбики по номерам
+            # этапов — ошибка, значения не из материалов — как неподтверждённое
+            # число в тезисе, предупреждение.
+            reason, ordinal = fabricated_chart(visual, source_numbers)
+            if reason:
+                issues.append(
+                    issue(
+                        index,
+                        "visual",
+                        "chart_without_data",
+                        "Диаграмма построена не по данным материалов: " + reason,
+                        severity="error" if ordinal else "warning",
                     )
                 )
             # Приложение 1: «у диаграммы нет подписей осей, единиц или легенды».
@@ -585,6 +614,24 @@ def audit(deck, template, sources, language=None):
                                         f"В гарнитуре {element['font']} нет символов: " + ''.join(missing[:20]),
                                         element['box'], severity='error'))
                 families.add(element["font"])
+                # Иерархия: тезис мельче заголовка. Акцент focus (lead) крупнее
+                # заголовка по замыслу варианта — одна мысль на слайд, — его не
+                # судим (layout.subordinate).
+                title_size = next(
+                    (e["font_size"] for e in elements if e.get("role") == "title"), None
+                )
+                if title_size and subordinate(element) and element["font_size"] >= title_size:
+                    issues.append(
+                        issue(
+                            index,
+                            element["id"],
+                            "body_over_title",
+                            f"Кегль текста {element['font_size']:g} pt не меньше "
+                            f"кегля заголовка {title_size:g} pt: нарушена иерархия",
+                            element["box"],
+                            True,
+                        )
+                    )
                 if element["font_size"] < MIN_LABEL_SIZE - 0.01:
                     issues.append(
                         issue(
@@ -1010,6 +1057,15 @@ def apply_fixes(deck, report, issue_ids, template):
                 "lt1", "FFFFFF"
             )
             element["color"] = best_text_color(background, palette)
+        elif finding["code"] == "body_over_title":
+            # Тезис опускается на ступень шкалы ниже заголовка; мельче
+            # ориентира читаемости не уходим — тогда находка останется.
+            title_size = next(
+                e["font_size"] for e in slide["elements"] if e.get("role") == "title"
+            )
+            below = [s for s in scale if MIN_LABEL_SIZE <= s < title_size]
+            if below:
+                element["font_size"] = max(below)
         elif finding["code"] == "text_too_small":
             # Поднимаем до ближайшей ступени шкалы, не мельче ориентира. Если
             # такой ступени нет, берём сам ориентир: читаемость важнее шкалы.
