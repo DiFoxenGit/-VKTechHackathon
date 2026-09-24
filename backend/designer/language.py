@@ -69,13 +69,16 @@ def foreign_labels(labels, cyrillic_deck):
     for label in labels:
         if CYRILLIC.search(label) or not LATIN.search(label):
             continue
-        # Digits stay with their word so "Q1" is recognised as an abbreviation.
+        # Регистр сохраняется: по нему technical_token узнаёт «CPU», «vCPU» и
+        # «gpt-oss-20b» — термины, которые промпт прямо разрешает писать
+        # латиницей. Раньше проверка сверялась только со словарём сокращений и
+        # отправляла модель переделывать подписи, в которых всё было верно.
         words = [
             w
-            for w in re.split(r"[^A-Za-z0-9]+", label.lower())
+            for w in re.split(r"[^A-Za-z0-9_.-]+", label)
             if w and any(c.isalpha() for c in w)
         ]
-        if words and all(word in LATIN_ALLOWED for word in words):
+        if words and all(technical_token(word) for word in words):
             continue
         found.append(label)
     return found
