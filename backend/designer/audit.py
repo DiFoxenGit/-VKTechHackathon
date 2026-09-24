@@ -14,6 +14,7 @@ from .generation import (
     ask_vision,
     vision_completion,
     completion,
+    fabricated_chart,
     known_numbers,
     repeated_items,
     unsupported_numbers,
@@ -323,6 +324,20 @@ def audit(deck, template, sources, language=None):
                         "visual",
                         "chart_single_value",
                         "В диаграмме одно значение: число на слайде читается лучше графика",
+                    )
+                )
+            # Выдуманная диаграмма хуже отсутствующей: столбики по номерам
+            # этапов — ошибка, значения не из материалов — как неподтверждённое
+            # число в тезисе, предупреждение.
+            reason, ordinal = fabricated_chart(visual, source_numbers)
+            if reason:
+                issues.append(
+                    issue(
+                        index,
+                        "visual",
+                        "chart_without_data",
+                        "Диаграмма построена не по данным материалов: " + reason,
+                        severity="error" if ordinal else "warning",
                     )
                 )
             # Приложение 1: «у диаграммы нет подписей осей, единиц или легенды».

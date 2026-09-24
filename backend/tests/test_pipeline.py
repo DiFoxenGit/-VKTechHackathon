@@ -2874,3 +2874,71 @@ def test_last_attempt_drops_repeats_instead_of_failing(client, monkeypatch):
     assert repeated_items(slides) == []
     assert len(slides) == 2
     assert slides[1]["bullets"] == ["Второй тезис о сроках"]
+
+
+def test_chart_values_are_checked_against_the_materials():
+    from designer.generation import fabricated_chart
+
+    chart = {
+        "kind": "bar",
+        "categories": ["Пилот", "Запуск"],
+        "series": [{"name": "Команды", "values": [10, 20.0]}],
+    }
+    assert fabricated_chart(chart, {"10", "20"}) == ("", False)
+    reason, ordinal = fabricated_chart(chart, {"10"})
+    assert "значений 20 нет в материалах" in reason and not ordinal
+    # Столбики по номерам этапов — выдумка, даже если цифры есть в тексте.
+    steps = {
+        "kind": "line",
+        "categories": ["А", "Б", "В"],
+        "series": [{"name": "Этап", "values": [1, 2, 3]}],
+    }
+    reason, ordinal = fabricated_chart(steps, {"1", "2", "3"})
+    assert "порядковые номера 1…3" in reason and ordinal
+    # Дробные и схемы: 4,5 из текста — это 4.5; у схемы значений нет.
+    assert fabricated_chart(
+        {"kind": "bar", "series": [{"name": "Ч", "values": [4.5]}]}, {"4.5"}
+    ) == ("", False)
+    assert fabricated_chart({"kind": "process", "steps": ["А"]}, set()) == ("", False)
+
+
+def ordinal_chart_outline():
+    plan = outline(3)
+    plan["slides"][0]["visual"]["series"][0]["values"] = [1, 2, 3]
+    plan["slides"][0]["visual"]["categories"] = ["План", "Работа", "Итог"]
+    return plan
+
+
+def test_content_audit_reports_chart_without_data():
+    from designer.models import Outline
+
+    template = parse_template(template_bytes(), "unknown.pptx")
+    deck = compose(Outline.model_validate(ordinal_chart_outline()).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "Этапы 1, 2, 3; 10 и 20"}])
+    found = [i for i in report["issues"] if i["code"] == "chart_without_data"]
+    assert [(i["slide_index"], i["severity"]) for i in found] == [(0, "error")]
+
+    plan = outline(3)
+    deck = compose(Outline.model_validate(plan).model_dump(), template, "classic")
+    report = audit(deck, template, [{"id": "brief", "text": "Только 10"}])
+    found = [i for i in report["issues"] if i["code"] == "chart_without_data"]
+    assert [(i["slide_index"], i["severity"]) for i in found] == [(0, "warning")]
+
+
+CHART_BRIEF = {"brief": "Данные: 10 и 20. Разделы 1, 2, 3.", "slide_count": 3}
+
+
+def test_chart_without_data_is_sent_back_to_the_model(client, monkeypatch):
+    captured = mock_provider(
+        monkeypatch, [json.dumps(ordinal_chart_outline()), json.dumps(outline(3))]
+    )
+    response = client.post("/api/v1/outlines", json=CHART_BRIEF)
+    assert response.status_code == 200, response.text
+    assert "порядковые номера" in captured[1]["messages"][-1]["content"]
+
+
+def test_last_attempt_drops_the_chart_without_data(client, monkeypatch):
+    mock_provider(monkeypatch, [json.dumps(ordinal_chart_outline())])
+    response = client.post("/api/v1/outlines", json=CHART_BRIEF)
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][0]["visual"]["kind"] == "none"
