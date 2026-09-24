@@ -86,6 +86,7 @@ export function toDeck(source: ApiPresentation): Deck {
     templateId: source.template_id,
     layout: VARIANTS[source.variant] ?? 'classic',
     updatedAt: new Date().toISOString(),
+    revision: source.revision,
   };
 }
 
@@ -282,12 +283,12 @@ export const presentationService = {
   /** Колоды этого браузера. Пользователей у сервиса нет, поэтому весь список
    *  сервера — это чужие презентации; показываем только созданные здесь. */
   async recent(own: ReadonlySet<string>, limit = 12): Promise<Project[]> {
-    if (!own.size) return [];
-    const { items } = await api.listPresentations(0, 200);
-    const mine = items.filter(item => own.has(item.id)).slice(0, limit);
-    // The list endpoint returns summaries without slide geometry or audit.
-    const presentations = await Promise.all(mine.map(item => api.presentation(item.id)));
-    return presentations.map(toProject);
+    // Свои колоды грузятся прямо по id: список сервера отдаёт не больше 100
+    // записей, и колода постарше в нём бы просто не нашлась. Последние созданные —
+    // первыми; удалённые на сервере пропускаются.
+    const ids = [...own].slice(-limit).reverse();
+    const loaded = await Promise.all(ids.map(id => api.presentation(id).catch(() => null)));
+    return loaded.filter((item): item is ApiPresentation => item !== null).map(toProject);
   },
 
   async saveSlide(project: Project, index: number, slide: Slide): Promise<Project> {
