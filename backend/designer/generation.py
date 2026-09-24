@@ -52,6 +52,46 @@ def narrative(purpose):
     return frames.get(purpose)
 
 
+def narrative_beats():
+    """Названия шагов всех каркасов повествования: ими нельзя начинать заголовок.
+
+    От шага берётся часть до двоеточия: у «Что потребуется: ресурсы и сроки»
+    это «Что потребуется». Длинные — первыми, чтобы короткий шаг не перехватил
+    совпадение у длинного.
+    """
+    manifest = workflow()
+    path = PROMPTS / manifest.get("narratives", "narratives.v1.json")
+    if not path.exists():
+        return []
+    frames = json.loads(path.read_text(encoding="utf-8"))
+    beats = set()
+    for frame in frames.values():
+        # В файле есть служебный "_comment" — это строка, а не каркас.
+        if not isinstance(frame, dict):
+            continue
+        for beat in frame.get("beats") or []:
+            head = re.split(r"[:—–]", str(beat))[0].strip()
+            if len(head) > 3:
+                beats.add(head)
+    return sorted(beats, key=len, reverse=True)
+
+
+def beat_title(title, beats=None):
+    """Шаг каркаса, которым открывается заголовок, или None.
+
+    «Ожидаемый эффект: скорость сборки» — это подпись раздела, а не вывод:
+    модель берёт название шага из каркаса и ставит его префиксом. Проверка
+    намеренно узкая — только шаги каркаса с двоеточием или тире после них,
+    чтобы не трогать заголовки-выводы вроде «Итог: сборка ускорилась в 46 раз».
+    """
+    text = (title or "").strip().lower()
+    for beat in beats if beats is not None else narrative_beats():
+        head = beat.lower()
+        if text.startswith(head) and re.match(r"\s*[:—–-]", text[len(head):]):
+            return beat
+    return None
+
+
 def provider():
     settings = require_llm()
     return settings.url, settings.model
@@ -740,6 +780,20 @@ async def generate_outline(request, sources, warnings=None):
             for slide in outline.slides:
                 if foreign_labels(visual_labels(slide.visual.model_dump()), cyrillic):
                     slide.visual = Visual()
+        beats = narrative_beats()
+        labelled = [
+            (index, slide.title)
+            for index, slide in enumerate(outline.slides)
+            if index > 0 and beat_title(slide.title, beats)
+        ]
+        if labelled and not last_chance:
+            # Приложение 1, вопрос 1: заголовок содержит вывод, а не называет тему.
+            raise ValueError(
+                "Заголовки называют раздел, а не вывод: "
+                + "; ".join(f"слайд {index + 1} «{title}»" for index, title in labelled[:6])
+                + ". Шаги каркаса — это порядок мыслей, а не текст заголовка: убери "
+                "префикс с двоеточием и сформулируй вывод слайда, по возможности с числом."
+            )
         titles = [slide.title.strip().lower() for slide in outline.slides]
         repeated = {title for title in titles if titles.count(title) > 1}
         if repeated:
@@ -749,6 +803,20 @@ async def generate_outline(request, sources, warnings=None):
                 "Заголовки повторяются: "
                 + ", ".join(sorted(repeated)[:4])
                 + ". Каждый слайд несёт свою мысль."
+            )
+        unitless = [
+            index + 1
+            for index, slide in enumerate(outline.slides)
+            if slide.visual.kind in ("bar", "line") and not (slide.visual.unit or "").strip()
+        ]
+        if unitless and not last_chance:
+            # Приложение 1: «у диаграммы нет подписей осей, единиц или легенды».
+            # Единица становится подписью оси значений, без неё ось немая.
+            raise ValueError(
+                "У диаграмм на слайдах "
+                + ", ".join(map(str, unitless))
+                + " не указана единица измерения (unit). Напиши, что измеряют значения: "
+                "«мин», «%», «команд», «млн руб.»."
             )
         charts = [
             (index, fabricated_chart(slide.visual, known)[0])
@@ -786,7 +854,13 @@ async def generate_outline(request, sources, warnings=None):
                 )
         invented = unsupported_numbers(
             "\n".join(
-                slide.title + "\n" + "\n".join(slide.bullets)
+                slide.title
+                + "\n"
+                + "\n".join(slide.bullets)
+                # Таблицы и подписи схем — тоже цифры на слайде (Приложение 1,
+                # вопрос 4). Значения диаграмм сверяет fabricated_chart.
+                + "\n"
+                + "\n".join(visual_labels(slide.visual.model_dump()))
                 for slide in outline.slides
             ),
             known,

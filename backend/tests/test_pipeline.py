@@ -1021,6 +1021,110 @@ def test_invented_numbers_send_the_model_back_for_another_try(client, monkeypatc
     assert "100" in captured[-1]["messages"][-1]["content"]
 
 
+def test_invented_table_number_sends_the_model_back(client, monkeypatch):
+    """Цифра в ячейке таблицы — тоже цифра на слайде: её сверяют с материалами."""
+    invented = outline(1)
+    invented["slides"][0]["title"] = "Команд стало 20 вместо 10"
+    invented["slides"][0]["visual"] = {
+        "kind": "table",
+        "columns": ["Этап", "Команд"],
+        "rows": [["Пилот", "10"], ["Запуск", "450"]],
+    }
+    good = outline(1)
+    good["slides"][0]["title"] = "Команд стало 20 вместо 10"
+    good["slides"][0]["visual"] = {
+        "kind": "table",
+        "columns": ["Этап", "Команд"],
+        "rows": [["Пилот", "10"], ["Запуск", "20"]],
+    }
+    captured = mock_provider(monkeypatch, [json.dumps(invented), json.dumps(good)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Пилот: 10 команд, после запуска 20 команд", "slide_count": 1},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][0]["visual"]["rows"][1][1] == "20"
+    assert len(captured) == 2
+    assert "450" in captured[-1]["messages"][-1]["content"]
+
+
+def test_audit_flags_unverified_number_in_a_table_cell():
+    """Правка слайда могла вписать в таблицу число, которого нет в материалах."""
+
+    def break_table(content):
+        content["slides"][0]["visual"] = {
+            "kind": "table",
+            "columns": ["Метрика", "Значение"],
+            "rows": [["Первый тезис", "10"], ["Второй тезис", "730"]],
+        }
+
+    template = synthetic_template([pattern(0), pattern(1)])
+    _, report, codes = audited(template, content_mutator=break_table)
+    assert "unverified_number" in codes
+    message = next(i["message"] for i in report["issues"] if i["code"] == "unverified_number")
+    assert "730" in message
+
+
+def test_beat_prefixed_title_is_a_topic_not_a_conclusion():
+    """Приложение 1, вопрос 1: «Раздел: тема» — это подпись, а не вывод."""
+    from designer.generation import beat_title, narrative_beats
+
+    beats = narrative_beats()
+    assert "Ожидаемый эффект" in beats and "_comment" not in " ".join(beats)
+    assert beat_title("Ожидаемый эффект: скорость сборки", beats) == "Ожидаемый эффект"
+    assert beat_title("Что потребуется: ресурсы и сроки", beats) == "Что потребуется"
+    assert beat_title("Контекст и возможность — время и стиль", beats) == "Контекст и возможность"
+    # Выводы, даже с двоеточием, не трогаем.
+    assert beat_title("Итог: сборка ускорилась в 46 раз", beats) is None
+    assert beat_title("Предложение сервиса экономит 3 часа", beats) is None
+
+
+def test_beat_prefixed_titles_send_the_model_back(client, monkeypatch):
+    """Заголовки-разделы возвращаются модели с просьбой сформулировать вывод."""
+    labelled = outline(2)
+    labelled["slides"][1]["title"] = "Ожидаемый эффект: рост команд"
+    good = outline(2)
+    good["slides"][1]["title"] = "Команд стало 20 вместо 10"
+    captured = mock_provider(monkeypatch, [json.dumps(labelled), json.dumps(good)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Пилот: 10 команд, после запуска 20 команд", "slide_count": 2},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][1]["title"] == "Команд стало 20 вместо 10"
+    assert len(captured) == 2
+    assert "называют раздел" in captured[-1]["messages"][-1]["content"]
+
+
+def test_audit_marks_beat_prefixed_title():
+    """Оставшийся заголовок-раздел виден пользователю находкой title_topic."""
+
+    def label_titles(content):
+        content["slides"][1]["title"] = "Предложение: процесс работы сервиса"
+
+    template = synthetic_template([pattern(0), pattern(1)])
+    _, report, codes = audited(template, content_mutator=label_titles, count=2)
+    assert "title_topic" in codes
+    finding = next(i for i in report["issues"] if i["code"] == "title_topic")
+    assert finding["slide_index"] == 1 and "Предложение" in finding["message"]
+
+
+def test_chart_without_unit_sends_the_model_back(client, monkeypatch):
+    """Диаграмма без единицы измерения — немая ось; модель переспрашиваем."""
+    unitless = outline(1)
+    unitless["slides"][0]["visual"]["unit"] = ""
+    good = outline(1)
+    captured = mock_provider(monkeypatch, [json.dumps(unitless), json.dumps(good)])
+    response = client.post(
+        "/api/v1/outlines",
+        json={"brief": "Продажи А 10 Б 20 млн руб.", "slide_count": 1},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["slides"][0]["visual"]["unit"] == "млн руб."
+    assert len(captured) == 2
+    assert "единица измерения" in captured[-1]["messages"][-1]["content"]
+
+
 def test_focus_variant_fills_the_slide_with_larger_type():
     """Один тезис на слайд — это крупный кегль, а не четверть пустой страницы."""
     from designer.layout import ink_area

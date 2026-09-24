@@ -12,6 +12,8 @@ from .generation import (
     PROMPTS,
     InvalidCompletion,
     ask_vision,
+    beat_title,
+    narrative_beats,
     vision_completion,
     completion,
     fabricated_chart,
@@ -196,6 +198,8 @@ def audit(deck, template, sources, language=None):
     # The script the deck is written in decides what counts as a foreign label.
     cyrillic_deck = len(CYRILLIC.findall(deck_text)) > len(LATIN.findall(deck_text))
     source_numbers = known_numbers(sources)
+    # Шаги каркаса повествования: заголовок, открытый ими, — тема, а не вывод.
+    beats = narrative_beats()
     # Повтор между слайдами виден только на всей колоде, поэтому считается до
     # цикла. Приложение 1: «два слайда дублируют друг друга» — duplicate_slide
     # ловит полный дубль, эта проверка — один и тот же тезис в разных местах.
@@ -260,6 +264,17 @@ def audit(deck, template, sources, language=None):
                     )
                 )
         text = content["title"] + "\n" + "\n".join(content["bullets"])
+        beat = beat_title(content["title"], beats) if index > 0 else None
+        if beat:
+            issues.append(
+                issue(
+                    index,
+                    "title",
+                    "title_topic",
+                    f"Заголовок начинается с названия раздела «{beat}» и называет тему, "
+                    "а не вывод: сформулируйте, что следует из слайда",
+                )
+            )
         if re.search(
             r"lorem ipsum|\bXXX\b|\bTODO\b|вставьте текст", text, re.IGNORECASE
         ):
@@ -437,7 +452,12 @@ def audit(deck, template, sources, language=None):
         background = slide.get("background") or template["tokens"]["theme"].get(
             "lt1", "FFFFFF"
         )
-        numbers = unsupported_numbers(text, source_numbers)
+        # Числа в ячейках таблиц и подписях схем проверяются так же, как в
+        # тезисах: пользователь мог вписать их правкой слайда.
+        numbers = unsupported_numbers(
+            text + "\n" + "\n".join(visual_labels(content.get("visual") or {})),
+            source_numbers,
+        )
         if numbers:
             issues.append(
                 issue(
