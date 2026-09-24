@@ -1215,6 +1215,20 @@ def test_focus_variant_fills_the_slide_with_larger_type():
             assert element["font_size"] in template["tokens"]["font_sizes"]
 
 
+def test_technical_terms_in_labels_are_not_a_foreign_language():
+    """«CPU», «2 vCPU», «gpt-oss-20b» пишутся латиницей и в русской колоде.
+
+    Проверка считала их английскими, отправляла модель переделывать подписи и
+    сжигала попытку, а на последней снимала таблицу ресурсов целиком.
+    """
+    from designer.language import foreign_labels
+
+    technical = ["2 vCPU", "CPU", "RAM", "gpt-oss-20b", "OpenAI", "KPI", "Q1", "API ключ"]
+    assert foreign_labels(technical, True) == []
+    english = ["Manual", "Pilot", "Requests closed per week", "Time (min)"]
+    assert foreign_labels(english, True) == english
+
+
 def test_english_labels_send_the_model_back(client, monkeypatch):
     """Русская колода с английскими подписями осей не доходит до вёрстки."""
     english = outline(1)
