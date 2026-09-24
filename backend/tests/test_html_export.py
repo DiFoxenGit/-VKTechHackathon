@@ -1,19 +1,17 @@
+import shutil
 from pathlib import Path
 
-import pymupdf
 from lxml import html
 
 from designer.exporting import export_html
 
+# Страница 720×405 pt со встроенным подмножеством шрифта Play: «186 минут» и строка,
+# похожая на разметку, — чтобы проверить экранирование текстового слоя.
+FIXTURE = Path(__file__).resolve().parent / 'fixtures' / 'text-slide.pdf'
+
 
 def text_pdf(path):
-    font = Path(__file__).resolve().parents[1] / 'designer/assets/fonts/Play-Regular.ttf'
-    with pymupdf.open() as document:
-        page = document.new_page(width=720, height=405)
-        page.insert_font(fontname='Play', fontfile=str(font))
-        page.insert_text((40, 90), '186 минут', fontname='Play', fontsize=28)
-        page.insert_text((40, 140), '<script>alert("x")</script> & результат', fontname='Play', fontsize=18)
-        document.save(path)
+    shutil.copyfile(FIXTURE, path)
 
 
 def test_html_contains_live_searchable_cyrillic_without_size_regression(tmp_path):
@@ -27,9 +25,9 @@ def test_html_contains_live_searchable_cyrillic_without_size_regression(tmp_path
     assert document.xpath('//svg//text')
     assert not document.xpath('//script')
     assert '<script>alert("x")</script>' in document.text_content()
-    with pymupdf.open(pdf) as source:
-        prior_svg = source[0].get_svg_image(text_as_path=True).encode('utf-8')
-    assert output.stat().st_size <= len(prior_svg) * 1.5
+    # Слайд — растр плюс текстовый слой: страница с двумя строками не должна
+    # весить больше, чем нужно для резкой картинки на экране ноутбука.
+    assert output.stat().st_size <= 400 * 1024
 
 
 def test_html_language_and_title_are_escaped(tmp_path):

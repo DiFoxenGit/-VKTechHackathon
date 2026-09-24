@@ -251,30 +251,30 @@ def _inspect_chart(chart, slide_number, share):
 
 def contact_sheet(images, target: Path):
     """Склеить слайды колоды в один лист: три колонки, номер в углу миниатюры."""
-    import pymupdf
+    from PIL import Image, ImageDraw
 
-    first = pymupdf.Pixmap(images[0])
-    tile_height = SHEET_TILE_WIDTH * first.height / first.width
-    rows = math.ceil(len(images) / SHEET_COLUMNS)
+    from designer.render import image_from_bytes, png
+
+    tiles = [image_from_bytes(image).convert("RGB") for image in images]
+    tile_height = round(SHEET_TILE_WIDTH * tiles[0].height / tiles[0].width)
+    rows = math.ceil(len(tiles) / SHEET_COLUMNS)
     width = SHEET_COLUMNS * SHEET_TILE_WIDTH + (SHEET_COLUMNS + 1) * SHEET_GAP
     height = rows * tile_height + (rows + 1) * SHEET_GAP
-    document = pymupdf.open()
-    page = document.new_page(width=width, height=height)
-    page.draw_rect(page.rect, color=None, fill=(0.91, 0.92, 0.94))
-    for index, image in enumerate(images):
+    sheet = Image.new("RGB", (width, height), (232, 235, 240))
+    draw = ImageDraw.Draw(sheet)
+    for index, tile in enumerate(tiles):
         column, row = index % SHEET_COLUMNS, index // SHEET_COLUMNS
         left = SHEET_GAP + column * (SHEET_TILE_WIDTH + SHEET_GAP)
         top = SHEET_GAP + row * (tile_height + SHEET_GAP)
-        tile = pymupdf.Rect(left, top, left + SHEET_TILE_WIDTH, top + tile_height)
-        page.insert_image(tile, stream=image, keep_proportion=True)
-        page.draw_rect(tile, color=(0.75, 0.77, 0.8), width=0.6)
-        badge = pymupdf.Rect(left, top, left + 26, top + 18)
-        page.draw_rect(badge, color=None, fill=(0.1, 0.1, 0.12))
-        page.insert_text(
-            (left + 5, top + 13), str(index + 1), fontsize=11, color=(1, 1, 1)
+        tile.thumbnail((SHEET_TILE_WIDTH, tile_height))
+        sheet.paste(tile, (left, top))
+        draw.rectangle(
+            (left, top, left + SHEET_TILE_WIDTH - 1, top + tile_height - 1),
+            outline=(191, 196, 204),
         )
-    target.write_bytes(page.get_pixmap(dpi=72).tobytes("png"))
-    document.close()
+        draw.rectangle((left, top, left + 26, top + 18), fill=(26, 26, 31))
+        draw.text((left + 6, top + 3), str(index + 1), fill=(255, 255, 255))
+    target.write_bytes(png(sheet))
 
 
 def measure(template, path: Path):

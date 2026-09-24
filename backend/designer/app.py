@@ -34,6 +34,7 @@ from .exporting import (
     export_pptx,
     render_slides,
     sample_backgrounds,
+    slide_svg,
     template_thumbnail,
     branding_drift,
     verify_pptx,
@@ -61,6 +62,8 @@ IMAGE_LIMIT = max(0, int(os.getenv("DESIGNER_IMAGE_LIMIT", "3")))
 # Ширины миниатюр: лента и карточки, холст редактора, крупный просмотр.
 # Набор фиксированный, чтобы кеш на диске не рос от произвольных запросов.
 THUMB_WIDTHS = (320, 640, 1280)
+# Ширина растра в окне просмотра: рамки находок должны читаться на ноутбуке.
+PREVIEW_WIDTH = 1600
 
 
 async def upload_bytes(file):
@@ -910,19 +913,21 @@ def create_app(data_dir=None, seed_dir=None):
     def preview(presentation_id: str, index: int, highlight: bool = False):
         import html
 
-        import pymupdf
+        from .render import page_size, render_page
 
         record = store.get("presentations", presentation_id)
         if not 0 <= index < len(record["deck"]["slides"]):
             raise HTTPException(404, "Slide not found")
         pdf = revision_pdf(record)
-        with pymupdf.open(pdf) as document:
-            page = document[index]
-            svg = page.get_svg_image(text_as_path=True)
-            sx, sy = (
-                page.rect.width / record["deck"]["width"],
-                page.rect.height / record["deck"]["height"],
-            )
+        width, height = page_size(pdf, index)
+        # Превью — растр той же страницы PDF, что уедет пользователю; рамки
+        # находок рисуются поверх в координатах страницы.
+        image = render_page(pdf, index, PREVIEW_WIDTH)
+        svg = slide_svg(image, width, height, [], f"Слайд {index + 1}")
+        sx, sy = (
+            width / record["deck"]["width"],
+            height / record["deck"]["height"],
+        )
         if highlight:
             boxes = []
             for finding in record["audit"]["issues"]:

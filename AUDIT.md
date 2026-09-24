@@ -111,7 +111,7 @@
 
 ## Автоматические тесты
 
-`presenton-main/servers/fastapi/tests/designer/test_pipeline.py`:
+`backend/tests/test_pipeline.py`:
 
 - Полный HTTP-цикл на синтетическом неизвестном шаблоне.
 - Каждый из трёх приложенных VK-шаблонов, по три варианта.
