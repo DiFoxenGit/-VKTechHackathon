@@ -906,15 +906,9 @@ def convert_pdf(pptx_path: Path, destination: Path):
 
 def render_slides(pdf_path: Path, width=1280):
     """Слайды как PNG — то, что реально увидит зритель, а не наше представление."""
-    import pymupdf
+    from .render import render_pages
 
-    pages = []
-    with pymupdf.open(pdf_path) as document:
-        for page in document:
-            zoom = width / page.rect.width if page.rect.width else 1
-            pixmap = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
-            pages.append(pixmap.tobytes("png"))
-    return pages
+    return render_pages(pdf_path, width)
 
 
 def template_thumbnail(pptx_path: Path, destination: Path, page=0, width=640):
@@ -941,56 +935,82 @@ def sample_backgrounds(pptx_path: Path, content_region=(0.05, 0.23, 0.95, 0.87))
     Возвращает по слайду среднюю светлоту рабочей области и разброс: тёмный фон
     требует светлого текста, пёстрый — подложки под текстом.
     """
-    import pymupdf
+    from .render import page_images
 
     with tempfile.TemporaryDirectory(prefix="designer-bg-") as temp:
         pdf = Path(temp) / "template.pdf"
         convert_pdf(pptx_path, pdf)
-        stats = []
-        with pymupdf.open(pdf) as document:
-            for page in document:
-                pixmap = page.get_pixmap(dpi=36)
-                left = int(pixmap.width * content_region[0])
-                right = int(pixmap.width * content_region[2])
-                top = int(pixmap.height * content_region[1])
-                bottom = int(pixmap.height * content_region[3])
-                total = 0.0
-                squares = 0.0
-                count = 0
-                for y in range(top, bottom, 2):
-                    for x in range(left, right, 2):
-                        r, g, b = pixmap.pixel(x, y)[:3]
-                        luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-                        total += luma
-                        squares += luma * luma
-                        count += 1
-                if not count:
-                    stats.append({"luma": 1.0, "spread": 0.0})
-                    continue
-                mean = total / count
-                variance = max(0.0, squares / count - mean * mean)
-                stats.append(
-                    {"luma": round(mean, 4), "spread": round(variance**0.5, 4)}
-                )
+        images = page_images(pdf, dpi=36)
+    stats = []
+    for image in images:
+        pixels = image.load()
+        left = int(image.width * content_region[0])
+        right = int(image.width * content_region[2])
+        top = int(image.height * content_region[1])
+        bottom = int(image.height * content_region[3])
+        total = 0.0
+        squares = 0.0
+        count = 0
+        for y in range(top, bottom, 2):
+            for x in range(left, right, 2):
+                r, g, b = pixels[x, y][:3]
+                luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+                total += luma
+                squares += luma * luma
+                count += 1
+        if not count:
+            stats.append({"luma": 1.0, "spread": 0.0})
+            continue
+        mean = total / count
+        variance = max(0.0, squares / count - mean * mean)
+        stats.append({"luma": round(mean, 4), "spread": round(variance**0.5, 4)})
     return stats
 
 
-HTML_EXPORT_MARKER = '<!-- designer-html:live-text-v1 -->'
+HTML_EXPORT_MARKER = '<!-- designer-html:live-text-v2 -->'
+# Ширина растра слайда в HTML: резкий на экране ноутбука и не раздувает файл.
+HTML_SLIDE_WIDTH = 1600
+
+
+def slide_svg(image_png: bytes, width: float, height: float, runs, label: str) -> str:
+    """Слайд для HTML: точный растр плюс прозрачный слой настоящего текста.
+
+    Растр даёт ровно ту картинку, что в PDF, а текстовый слой лежит на тех же
+    координатах: текст выделяется, копируется и находится поиском по странице.
+    """
+    import base64
+
+    encoded = base64.b64encode(image_png).decode("ascii")
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width:.2f} {height:.2f}" '
+        f'role="img" aria-label="{html.escape(label, quote=True)}">',
+        f'<image href="data:image/png;base64,{encoded}" x="0" y="0" '
+        f'width="{width:.2f}" height="{height:.2f}"/>',
+        '<g fill="transparent" font-family="sans-serif">',
+    ]
+    for run in runs:
+        size = max(1.0, run["height"] * 0.9)
+        baseline = run["y"] + run["height"] * 0.82
+        parts.append(
+            f'<text x="{run["x"]:.2f}" y="{baseline:.2f}" font-size="{size:.2f}" '
+            f'textLength="{run["width"]:.2f}" lengthAdjust="spacingAndGlyphs">'
+            f"{html.escape(run['text'], quote=False)}</text>"
+        )
+    parts.append("</g></svg>")
+    return "".join(parts)
 
 
 def export_html(pdf_path: Path, destination: Path, title: str, language: str = "ru"):
-    import pymupdf
-    from lxml import etree
+    from .render import page_images, page_size, png, text_runs
 
-    with pymupdf.open(pdf_path) as pdf:
-        pages = []
-        for page in pdf:
-            # Keep selectable/searchable SVG text. Serialize numeric character
-            # references as UTF-8 too, so Russian phrases can be found in the file.
-            svg = page.get_svg_image(text_as_path=False)
-            root = etree.fromstring(svg.encode('utf-8'), etree.XMLParser(resolve_entities=False, no_network=True))
-            svg = etree.tostring(root, encoding='unicode')
-            pages.append('<section class="slide">' + svg + "</section>")
+    images = page_images(pdf_path, width=HTML_SLIDE_WIDTH)
+    pages = []
+    for index, image in enumerate(images):
+        width, height = page_size(pdf_path, index)
+        svg = slide_svg(
+            png(image), width, height, text_runs(pdf_path, index), f"Слайд {index + 1}"
+        )
+        pages.append('<section class="slide">' + svg + "</section>")
     destination.write_text(
         '<!doctype html>' + HTML_EXPORT_MARKER + '<html lang="' + html.escape(language or 'ru', quote=True)
         + '"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>'

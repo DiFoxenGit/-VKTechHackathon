@@ -596,29 +596,27 @@ def inspect_image(blob):
     По этим признакам шаблонная картинка раскладывается на иконку, иллюстрацию,
     фотографию или декор, который брать не нужно (градиентные полосы, фон).
     """
-    import pymupdf
+    from .render import image_from_bytes
 
-    pix = pymupdf.Pixmap(blob)
-    if pix.colorspace is None or pix.colorspace.n != 3:
-        pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
-    width, height = pix.width, pix.height
+    image = image_from_bytes(blob)
+    width, height = image.size
     side = 40
     scale = side / max(width, height)
-    small = pymupdf.Pixmap(pix, max(1.0, width * scale), max(1.0, height * scale), None)
-    n = small.n
-    alpha = bool(small.alpha)
-    samples = small.samples
+    small = image.resize(
+        (max(1, round(width * scale)), max(1, round(height * scale))), resample=3
+    )
+    alpha = small.mode == "RGBA"
     opaque, solid = [], []
     total = 0
-    for i in range(0, len(samples), n):
+    for pixel_value in small.getdata():
         total += 1
-        if alpha and samples[i + n - 1] < 48:
+        if alpha and pixel_value[3] < 48:
             continue
-        pixel = (samples[i], samples[i + 1], samples[i + 2])
+        pixel = tuple(pixel_value[:3])
         opaque.append(pixel)
         # Полупрозрачные края сглаживания темнее самого цвета: для оценки
         # одноцветности берём только плотные пиксели.
-        if not alpha or samples[i + n - 1] >= 200:
+        if not alpha or pixel_value[3] >= 200:
             solid.append(pixel)
     coverage = len(opaque) / total if total else 0.0
     info = {"w": width, "h": height, "alpha": alpha, "coverage": round(coverage, 3)}
@@ -690,21 +688,17 @@ def classify_image(info, frame_area=None):
 
 def tint_png(blob, color):
     """Одноцветная иконка в заданный цвет: прозрачность сохраняется."""
-    import pymupdf
+    from PIL import Image
 
-    pix = pymupdf.Pixmap(blob)
-    if pix.colorspace is None or pix.colorspace.n != 3:
-        pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
-    if not pix.alpha:
+    from .render import image_from_bytes, png
+
+    image = image_from_bytes(blob)
+    if image.mode != "RGBA":
         return blob
-    samples = bytearray(pix.samples)
-    count = len(samples) // 4
     r, g, b = (int(color[i : i + 2], 16) for i in (0, 2, 4))
-    samples[0::4] = bytes([r]) * count
-    samples[1::4] = bytes([g]) * count
-    samples[2::4] = bytes([b]) * count
-    tinted = pymupdf.Pixmap(pymupdf.csRGB, pix.width, pix.height, bytes(samples), True)
-    return tinted.tobytes("png")
+    tinted = Image.new("RGBA", image.size, (r, g, b, 255))
+    tinted.putalpha(image.getchannel("A"))
+    return png(tinted)
 
 
 def image_format(blob):
@@ -1268,29 +1262,81 @@ def draw_asset(shapes, box, asset, colors, root=None, fit="contain", tint=None):
 TAG_BATCH = 16
 
 
+def svg_raster(blob, size):
+    """SVG картинкой для контакт-листа: наш же разбор геометрии, залитый серым.
+
+    Модели нужно узнать, что изображено, а не оценить цвета, поэтому хватает
+    силуэта. Сторонний растеризатор SVG для этого не нужен.
+    """
+    from PIL import Image, ImageDraw
+
+    geometry = parse_svg(blob)
+    vx, vy, vw, vh = geometry["viewbox"]
+    scale = size / max(vw or 1, vh or 1)
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    ink = (40, 40, 40, 255)
+    ox = (size - vw * scale) / 2 - vx * scale
+    oy = (size - vh * scale) / 2 - vy * scale
+    for item in geometry["items"]:
+        if item["shape"] in ("ellipse", "rect"):
+            box = (
+                ox + item["x"] * scale,
+                oy + item["y"] * scale,
+                ox + (item["x"] + item["w"]) * scale,
+                oy + (item["y"] + item["h"]) * scale,
+            )
+            if box[2] - box[0] < 1 or box[3] - box[1] < 1:
+                continue
+            (draw.ellipse if item["shape"] == "ellipse" else draw.rectangle)(box, fill=ink)
+            continue
+        for contour in item["contours"]:
+            points = [(ox + px * scale, oy + py * scale) for px, py in contour["points"]]
+            if len(points) < 2:
+                continue
+            if contour["closed"] and len(points) > 2:
+                draw.polygon(points, fill=ink)
+            else:
+                draw.line(points, fill=ink, width=max(1, round(item["width"] * scale)))
+    return image
+
+
 def contact_sheet(blobs, cell=150, columns=4):
     """Пронумерованный лист картинок для мультимодальной модели."""
-    import pymupdf
+    from PIL import Image, ImageDraw
+
+    from .render import image_from_bytes, png
 
     rows = math.ceil(len(blobs) / columns)
-    doc = pymupdf.open()
-    page = doc.new_page(width=columns * cell, height=rows * cell)
-    page.draw_rect(page.rect, color=None, fill=(1, 1, 1))
+    sheet = Image.new("RGB", (columns * cell, max(1, rows) * cell), (255, 255, 255))
+    draw = ImageDraw.Draw(sheet)
+    inner = cell - 34
     for index, (blob, mono) in enumerate(blobs):
         col, row = index % columns, index // columns
-        frame = pymupdf.Rect(col * cell, row * cell, (col + 1) * cell, (row + 1) * cell)
-        page.draw_rect(frame + (2, 2, -2, -2), color=(0.8, 0.8, 0.8), fill=(0.96, 0.96, 0.96))
-        if mono:
-            try:
-                blob = tint_png(blob, "111111")
-            except Exception:  # noqa: BLE001
-                pass
+        x0, y0 = col * cell, row * cell
+        draw.rectangle(
+            (x0 + 2, y0 + 2, x0 + cell - 3, y0 + cell - 3),
+            fill=(245, 245, 245),
+            outline=(204, 204, 204),
+        )
         try:
-            page.insert_image(frame + (22, 22, -12, -12), stream=blob, keep_proportion=True)
+            if blob[:5] == b"<?xml" or b"<svg" in blob[:512]:
+                picture = svg_raster(blob, inner)
+            else:
+                if mono:
+                    try:
+                        blob = tint_png(blob, "111111")
+                    except Exception:  # noqa: BLE001
+                        pass
+                picture = image_from_bytes(blob)
+                picture.thumbnail((inner, inner))
         except Exception:  # noqa: BLE001 - картинку, которую не открыть, модель не увидит
             continue
-        page.insert_text((frame.x0 + 6, frame.y0 + 16), str(index + 1), fontsize=13, color=(0.8, 0.1, 0.1))
-    return page.get_pixmap(matrix=pymupdf.Matrix(1, 1)).tobytes("png")
+        left = x0 + 22 + (inner - picture.width) // 2
+        top = y0 + 22 + (inner - picture.height) // 2
+        sheet.paste(picture, (left, top), picture if picture.mode == "RGBA" else None)
+        draw.text((x0 + 6, y0 + 4), str(index + 1), fill=(204, 26, 26))
+    return png(sheet)
 
 
 # ---------------------------------------------------------------- генерация картинок

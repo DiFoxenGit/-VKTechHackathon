@@ -392,7 +392,7 @@ def test_slide_and_template_thumbnails_are_real_renders(client):
     """Интерфейс показывает настоящие слайды и обложки шаблонов, а не CSS-макет."""
     if not client.get("/health").json()["pdf_available"]:
         pytest.skip("LibreOffice not installed")
-    import pymupdf
+    from PIL import Image
 
     template, job = generate(client)
     identifier = job["presentation_ids"][0]
@@ -400,20 +400,20 @@ def test_slide_and_template_thumbnails_are_real_renders(client):
     response = client.get(f"/api/v1/presentations/{identifier}/slides/1/thumbnail?width=320")
     assert response.status_code == 200, response.text
     assert response.headers["content-type"] == "image/png"
-    image = pymupdf.Pixmap(response.content)
+    image = Image.open(io.BytesIO(response.content))
     assert image.width == 320 and image.height < image.width
     # Лента из всей колоды рисуется одним рендером и дальше отдаётся с диска.
     folder = client.app.state.store.directory("presentations", identifier)
     assert len(list(folder.glob("r1-w320-*.png"))) == 3
     # Произвольная ширина приводится к ближайшей допустимой.
-    assert pymupdf.Pixmap(
+    assert Image.open(io.BytesIO(
         client.get(f"/api/v1/presentations/{identifier}/slides/0/thumbnail?width=700").content
-    ).width == 640
+    )).width == 640
     assert client.get(f"/api/v1/presentations/{identifier}/slides/9/thumbnail").status_code == 404
 
     cover = client.get(f"/api/v1/templates/{template['id']}/thumbnail")
     assert cover.status_code == 200, cover.text
-    assert pymupdf.Pixmap(cover.content).width == 640
+    assert Image.open(io.BytesIO(cover.content)).width == 640
 
 
 def test_pdf_html_export(client):
@@ -2576,27 +2576,35 @@ def test_export_keeps_template_branding_in_place(tmp_path):
 # ---------------------------------------------------------------- визуальные ассеты
 
 
+def png_bytes(image):
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 def png_glyph(color=(0, 119, 255), size=64, fill=0.45):
     """Одноцветный значок на прозрачном фоне — как иконка из шаблона."""
-    import pymupdf
+    from PIL import Image, ImageDraw
 
-    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, size, size), True)
-    pix.clear_with()
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     margin = int(size * (1 - fill) / 2)
-    pix.set_rect(pymupdf.IRect(margin, margin, size - margin, size - margin), (*color, 255))
-    return pix.tobytes("png")
+    ImageDraw.Draw(image).rectangle(
+        (margin, margin, size - margin - 1, size - margin - 1), fill=(*color, 255)
+    )
+    return png_bytes(image)
 
 
 def png_photo(width=400, height=300):
     """Непрозрачная пёстрая картинка — как фотография."""
-    import pymupdf
+    from PIL import Image, ImageDraw
 
-    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, width, height), False)
+    image = Image.new("RGB", (width, height), (0, 0, 0))
+    draw = ImageDraw.Draw(image)
     stripe = width // 40
     for i in range(40):
         colour = ((i * 37) % 256, (i * 91) % 256, (i * 53) % 256)
-        pix.set_rect(pymupdf.IRect(i * stripe, 0, (i + 1) * stripe, height), colour)
-    return pix.tobytes("png")
+        draw.rectangle((i * stripe, 0, (i + 1) * stripe - 1, height - 1), fill=colour)
+    return png_bytes(image)
 
 
 def test_drawn_illustration_reaches_the_slide(client, monkeypatch):
