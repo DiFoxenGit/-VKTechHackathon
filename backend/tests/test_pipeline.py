@@ -2848,3 +2848,42 @@ def test_card_text_frame_grows_down_to_the_next_obstacle():
     # Свободно до низа рабочей области; но рамка никогда не уменьшается.
     assert card_depth(top_row, [top_row], [], 500.0) == 400.0
     assert card_depth(top_row, [top_row], [], 120.0) == 40.0
+
+
+def test_title_backdrop_is_the_plate_under_the_template_title():
+    from designer.layout import title_backdrop
+
+    title_box = {"x": 0.1, "y": 0.066, "w": 0.6, "h": 0.066}
+    # Плашка, в которой начинается рамка заголовка образца.
+    assert title_backdrop((75.0, 32.0, 580.0, 49.0), title_box, 960, 540)
+    # Крупная иллюстрация рядом с заголовком — не плашка.
+    assert not title_backdrop((474.0, 54.0, 486.0, 486.0), title_box, 960, 540)
+    # Ряд декора ниже заголовка — тоже.
+    assert not title_backdrop((120.0, 107.0, 118.0, 110.0), title_box, 960, 540)
+
+
+def test_title_on_its_plate_is_not_a_branding_overlap():
+    """Заголовок, поставленный на плашку образца, аудит не считает наездом."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+    content = outline(2)
+    from designer.models import Outline
+
+    deck = compose(Outline.model_validate(content).model_dump(), template, "classic")
+    slide = deck["slides"][1]
+    title = next(e for e in slide["elements"] if e["id"] == "title")
+    pattern = next(p for p in template["patterns"] if p["index"] == slide["pattern_index"])
+    width, height = deck["width"], deck["height"]
+    x, y, w, h = title["box"]
+    pattern["title_box"] = {"x": x / width, "y": y / height, "w": w / width, "h": h / height}
+    plate = {"x": (x - 4) / width, "y": (y - 4) / height, "w": (w + 8) / width, "h": (h + 8) / height}
+    pattern["reserved"] = [plate]
+
+    def overlaps(report):
+        return any(
+            i["code"] == "branding_overlap" and i["slide_index"] == 1 for i in report["issues"]
+        )
+
+    assert not overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))
+    # Та же фигура, но не под рамкой заголовка образца, — наезд.
+    pattern["title_box"] = {"x": 0.9, "y": 0.9, "w": 0.05, "h": 0.05}
+    assert overlaps(audit(deck, template, [{"id": "brief", "text": "10 20"}]))
