@@ -356,7 +356,15 @@ def audit(deck, template, sources, language=None):
                 )
             )
         fill = sum(ink_area(e) for e in elements) / slide_area if slide_area else 0
-        if fill < FILL_RANGE[0] or fill > FILL_RANGE[1]:
+        # Титульная страница собрана в рамках самого шаблона: заголовок и
+        # подзаголовок стоят там, где их поставил дизайнер, и набраны его
+        # кеглем, а остальное место — фирменная графика, которую мы не
+        # считаем (она лежит в картинке фона или в мастере). Доля заливки там —
+        # решение автора шаблона, не вёрстки; пустоту обложки ловит
+        # empty_content, если на слайде один заголовок.
+        if slide.get("native_cover"):
+            fill = None
+        if fill is not None and (fill < FILL_RANGE[0] or fill > FILL_RANGE[1]):
             issues.append(
                 issue(
                     index,

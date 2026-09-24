@@ -625,10 +625,15 @@ def test_density_and_chart_checks_fire():
     assert "chart_labels" in audited(template, content_mutator=unlabelled)[2]
 
     def sparse(content):
-        content["slides"][0]["bullets"] = ["Мало"]
-        content["slides"][0]["visual"] = {"kind": "none"}
+        content["slides"][1]["bullets"] = ["Мало"]
+        content["slides"][1]["visual"] = {"kind": "none"}
 
-    assert "fill_ratio" in audited(template, content_mutator=sparse)[2]
+    # Первый слайд — обложка в рамках шаблона, её заливку задаёт дизайнер;
+    # разреженность ловится на обычном слайде.
+    _, report, _ = audited(template, content_mutator=sparse, count=2)
+    assert any(
+        i["code"] == "fill_ratio" and i["slide_index"] == 1 for i in report["issues"]
+    )
 
 
 def test_new_fixes_repair_the_deck():
@@ -2805,3 +2810,41 @@ def test_unmeasured_background_still_warns():
         if i["code"] == "text_over_image"
     ]
     assert found and "не измерен" in found[0]["message"], found
+
+
+def test_cover_fill_is_left_to_the_template():
+    """Обложка в рамках шаблона не судится по заливке, обычный слайд — судится."""
+    template = parse_template(template_bytes(), "unknown.pptx")
+
+    def sparse(content):
+        for slide in content["slides"]:
+            slide["bullets"] = ["Мало"]
+            slide["visual"] = {"kind": "none"}
+
+    deck, report, _ = audited(template, content_mutator=sparse, count=2)
+    assert deck["slides"][0]["native_cover"]
+    flagged = {i["slide_index"] for i in report["issues"] if i["code"] == "fill_ratio"}
+    assert 0 not in flagged and 1 in flagged
+
+    # Мера та же: сними с обложки признак — и находка вернётся.
+    deck["slides"][0]["native_cover"] = False
+    report = audit(deck, template, [{"id": "brief", "text": "Мало"}])
+    assert any(
+        i["code"] == "fill_ratio" and i["slide_index"] == 0 for i in report["issues"]
+    )
+
+
+def test_card_text_frame_grows_down_to_the_next_obstacle():
+    from designer.layout import card_depth
+
+    top_row = [10.0, 100.0, 200.0, 40.0]
+    below = [10.0, 300.0, 200.0, 40.0]
+    # Следующая карточка в колонке — предел.
+    assert card_depth(top_row, [top_row, below], [], 500.0) == 300.0 - 8.0 - 100.0
+    # Фигура-подложка карточки — тоже.
+    assert card_depth(top_row, [top_row], [(0.0, 90.0, 220.0, 150.0)], 500.0) == 140.0
+    # Значок ниже рамки — тоже.
+    assert card_depth(top_row, [top_row], [(50.0, 200.0, 30.0, 30.0)], 500.0) == 92.0
+    # Свободно до низа рабочей области; но рамка никогда не уменьшается.
+    assert card_depth(top_row, [top_row], [], 500.0) == 400.0
+    assert card_depth(top_row, [top_row], [], 120.0) == 40.0
