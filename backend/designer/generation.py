@@ -122,11 +122,34 @@ def beat_title(title, beats=None):
     намеренно узкая — только шаги каркаса с двоеточием или тире после них,
     чтобы не трогать заголовки-выводы вроде «Итог: сборка ускорилась в 46 раз».
     """
-    text = (title or "").strip().lower()
+    text = (title or "").strip().lower().rstrip(".!?…")
     for beat in beats if beats is not None else narrative_beats():
         head = beat.lower()
+        # Шаг целиком («Предложение», «Что мы просим решить») — тоже подпись раздела.
+        if text == head:
+            return beat
         if text.startswith(head) and re.match(r"\s*[:—–-]", text[len(head):]):
             return beat
+    return None
+
+
+# Заголовок из одного-двух слов без числа — «Риски», «Результаты пилота»,
+# «Заключение»: он называет тему. Вывод в два слова без числа почти не бывает.
+TOPIC_MAX_WORDS = 2
+
+
+def topic_title(title, beats=None):
+    """Почему заголовок — тема, а не вывод, или None.
+
+    Две причины: заголовок открывается шагом каркаса или равен ему, либо в нём
+    не больше двух слов и нет ни одного числа.
+    """
+    beat = beat_title(title, beats)
+    if beat:
+        return f"название раздела «{beat}»"
+    words = re.findall(r"[\wЁё]+", title or "")
+    if words and len(words) <= TOPIC_MAX_WORDS and not any(ch.isdigit() for ch in title):
+        return "короткая подпись без вывода"
     return None
 
 
@@ -847,15 +870,16 @@ async def generate_outline(request, sources, warnings=None):
         labelled = [
             (index, slide.title)
             for index, slide in enumerate(outline.slides)
-            if index > 0 and beat_title(slide.title, beats)
+            if index > 0 and topic_title(slide.title, beats)
         ]
         if labelled and not last_chance:
             # Приложение 1, вопрос 1: заголовок содержит вывод, а не называет тему.
             reasons.append(
-                "Заголовки называют раздел, а не вывод: "
-                + "; ".join(f"слайд {index + 1} «{title}»" for index, title in labelled[:6])
-                + ". Шаги каркаса — это порядок мыслей, а не текст заголовка: убери "
-                "префикс с двоеточием и сформулируй вывод слайда, по возможности с числом."
+                "Заголовки называют раздел или тему, а не вывод: "
+                + "; ".join(f"слайд {index + 1} «{title}»" for index, title in labelled[:8])
+                + ". Шаги каркаса — это порядок мыслей, а не текст заголовка. Каждый "
+                "заголовок — законченная мысль слайда, по возможности с числом из "
+                "материалов: не «Риски», а «Главный риск — нагрузка выше 20 задач»."
             )
         elif labelled:
             # Последняя попытка: «Ожидаемый эффект: скорость сборки» читается как

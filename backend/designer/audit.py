@@ -12,8 +12,8 @@ from .generation import (
     PROMPTS,
     InvalidCompletion,
     ask_vision,
-    beat_title,
     narrative_beats,
+    topic_title,
     vision_completion,
     completion,
     fabricated_chart,
@@ -264,15 +264,15 @@ def audit(deck, template, sources, language=None):
                     )
                 )
         text = content["title"] + "\n" + "\n".join(content["bullets"])
-        beat = beat_title(content["title"], beats) if index > 0 else None
-        if beat:
+        why = topic_title(content["title"], beats) if index > 0 else None
+        if why:
             issues.append(
                 issue(
                     index,
                     "title",
                     "title_topic",
-                    f"Заголовок начинается с названия раздела «{beat}» и называет тему, "
-                    "а не вывод: сформулируйте, что следует из слайда",
+                    f"Заголовок называет тему, а не вывод ({why}): "
+                    "сформулируйте, что следует из слайда",
                 )
             )
         if re.search(

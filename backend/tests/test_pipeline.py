@@ -1107,6 +1107,22 @@ def test_beat_prefixed_title_is_a_topic_not_a_conclusion():
     assert beat_title("Предложение сервиса экономит 3 часа", beats) is None
 
 
+def test_bare_section_names_and_short_labels_are_topics():
+    """«Предложение», «Риски», «Заключение» — тема; «Процесс вёрстки: 6 шагов» — нет."""
+    from designer.generation import narrative_beats, topic_title
+
+    beats = narrative_beats()
+    for title in ["Предложение", "Что мы просим решить", "Риски", "Результаты пилота", "Заключение"]:
+        assert topic_title(title, beats), title
+    for title in [
+        "Ключевые риски и меры",
+        "Сборка колоды занимает 186 минут",
+        "Процесс вёрстки: 6 шагов",
+        "Пилот сократил время и повысил качество",
+    ]:
+        assert topic_title(title, beats) is None, title
+
+
 def test_beat_prefixed_titles_send_the_model_back(client, monkeypatch):
     """Заголовки-разделы возвращаются модели с просьбой сформулировать вывод."""
     labelled = outline(2)
