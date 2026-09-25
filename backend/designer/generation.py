@@ -130,6 +130,21 @@ def beat_title(title, beats=None):
     return None
 
 
+def strip_beat(title, beats=None):
+    """Заголовок без названия раздела впереди или пустая строка, если остаётся мало.
+
+    «Ожидаемый эффект: скорость сборки» → «Скорость сборки». Если после снятия
+    остаётся одно слово, заголовок не трогаем: огрызок хуже подписи раздела.
+    """
+    beat = beat_title(title, beats)
+    if not beat:
+        return ""
+    rest = re.sub(r"^\s*[:—–-]\s*", "", title.strip()[len(beat):]).strip()
+    if len(rest.split()) < 2:
+        return ""
+    return rest[0].upper() + rest[1:]
+
+
 def provider():
     settings = require_llm()
     return settings.url, settings.model
@@ -842,6 +857,21 @@ async def generate_outline(request, sources, warnings=None):
                 + ". Шаги каркаса — это порядок мыслей, а не текст заголовка: убери "
                 "префикс с двоеточием и сформулируй вывод слайда, по возможности с числом."
             )
+        elif labelled:
+            # Последняя попытка: «Ожидаемый эффект: скорость сборки» читается как
+            # пункт плана, а не как слайд. Название раздела снимаем, остаток
+            # оставляем; вывод за модель не придумываем, а говорим об этом.
+            stripped = 0
+            for index, _ in labelled:
+                rest = strip_beat(outline.slides[index].title, beats)
+                if rest:
+                    outline.slides[index].title = rest
+                    stripped += 1
+            if stripped and warnings is not None:
+                warnings.append(
+                    f"У {stripped} заголовков модель оставила название раздела вместо вывода: "
+                    "префикс снят, но формулировку вывода стоит проверить."
+                )
         titles = [slide.title.strip().lower() for slide in outline.slides]
         repeated = {title for title in titles if titles.count(title) > 1}
         if repeated:
@@ -932,7 +962,17 @@ async def generate_outline(request, sources, warnings=None):
         # попытке они по-прежнему роняют план, как и раньше.
         fatal = [reason for reason in reasons if reason.startswith(("Неизвестные source_refs", "Заголовки повторяются"))]
         if reasons and (not last_chance or fatal):
-            raise ValueError("\n".join(f"{number}. {reason}" for number, reason in enumerate(reasons, 1)))
+            # Исправляя одно, модель норовит переписать всю колоду и заодно сжать
+            # её: напоминаем, что объём и остальное содержание менять не надо.
+            reminder = (
+                f"Остальное не меняй: сохрани {request.slide_count} слайдов "
+                "и все факты, которые уже были верны."
+            )
+            raise ValueError(
+                "\n".join(f"{number}. {reason}" for number, reason in enumerate(reasons, 1))
+                + "\n"
+                + reminder
+            )
         outline.title = tidy_line(outline.title)
         for slide in outline.slides:
             slide.title = tidy_line(slide.title)
