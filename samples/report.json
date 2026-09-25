@@ -3,78 +3,64 @@
     "template": "Шаблон презентации VK Education",
     "variant": "classic",
     "slides": 12,
-    "seconds": 63.7,
+    "seconds": 135.1,
     "errors": 0,
-    "warnings": {
-      "fill_ratio": 3
-    }
+    "warnings": {}
   },
   {
     "template": "Шаблон презентации VK Education",
     "variant": "split",
     "slides": 12,
-    "seconds": 63.7,
+    "seconds": 135.1,
     "errors": 0,
-    "warnings": {
-      "fill_ratio": 2
-    }
+    "warnings": {}
   },
   {
     "template": "Шаблон презентации VK Education",
     "variant": "focus",
     "slides": 12,
-    "seconds": 63.7,
+    "seconds": 135.1,
     "errors": 0,
     "warnings": {
-      "fill_ratio": 2
+      "word_break": 1,
+      "fill_ratio": 1
     }
   },
   {
     "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "classic",
     "slides": 12,
-    "seconds": 32.0,
+    "seconds": 134.8,
     "errors": 0,
     "warnings": {
-      "source_reference": 5,
-      "fill_ratio": 4,
-      "text_over_image": 3,
-      "word_break": 1,
-      "empty_content": 1
+      "text_over_image": 3
     }
   },
   {
     "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "split",
     "slides": 12,
-    "seconds": 32.0,
+    "seconds": 134.8,
     "errors": 0,
     "warnings": {
-      "source_reference": 5,
-      "fill_ratio": 3,
-      "text_over_image": 3,
-      "empty_content": 1
+      "text_over_image": 3
     }
   },
   {
     "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
     "variant": "focus",
     "slides": 12,
-    "seconds": 32.0,
+    "seconds": 134.8,
     "errors": 0,
     "warnings": {
-      "source_reference": 5,
-      "fill_ratio": 3,
-      "text_over_image": 3,
-      "word_break": 1,
-      "empty_content": 1
+      "text_over_image": 3
     }
   },
   {
     "template": "VK Tech шаблон",
     "variant": "classic",
     "slides": 12,
-    "seconds": 49.6,
+    "seconds": 42.0,
     "errors": 0,
     "warnings": {
       "fill_ratio": 1
@@ -84,20 +70,16 @@
     "template": "VK Tech шаблон",
     "variant": "split",
     "slides": 12,
-    "seconds": 49.6,
+    "seconds": 42.0,
     "errors": 0,
-    "warnings": {
-      "fill_ratio": 1
-    }
+    "warnings": {}
   },
   {
     "template": "VK Tech шаблон",
     "variant": "focus",
     "slides": 12,
-    "seconds": 49.6,
+    "seconds": 42.0,
     "errors": 0,
-    "warnings": {
-      "fill_ratio": 1
-    }
+    "warnings": {}
   }
 ]
