@@ -819,7 +819,8 @@ async def generate_outline(request, sources, warnings=None):
                     "Разбей самые насыщенные слайды на два по смыслу или добавь "
                     "слайды с таблицей либо схемой по материалам: сравнение "
                     "показателей, этапы, сроки. Новые слайды несут факты из "
-                    "источников, а не воду."
+                    "источников, а не воду. Если новых фактов нет, сохрани меньший "
+                    "объём. Не добавляй пилот, сроки, бюджет или ресурсы ради каркаса."
                 )
             else:
                 LOGGER.warning(
@@ -986,11 +987,11 @@ async def generate_outline(request, sources, warnings=None):
         # попытке они по-прежнему роняют план, как и раньше.
         fatal = [reason for reason in reasons if reason.startswith(("Неизвестные source_refs", "Заголовки повторяются"))]
         if reasons and (not last_chance or fatal):
-            # Исправляя одно, модель норовит переписать всю колоду и заодно сжать
-            # её: напоминаем, что объём и остальное содержание менять не надо.
+            # При повторе сохраняем подтверждённое содержание; недостающий
+            # объём нельзя заполнять выдуманными фактами.
             reminder = (
-                f"Остальное не меняй: сохрани {request.slide_count} слайдов "
-                "и все факты, которые уже были верны."
+                f"Сохрани подтверждённые факты, не превышай {request.slide_count} слайдов. "
+                "Если источников не хватает, оставь меньше слайдов вместо выдуманных утверждений."
             )
             raise ValueError(
                 "\n".join(f"{number}. {reason}" for number, reason in enumerate(reasons, 1))
@@ -1004,7 +1005,7 @@ async def generate_outline(request, sources, warnings=None):
             tidy_visual(slide.visual)
         return outline
 
-    return await completion(
+    result = await completion(
         "outline",
         {
             **request.model_dump(exclude={"outline", "template_id"}),
@@ -1014,3 +1015,6 @@ async def generate_outline(request, sources, warnings=None):
         },
         validate=validate,
     )
+    from .comparisons import add_comparison_charts
+
+    return add_comparison_charts(result, sources, request.language)
