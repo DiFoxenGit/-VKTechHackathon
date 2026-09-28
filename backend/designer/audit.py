@@ -19,6 +19,7 @@ from .generation import (
     fabricated_chart,
     known_numbers,
     repeated_items,
+    select_context,
     unsupported_numbers,
     workflow,
 )
@@ -938,25 +939,38 @@ async def visual_audit(deck, sources, images):
     Слайды проверяются параллельно: это самая долгая часть пайплайна.
     """
     prompt = (PROMPTS / workflow()["agents"]["audit_image"]).read_text()
-    source_text = "\n".join(s["text"] for s in sources)[:8000]
+    if len(images) != len(deck["slides"]):
+        raise HTTPException(502, "Visual audit requires an image for every slide")
 
     async def one(index, slide, image):
+        content = slide["content"]
+        query = " ".join([content["title"], *content["bullets"], *visual_labels(content["visual"])])
+        selected = select_context(sources, query, budget=8000)
+        complete_sources = selected == sources
         payload = {
             "slide_index": index,
             "title": slide["content"]["title"],
             "bullets": slide["content"]["bullets"],
             "visual": slide["content"]["visual"],
-            "sources": source_text,
+            "sources": selected,
+            "source_context_complete": complete_sources,
         }
         try:
             result = await vision_completion(prompt, payload, image)
+            validate_model_issues(result, set(VISUAL_CODES))
         except (HTTPException, InvalidCompletion, httpx.HTTPError, ValueError) as exc:
             LOGGER.warning("Visual audit failed on slide %s: %s", index, exc)
-            return []
+            raise HTTPException(
+                502, f"Не удалось проверить слайд {index + 1} по изображению; повторите проверку"
+            ) from exc
         findings = []
-        for item in (result.get("issues") or [])[:12]:
-            if not isinstance(item, dict):
-                continue
+        if not complete_sources:
+            findings.append(issue(
+                index, "slide_image", "source_context_incomplete",
+                "Материалы слишком велики для проверки по изображению: использованы отобранные фрагменты. Полнота проверки фактов не подтверждена.",
+                category="contextual",
+            ))
+        for item in result["issues"]:
             code = str(item.get("code", "content"))[:60]
             findings.append(
                 issue(
@@ -966,6 +980,7 @@ async def visual_audit(deck, sources, images):
                     (VISUAL_CODES.get(code, "Замечание по слайду") + ": ")
                     + str(item.get("message", ""))[:600],
                     category="contextual",
+                    severity="error" if code in {"facts_supported", "no_typos", "no_garbage"} else "warning",
                 )
             )
         return findings
@@ -979,16 +994,54 @@ async def visual_audit(deck, sources, images):
     return [finding for batch in batches for finding in batch]
 
 
-async def contextual_audit(deck, sources):
-    result = await completion(
-        "audit", {"slides": [s["content"] for s in deck["slides"]], "sources": sources}
-    )
+TEXT_AUDIT_CODES = {
+    "unsupported_fact", "title_mismatch", "title_topic", "narrative",
+    "language", "typo", "prompt_leak",
+}
+
+
+def validate_model_issues(result, codes):
+    """A malformed response is a failed check, never an empty successful audit."""
     if (
         not isinstance(result, dict)
         or not isinstance(result.get("issues"), list)
-        or any(not isinstance(item, dict) for item in result["issues"])
+        or len(result["issues"]) > 200
     ):
-        raise HTTPException(502, "LLM audit does not match the required schema")
+        raise ValueError("Audit must return an issues array with at most 200 findings")
+    for item in result["issues"]:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("code"), str)
+            or item["code"] not in codes
+            or not isinstance(item.get("message"), str)
+            or not item["message"].strip()
+        ):
+            raise ValueError("Each audit finding needs a known code and a non-empty message")
+    return result
+
+
+async def contextual_audit(deck, sources):
+    count = len(deck["slides"])
+
+    def validate(result):
+        validate_model_issues(result, TEXT_AUDIT_CODES)
+        checked = result.get("checked_slide_indices")
+        if (
+            not isinstance(checked, list)
+            or any(type(i) is not int for i in checked)
+            or sorted(checked) != list(range(count))
+        ):
+            raise ValueError("checked_slide_indices must list every slide index exactly once")
+        for item in result["issues"]:
+            index = item.get("slide_index")
+            if type(index) is not int or not 0 <= index < count:
+                raise ValueError("Each finding must refer to an existing slide_index")
+        return result
+
+    result = await completion(
+        "audit", {"slides": [s["content"] for s in deck["slides"]], "sources": sources},
+        validate=validate,
+    )
     issues = []
     for j, item in enumerate(result["issues"][:200]):
         index = item.get("slide_index")
@@ -1000,6 +1053,7 @@ async def contextual_audit(deck, sources):
                     str(item.get("code", "content"))[:100],
                     str(item.get("message", ""))[:2000],
                     category="contextual",
+                    severity="error" if item["code"] in {"unsupported_fact", "title_mismatch", "typo", "prompt_leak"} else "warning",
                 )
             )
     return issues

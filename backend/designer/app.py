@@ -494,7 +494,8 @@ def create_app(data_dir=None, seed_dir=None):
         report = audit(deck, template, sources, request.language)
         if contextual_findings is not None:
             report["issues"].extend(copy.deepcopy(contextual_findings))
-            report["counts"]["warnings"] += len(contextual_findings)
+            for finding in contextual_findings:
+                report["counts"]["errors" if finding["severity"] == "error" else "warnings"] += 1
             report["contextual"] = {"status": "completed", "input": "structured_text"}
         record = {
             "id": identifier,
