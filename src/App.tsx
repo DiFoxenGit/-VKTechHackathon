@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronRight, CircleHelp, Clock3, Copy, Download, FileText, FolderOpen, GripVertical, LayoutTemplate, LoaderCircle, Maximize2, Monitor, PanelLeftClose, Paperclip, Plus, Presentation, Search, ShieldCheck, Sparkles, Trash2, Upload, X, AlertCircle, CheckCircle2, ArrowUpRight, Lightbulb, FileUp, SlidersHorizontal } from 'lucide-react';
 import type { Brief, Deck, Layout, Slide, Template } from './types';
-import { templates, EXAMPLE_BRIEF, auditDeck, getSlideTypography, importTemplate, exportHtml, exportPptx, exportPrint } from './engine';
+import { templates, EXAMPLE_BRIEF, auditDeck, getSlideTypography, exportHtml, exportPptx, exportPrint } from './engine';
 import { presentationService } from './services/presentationService';
 
 type Screen = 'create' | 'outline' | 'design' | 'editor' | 'projects' | 'templates';
 type Saved = { brief: Brief; decks: Deck[]; customTemplates: Template[] };
 const STORAGE_KEY = 'slide-studio:v1';
-const DEFAULT_BRIEF: Brief = { text: '', audience: 'Коллеги и команда', goal: 'Представить идею', slideCount: 10, templateId: 'tech', materials: '' };
+const DEFAULT_BRIEF: Brief = { text: '', audience: 'Коллеги и команда', goal: 'Представить идею', slideCount: 10, templateId: 'tech', materials: '', contentPackIds: [] };
 
 function readSaved(): Saved {
   try {
@@ -65,6 +65,7 @@ export default function App() {
   const [brief, setBrief] = useState<Brief>(initial.brief);
   const [decks, setDecks] = useState<Deck[]>(initial.decks);
   const [customTemplates, setCustomTemplates] = useState<Template[]>(initial.customTemplates);
+  const [remoteTemplates, setRemoteTemplates] = useState<Template[]>([]);
   const [screen, setScreen] = useState<Screen>('create');
   const [deck, setDeck] = useState<Deck | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
@@ -81,15 +82,35 @@ export default function App() {
   const materialInput = useRef<HTMLInputElement>(null);
   const templateInput = useRef<HTMLInputElement>(null);
   const briefInput = useRef<HTMLTextAreaElement>(null);
-  const allTemplates = useMemo(() => [...templates, ...customTemplates], [customTemplates]);
+  const allTemplates = useMemo(() => {
+    const fallbacks = remoteTemplates.length ? templates.filter(template => !remoteTemplates.some(remote => remote.name === template.name)) : templates;
+    const merged = [...remoteTemplates, ...customTemplates, ...fallbacks];
+    return merged.filter((template, index) => merged.findIndex(item => item.id === template.id) === index);
+  }, [customTemplates, remoteTemplates]);
   const currentTemplate = allTemplates.find(t => t.id === (deck && ['outline', 'design', 'editor'].includes(screen) ? deck.templateId : brief.templateId)) || templates[0];
-  const issues = useMemo(() => deck ? auditDeck(deck) : [], [deck]);
+  const issues = useMemo(() => deck ? (deck.remote && deck.serverIssues ? deck.serverIssues : auditDeck(deck)) : [], [deck]);
   const slide = deck?.slides[Math.min(activeSlide, deck.slides.length - 1)];
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ brief, decks, customTemplates })); setStorageError(false); }
     catch { setStorageError(true); }
   }, [brief, decks, customTemplates]);
+  useEffect(() => {
+    let disposed = false;
+    void presentationService.listTemplates().then(items => {
+      if (disposed || !items.length) return;
+      setRemoteTemplates(items);
+      setBrief(prev => {
+        if (items.some(item => item.id === prev.templateId)) return prev;
+        const legacy = templates.find(item => item.id === prev.templateId);
+        const matching = items.find(item => item.name === legacy?.name) || items[0];
+        return matching ? { ...prev, templateId: matching.id } : prev;
+      });
+    }).catch(() => {
+      if (!disposed) setToast('Продовые шаблоны недоступны — оставлен локальный режим.');
+    });
+    return () => { disposed = true; };
+  }, []);
   useEffect(() => {
     if (!deck) return;
     setDecks(prev => [deck, ...prev.filter(d => d.id !== deck.id)]);
@@ -105,7 +126,7 @@ export default function App() {
     navigate('editor');
   }
   function updateBrief<K extends keyof Brief>(key: K, value: Brief[K]) { setBrief(prev => ({ ...prev, [key]: value })); if (key === 'text') setError(''); }
-  function updateDeck(updater: (prev: Deck) => Deck) { setDeck(prev => prev ? { ...updater(prev), updatedAt: new Date().toISOString() } : prev); }
+  function updateDeck(updater: (prev: Deck) => Deck) { setDeck(prev => prev ? { ...updater(prev), updatedAt: new Date().toISOString(), remote: prev.remote ? false : prev.remote } : prev); }
   function editSlide(id: string, field: 'title' | 'body', value: string) { updateDeck(d => ({ ...d, slides: d.slides.map(s => s.id === id ? { ...s, [field]: value } : s) })); }
   function moveSlide(index: number, direction: number) {
     updateDeck(d => { const slides = [...d.slides]; const other = index + direction; if (other < 0 || other >= slides.length) return d; [slides[index], slides[other]] = [slides[other], slides[index]]; return { ...d, slides }; });
@@ -123,29 +144,29 @@ export default function App() {
   }
   async function startDeck() {
     if (brief.text.trim().length < 20) { setError('Добавьте хотя бы 20 символов: тему и несколько тезисов.'); briefInput.current?.focus(); return; }
-    setBusy('outline');
+    setBusy('generation');
     try {
-      const result = await presentationService.createOutline({ ...brief, templateId: currentTemplate.id });
-      setDeck({ ...result, id: crypto.randomUUID(), brief: { ...brief } }); setActiveSlide(0); navigate('editor');
+      const result = await presentationService.generate({ ...brief, templateId: currentTemplate.id }, currentTemplate.id);
+      setDeck(result); setActiveSlide(0); navigate('editor');
     } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось создать структуру. Ваш текст сохранён.'); }
     finally { setBusy(null); }
   }
   async function readMaterial(file?: File) {
     if (!file) return;
-    if (!/\.(txt|md)$/i.test(file.name)) { setError('В деморежиме можно добавить TXT или MD. Для PDF и DOCX потребуется подключение бэкенда.'); return; }
-    if (file.size > 2 * 1024 * 1024) { setError('Выберите текстовый файл до 2 МБ.'); return; }
+    if (file.size > 50 * 1024 * 1024) { setError('Выберите файл до 50 МБ.'); return; }
+    setBusy('material');
     try {
-      const text = await file.text();
-      if (!text.trim()) throw new Error('Файл пуст. Добавьте файл с текстом.');
-      if (text.length > 50000) throw new Error('В файле больше 50 000 символов. Оставьте только материалы для этой презентации.');
-      updateBrief('materials', text); setMaterialName(file.name); setError(''); setToast('Текст из файла добавлен к материалам');
+      const pack = await presentationService.uploadContent(file);
+      setBrief(prev => ({ ...prev, materials: pack.text, contentPackIds: [...(prev.contentPackIds || []), pack.id] }));
+      setMaterialName(pack.name); setError(''); setToast('Материалы загружены на сервер');
     } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось прочитать файл. Попробуйте ещё раз.'); }
+    finally { setBusy(null); }
   }
   async function uploadTemplate(file?: File) {
     if (!file) return;
     setBusy('template');
     try {
-      const t = await importTemplate(file);
+      const t = await presentationService.uploadTemplate(file);
       setCustomTemplates(prev => [...prev.filter(existing => existing.id !== t.id), t]); updateBrief('templateId', t.id); setToast('Шаблон добавлен: извлечены цвета, шрифт и число макетов'); setError('');
     } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось открыть шаблон. Проверьте PPTX-файл.'); }
     finally { setBusy(null); if (templateInput.current) templateInput.current.value = ''; }
@@ -154,7 +175,8 @@ export default function App() {
     if (!deck) return;
     setBusy(format);
     try {
-      if (format === 'pptx') await exportPptx(deck, currentTemplate);
+      if (deck.remote) await presentationService.download(deck, format);
+      else if (format === 'pptx') await exportPptx(deck, currentTemplate);
       else if (format === 'html') exportHtml(deck, currentTemplate);
       else exportPrint(deck, currentTemplate);
       setToast(format === 'pdf' ? 'В окне печати выберите «Сохранить как PDF»' : 'Файл готов — проверьте загрузки браузера');
@@ -174,7 +196,7 @@ export default function App() {
       <header className="simple-header">
         <button className="brand" onClick={() => navigate('create')} aria-label="Слайд — на главную"><span className="brand-icon"><Presentation size={23} strokeWidth={1.8} /></span><span>слайд<span className="brand-dot">.</span></span></button>
         <nav aria-label="Основная навигация"><button className={screen === 'projects' ? 'selected' : ''} onClick={() => navigate('projects')}><FolderOpen size={16} />Мои презентации</button><button className={screen === 'templates' ? 'selected' : ''} onClick={() => navigate('templates')}><LayoutTemplate size={16} />Шаблоны</button></nav>
-        <div className="simple-header-right"><span className="demo-badge">Демо</span><IconButton label="Как это работает" onClick={() => setDialog('help')}><CircleHelp size={19} /></IconButton></div>
+        <div className="simple-header-right"><span className="demo-badge">{remoteTemplates.length ? 'Прод' : 'Подключение'}</span><IconButton label="Как это работает" onClick={() => setDialog('help')}><CircleHelp size={19} /></IconButton></div>
       </header>
 
       <main className={`main-content ${screen === 'editor' ? 'editor-main' : ''}`}>
@@ -188,12 +210,12 @@ export default function App() {
           <div className={`prompt-composer ${dragging ? 'dragging' : ''}`} onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={e => { e.preventDefault(); setDragging(false); void readMaterial(e.dataTransfer.files[0]); }}>
             <label className="sr-only" htmlFor="brief">Описание презентации</label>
             <textarea id="brief" ref={briefInput} value={brief.text} maxLength={6000} onChange={e => updateBrief('text', e.target.value)} onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !busy) { e.preventDefault(); void startDeck(); } }} placeholder="Например, питч нового продукта для команды. Какую проблему решаем, в чём идея и что делаем дальше…" aria-invalid={Boolean(error)} />
-            {materialName && <div className="attached-material"><FileText size={15} /><span>{materialName}</span><IconButton label="Удалить материалы" onClick={() => { updateBrief('materials', ''); setMaterialName(''); }}><X size={14} /></IconButton></div>}
-            <div className="composer-toolbar"><div className="composer-tools"><button className="composer-tool" title="Добавить TXT или MD до 2 МБ" onClick={() => materialInput.current?.click()}><Paperclip size={18} /><span>Материалы</span></button><button className="composer-tool" onClick={() => setDialog('settings')}><SlidersHorizontal size={17} /><span>Настроить</span></button></div><button className="primary-button create-deck-button" disabled={Boolean(busy)} onClick={() => void startDeck()}>{busy === 'outline' ? <LoaderCircle className="spin" size={18} /> : <Sparkles size={17} />}<span>{busy === 'outline' ? 'Создаём…' : 'Создать презентацию'}</span><ArrowUpRight size={18} /></button></div>
+            {materialName && <div className="attached-material"><FileText size={15} /><span>{materialName}</span><IconButton label="Удалить материалы" onClick={() => { setBrief(prev => ({ ...prev, materials: '', contentPackIds: [] })); setMaterialName(''); }}><X size={14} /></IconButton></div>}
+            <div className="composer-toolbar"><div className="composer-tools"><button className="composer-tool" title="Загрузить материалы до 50 МБ" onClick={() => materialInput.current?.click()}><Paperclip size={18} /><span>Материалы</span></button><button className="composer-tool" onClick={() => setDialog('settings')}><SlidersHorizontal size={17} /><span>Настроить</span></button></div><button className="primary-button create-deck-button" disabled={Boolean(busy)} onClick={() => void startDeck()}>{busy === 'generation' ? <LoaderCircle className="spin" size={18} /> : <Sparkles size={17} />}<span>{busy === 'generation' ? 'Готовим…' : 'Создать презентацию'}</span><ArrowUpRight size={18} /></button></div>
           </div>
           <div className="composer-meta"><span>{brief.slideCount} слайдов <i /> {currentTemplate.name}</span><span>Ctrl + Enter</span></div>
           <div className="starter-prompts"><span>Нужна идея?</span><button onClick={() => updateBrief('text', EXAMPLE_BRIEF)}>Питч продукта<ArrowUpRight size={14} /></button><button onClick={() => updateBrief('text', 'Итоги работы над проектом для команды. Мы подготовили прототип сервиса, обсудили сценарии с пользователями и собрали обратную связь. Расскажите о проделанной работе, найденных сложностях и следующих шагах. Следующий этап — проверить основные сценарии и определить приоритеты разработки.')}>Итоги проекта<ArrowUpRight size={14} /></button><button onClick={() => updateBrief('text', 'Предлагаем запустить внутреннюю базу знаний. Сейчас полезные материалы распределены по разным чатам. Соберём инструкции и ответы на частые вопросы в одном месте. Начнём с пилота в одной команде, получим обратную связь и улучшим поиск. Цель — согласовать пилот и ответственных.')}>Предложить идею<ArrowUpRight size={14} /></button></div>
-          <div className="home-fineprint">Демо без ИИ. Результат можно отредактировать и скачать.</div>
+          <div className="home-fineprint">Генерация и экспорт работают через production API.</div>
           {decks.length > 0 && <section className="home-recent"><div><h2>Продолжить работу</h2><button onClick={() => navigate('projects')}>Все презентации<ArrowRight size={14} /></button></div><div className="home-recent-list">{decks.slice(0, 2).map(d => <button key={d.id} onClick={() => openDeck(d)}><span className="recent-deck-icon"><Presentation size={19} /></span><span><strong>{d.title || 'Без названия'}</strong><small>{d.slides.length} слайдов · {new Date(d.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small></span><ArrowUpRight size={17} /></button>)}</div></section>}
         </section>}
 
@@ -203,25 +225,25 @@ export default function App() {
 
         {screen === 'editor' && deck && slide && <><div className="editor-toolbar"><div className="editor-title"><IconButton label="К моим презентациям" onClick={() => navigate('projects')}><ArrowLeft size={19} /></IconButton><label><span className="sr-only">Название презентации</span><input value={deck.title} onChange={e => updateDeck(d => ({ ...d, title: e.target.value }))} maxLength={120} /></label><span>{deck.slides.length} слайдов</span></div><div className="editor-toolbar-actions"><details className="editor-more"><summary><SlidersHorizontal size={16} />Настроить</summary><div className="editor-more-menu"><button onClick={e => { e.currentTarget.closest('details')?.removeAttribute('open'); navigate('outline'); }}><FileText size={16} />Структура слайдов</button><button onClick={e => { e.currentTarget.closest('details')?.removeAttribute('open'); navigate('design'); }}><LayoutTemplate size={16} />Варианты оформления</button><button onClick={e => { e.currentTarget.closest('details')?.removeAttribute('open'); setAuditOpen(!auditOpen); }}><ShieldCheck size={16} />Проверка слайдов{issues.length > 0 && <span className="issue-count">{issues.length}</span>}</button></div></details><button className="primary-button" onClick={() => setDialog('export')}><Download size={16} />Скачать</button></div></div><div className={`editor-workspace ${auditOpen ? 'with-audit' : ''}`}><aside className="filmstrip"><div className="filmstrip-title"><span>СЛАЙДЫ</span><IconButton label="Добавить слайд" disabled={deck.slides.length >= 30} onClick={addSlide}><Plus size={16} /></IconButton></div>{deck.slides.map((s, i) => <button key={s.id} className={`filmstrip-slide ${i === activeSlide ? 'active' : ''}`} onClick={() => setActiveSlide(i)} aria-label={`Слайд ${i + 1}: ${s.title}`} aria-pressed={i === activeSlide}><span className="filmstrip-number">{i + 1}</span><SlideCanvas slide={s} template={currentTemplate} layout={deck.layout} index={i} total={deck.slides.length} miniature />{issues.some(issue => issue.slideId === s.id) && <span className="slide-warning"><AlertCircle size={12} /></span>}</button>)}<button className="filmstrip-add" onClick={addSlide} disabled={deck.slides.length >= 30}><Plus size={17} />Слайд</button></aside><div className="canvas-workspace"><div className="canvas-topline"><span>{layoutOptions.find(l => l.id === deck.layout)?.name}</span><button className="text-button" onClick={() => setDialog('preview')}><Maximize2 size={15} />Просмотр</button></div><div className="canvas-holder"><SlideCanvas slide={slide} template={currentTemplate} layout={deck.layout} index={activeSlide} total={deck.slides.length} /></div><div className="canvas-pagination"><IconButton label="Предыдущий слайд" disabled={activeSlide === 0} onClick={() => setActiveSlide(activeSlide - 1)}><ChevronLeft size={17} /></IconButton><span>{activeSlide + 1} из {deck.slides.length}</span><IconButton label="Следующий слайд" disabled={activeSlide === deck.slides.length - 1} onClick={() => setActiveSlide(activeSlide + 1)}><ChevronRight size={17} /></IconButton></div><section className="slide-edit-panel"><div className="slide-edit-header"><h2>Содержание слайда</h2><div><IconButton label="Поднять текущий слайд" disabled={activeSlide === 0} onClick={() => moveSlide(activeSlide, -1)}><ArrowUp size={15} /></IconButton><IconButton label="Опустить текущий слайд" disabled={activeSlide === deck.slides.length - 1} onClick={() => moveSlide(activeSlide, 1)}><ArrowDown size={15} /></IconButton><IconButton label="Дублировать слайд" disabled={deck.slides.length >= 30} onClick={() => { updateDeck(d => { const slides = [...d.slides]; slides.splice(activeSlide + 1, 0, { ...slide, id: crypto.randomUUID() }); return { ...d, slides }; }); setActiveSlide(activeSlide + 1); }}><Copy size={15} /></IconButton><IconButton label="Удалить текущий слайд" disabled={deck.slides.length <= 1} onClick={() => removeSlide(slide.id)}><Trash2 size={15} /></IconButton></div></div><label>Заголовок<input value={slide.title} onChange={e => editSlide(slide.id, 'title', e.target.value)} maxLength={250} /></label><label>Основной текст<textarea value={slide.body} onChange={e => editSlide(slide.id, 'body', e.target.value)} placeholder="Добавьте тезисы для этого слайда" rows={4} maxLength={6000} /></label><div className="editor-layout-select"><label htmlFor="editor-layout">Оформление всей презентации</label><select id="editor-layout" value={deck.layout} onChange={e => updateDeck(d => ({ ...d, layout: e.target.value as Layout }))}>{layoutOptions.map(l => <option value={l.id} key={l.id}>{l.name}</option>)}</select></div></section></div>{auditOpen && <aside className="audit-panel"><div className="audit-heading"><ShieldCheck size={20} /><h2>Проверка слайдов</h2><IconButton label="Закрыть проверку" onClick={() => setAuditOpen(false)}><PanelLeftClose size={17} /></IconButton></div><p className="audit-description">Проверяем длину текста, заполнение и повторы. Замечания обновляются при редактировании.</p><div className={`audit-summary ${issues.length ? 'has-issues' : ''}`}>{issues.length ? <AlertCircle size={22} /> : <CheckCircle2 size={24} />}<div><strong>{issues.length ? `${issues.length} замечаний` : 'Всё в порядке'}</strong><span>{issues.length ? 'Проверьте перед экспортом' : 'По доступным проверкам'}</span></div></div>{issues.map(issue => <button className={`audit-item ${slide.id === issue.slideId ? 'active' : ''}`} key={issue.id} onClick={() => setActiveSlide(deck.slides.findIndex(s => s.id === issue.slideId))}><span className="audit-slide-label">Слайд {deck.slides.findIndex(s => s.id === issue.slideId) + 1}<ArrowUpRight size={14} /></span><strong>{issue.title}</strong><p>{issue.description}</p><span className={`audit-severity ${issue.severity}`}>{issue.severity === 'error' ? 'Нужно исправить' : 'Рекомендуем проверить'}</span></button>)}<div className="audit-note"><CircleHelp size={16} /><p>Проверка фактов, контраста и пересечений объектов потребует серверного аудита.</p></div></aside>}</div></>}
 
-        {screen === 'templates' && <><div className="library-toolbar"><span>{allTemplates.length} шаблона · формат 16:9</span><button className="primary-button" disabled={Boolean(busy)} onClick={() => templateInput.current?.click()}>{busy === 'template' ? <LoaderCircle size={17} className="spin" /> : <Upload size={17} />}Загрузить PPTX</button></div>{templateCards(true)}<div className="library-disclosure"><FileUp size={22} /><div><h3>Есть свой фирменный шаблон?</h3><p>Добавьте PPTX до 50 МБ. Демоверсия извлечёт палитру, шрифт и количество макетов. Полный перенос композиции и графики требует бэкенда.</p></div><button className="secondary-button" onClick={() => navigate('create')}>Создать презентацию<ArrowRight size={16} /></button></div></>}
+        {screen === 'templates' && <><div className="library-toolbar"><span>{allTemplates.length} шаблона · формат 16:9</span><button className="primary-button" disabled={Boolean(busy)} onClick={() => templateInput.current?.click()}>{busy === 'template' ? <LoaderCircle size={17} className="spin" /> : <Upload size={17} />}Загрузить PPTX</button></div>{templateCards(true)}<div className="library-disclosure"><FileUp size={22} /><div><h3>Есть свой фирменный стиль?</h3><p>Добавьте PPTX до 50 МБ — сервер извлечёт палитру, шрифты и макеты и использует исходный файл при экспорте.</p></div><button className="secondary-button" onClick={() => navigate('create')}>Создать презентацию<ArrowRight size={16} /></button></div></>}
 
         {screen === 'projects' && <><div className="projects-toolbar"><label className="search-field"><Search size={17} /><input placeholder="Найти презентацию" value={projectSearch} onChange={e => setProjectSearch(e.target.value)} /></label><span><Clock3 size={15} />Сначала последние</span></div>{decks.filter(d => d.title.toLowerCase().includes(projectSearch.toLowerCase())).length === 0 ? <div className="empty-state"><span><Presentation size={34} /></span><h2>{projectSearch ? 'Ничего не нашлось' : 'Здесь будут ваши презентации'}</h2><p>{projectSearch ? 'Попробуйте другое название или очистите поиск.' : 'Начните с идеи. Мы сохраним результат в этом браузере.'}</p><button className="primary-button" onClick={() => projectSearch ? setProjectSearch('') : navigate('create')}>{projectSearch ? 'Очистить поиск' : 'Создать первую презентацию'}<ArrowRight size={16} /></button></div> : <div className="projects-grid">{decks.filter(d => d.title.toLowerCase().includes(projectSearch.toLowerCase())).map(d => <article className="project-card" key={d.id}><button className="project-open" onClick={() => openDeck(d)} aria-label={`Открыть ${d.title}`}><SlideCanvas slide={d.slides[0]} template={allTemplates.find(t => t.id === d.templateId) || templates[0]} layout={d.layout} miniature total={d.slides.length} /></button><div className="project-info"><h2>{d.title || 'Без названия'}</h2><div><span>{d.slides.length} слайдов · {new Date(d.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span><IconButton label={`Удалить презентацию ${d.title}`} onClick={() => setDeleteId(d.id)}><Trash2 size={16} /></IconButton></div></div></article>)}</div>}</>}
       </main>
       {screen !== 'editor' && <footer className="page-footer"><span>Создано для идей, которые стоит показать</span><span>Слайд · ЛЦТ 2026</span></footer>}
     </div>
 
-    <input ref={materialInput} className="sr-only" type="file" accept=".txt,.md" onChange={e => { void readMaterial(e.target.files?.[0]); e.target.value = ''; }} aria-label="Загрузить текстовые материалы" />
+    <input ref={materialInput} className="sr-only" type="file" accept=".txt,.md,.csv,.json,.docx,.pptx,.pdf" onChange={e => { void readMaterial(e.target.files?.[0]); e.target.value = ''; }} aria-label="Загрузить материалы" />
     <input type="file" ref={templateInput} className="sr-only" accept=".pptx" onChange={e => void uploadTemplate(e.target.files?.[0])} aria-label="Загрузить шаблон PPTX" />
     {toast && <div className="toast" role="status"><CheckCircle2 size={18} /><span>{toast}</span><IconButton label="Скрыть уведомление" onClick={() => setToast('')}><X size={15} /></IconButton></div>}
     {dialog === 'settings' && <Modal title="Пара настроек — и готово" onClose={() => setDialog(null)} wide>
-      <div className="settings-content"><section><div className="settings-label"><h3>Фирменный стиль</h3><button className="text-button" disabled={Boolean(busy)} onClick={() => templateInput.current?.click()}>{busy === 'template' ? <LoaderCircle className="spin" size={16} /> : <Upload size={16} />}Загрузить свой</button></div>{templateCards()}<p className="settings-hint">PPTX до 50 МБ. В демо импортируются цвета и шрифт.</p></section>
+      <div className="settings-content"><section><div className="settings-label"><h3>Фирменный стиль</h3><button className="text-button" disabled={Boolean(busy)} onClick={() => templateInput.current?.click()}>{busy === 'template' ? <LoaderCircle className="spin" size={16} /> : <Upload size={16} />}Загрузить свой</button></div>{templateCards()}<p className="settings-hint">PPTX до 50 МБ. Сервер сохранит шаблон и применит его при генерации.</p></section>
       <div className="settings-row"><label htmlFor="slide-count">Количество слайдов</label><div className="amount-control"><IconButton label="Уменьшить число слайдов" disabled={brief.slideCount <= 3} onClick={() => updateBrief('slideCount', brief.slideCount - 1)}>−</IconButton><input id="slide-count" type="number" min={3} max={20} value={brief.slideCount} onChange={e => updateBrief('slideCount', Math.max(3, Math.min(20, Number(e.target.value) || 3)))} /><IconButton label="Увеличить число слайдов" disabled={brief.slideCount >= 20} onClick={() => updateBrief('slideCount', brief.slideCount + 1)}><Plus size={16} /></IconButton></div></div>
       <div className="brief-selects"><label>Для кого<select value={brief.audience} onChange={e => updateBrief('audience', e.target.value)}><option>Коллеги и команда</option><option>Руководство</option><option>Клиенты и партнёры</option><option>Эксперты и жюри</option><option>Студенты</option></select></label><label>Задача презентации<select value={brief.goal} onChange={e => updateBrief('goal', e.target.value)}><option>Представить идею</option><option>Показать результаты</option><option>Убедить и получить поддержку</option><option>Объяснить и обучить</option></select></label></div>
       {error && <div className="error-banner" role="alert"><AlertCircle size={16} />{error}</div>}
       <button className="primary-button full-width" onClick={() => setDialog(null)}>Готово<Check size={17} /></button></div>
     </Modal>}
-    {dialog === 'help' && <Modal title="От идеи до готовой презентации" onClose={() => setDialog(null)}><div className="help-steps">{[{ title: 'Опишите идею', body: 'Добавьте основные тезисы, выберите аудиторию и фирменный шаблон. Для быстрого старта воспользуйтесь примером.' }, { title: 'Нажмите «Создать презентацию»', body: 'Откроется готовая презентация. Стиль и количество слайдов подберёт стандартный сценарий; их можно изменить заранее в настройках.' }, { title: 'Скачайте или доработайте', body: 'Редактируйте текст прямо в редакторе. Структура, три варианта оформления и проверка доступны через «Настроить». Скачать можно PPTX, HTML или PDF через печать.' }].map((item, i) => <div key={item.title}><span>{i + 1}</span><section><h3>{item.title}</h3><p>{item.body}</p></section></div>)}</div><div className="modal-note"><Sparkles size={19} /><p><strong>Сейчас это интерактивный деморежим.</strong> ИИ не подключён. Структура собирается по простым правилам, а дизайн использует палитру выбранного шаблона. Материалы и изменения сохраняются только в этом браузере.</p></div><button className="primary-button full-width" onClick={() => setDialog(null)}>Всё понятно<Check size={17} /></button></Modal>}
-    {dialog === 'export' && deck && <Modal title="Презентация готова к выходу" onClose={() => setDialog(null)}><p className="modal-subtitle">{deck.slides.length} слайдов · {currentTemplate.name}</p>{issues.length > 0 && <div className="export-warning"><AlertCircle size={18} /><span>В презентации есть замечания: {issues.length}.</span><button onClick={() => { setDialog(null); setAuditOpen(true); }}>Посмотреть</button></div>}<div className="export-options"><button onClick={() => void download('pptx')} disabled={Boolean(busy)}><span className="export-file pptx"><Presentation size={24} /></span><span><strong>PowerPoint <small>.pptx</small></strong><p>Редактируемые заголовки, текст и фигуры</p></span>{busy === 'pptx' ? <LoaderCircle className="spin" size={19} /> : <Download size={19} />}</button><button onClick={() => void download('pdf')} disabled={Boolean(busy)}><span className="export-file pdf"><FileText size={24} /></span><span><strong>PDF <small>через печать</small></strong><p>Выберите «Сохранить как PDF» в браузере</p></span><ArrowUpRight size={19} /></button><button onClick={() => void download('html')} disabled={Boolean(busy)}><span className="export-file html"><Monitor size={24} /></span><span><strong>Веб-презентация <small>.html</small></strong><p>Один файл, открывается в любом браузере</p></span><Download size={19} /></button></div><p className="export-disclosure">Экспорт использует оформление демоверсии. Исходные макеты и графика PPTX-шаблона полностью не переносятся.</p></Modal>}
+    {dialog === 'help' && <Modal title="От идеи до готовой презентации" onClose={() => setDialog(null)}><div className="help-steps">{[{ title: 'Опишите идею', body: 'Добавьте основные тезисы, выберите аудиторию и фирменный шаблон. Для быстрого старта воспользуйтесь примером.' }, { title: 'Нажмите «Создать презентацию»', body: 'Сервер соберёт структуру и три варианта оформления на основе выбранного шаблона. Генерация может занять несколько минут.' }, { title: 'Скачайте или доработайте', body: 'Редактируйте текст прямо в редакторе. Скачать результат можно в форматах PPTX, HTML или PDF.' }].map((item, i) => <div key={item.title}><span>{i + 1}</span><section><h3>{item.title}</h3><p>{item.body}</p></section></div>)}</div><div className="modal-note"><Sparkles size={19} /><p><strong>Фронтенд подключён к production API.</strong> Шаблоны и материалы отправляются на сервер, а скачивание использует последнюю ревизию презентации. Локальная копия помогает продолжить редактирование в этом браузере.</p></div><button className="primary-button full-width" onClick={() => setDialog(null)}>Всё понятно<Check size={17} /></button></Modal>}
+    {dialog === 'export' && deck && <Modal title="Презентация готова к выходу" onClose={() => setDialog(null)}><p className="modal-subtitle">{deck.slides.length} слайдов · {currentTemplate.name}</p>{issues.length > 0 && <div className="export-warning"><AlertCircle size={18} /><span>В презентации есть замечания: {issues.length}.</span><button onClick={() => { setDialog(null); setAuditOpen(true); }}>Посмотреть</button></div>}<div className="export-options"><button onClick={() => void download('pptx')} disabled={Boolean(busy)}><span className="export-file pptx"><Presentation size={24} /></span><span><strong>PowerPoint <small>.pptx</small></strong><p>Редактируемые заголовки, текст и фигуры</p></span>{busy === 'pptx' ? <LoaderCircle className="spin" size={19} /> : <Download size={19} />}</button><button onClick={() => void download('pdf')} disabled={Boolean(busy)}><span className="export-file pdf"><FileText size={24} /></span><span><strong>PDF <small>.pdf</small></strong><p>Скачивается из серверного экспорта</p></span><ArrowUpRight size={19} /></button><button onClick={() => void download('html')} disabled={Boolean(busy)}><span className="export-file html"><Monitor size={24} /></span><span><strong>Веб-презентация <small>.html</small></strong><p>Один файл, открывается в любом браузере</p></span><Download size={19} /></button></div><p className="export-disclosure">Экспорт собран из выбранного PPTX-шаблона. Для PDF и HTML сервер при необходимости сначала конвертирует последнюю ревизию.</p></Modal>}
     {dialog === 'preview' && deck && slide && <Modal title={`Слайд ${activeSlide + 1} из ${deck.slides.length}`} onClose={() => setDialog(null)} wide><SlideCanvas slide={slide} template={currentTemplate} layout={deck.layout} index={activeSlide} total={deck.slides.length} /><div className="preview-navigation"><button className="secondary-button" disabled={activeSlide === 0} onClick={() => setActiveSlide(activeSlide - 1)}><ChevronLeft size={17} />Назад</button><button className="secondary-button" disabled={activeSlide === deck.slides.length - 1} onClick={() => setActiveSlide(activeSlide + 1)}>Далее<ChevronRight size={17} /></button></div></Modal>}
     {deleteId && <Modal title="Удалить презентацию?" onClose={() => setDeleteId(null)}><p className="modal-subtitle">Она исчезнет из этого браузера. Скачанные файлы сохранятся.</p><div className="flow-actions"><button className="secondary-button" onClick={() => setDeleteId(null)}>Оставить</button><button className="danger-button" onClick={() => { setDecks(prev => prev.filter(d => d.id !== deleteId)); if (deck?.id === deleteId) setDeck(null); setDeleteId(null); setToast('Презентация удалена'); }}>Удалить</button></div></Modal>}
   </div>;
