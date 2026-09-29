@@ -1252,8 +1252,8 @@ def test_non_breaking_hyphen_keeps_model_name_technical():
     assert foreign_labels(["gpt‑oss‑20b", "Модель gpt‑oss‑20b"], True) == []
 
 
-def test_retry_reminds_to_keep_the_slide_count(client, monkeypatch):
-    """Исправляя подписи, модель норовит сжать колоду — повтор напоминает про объём."""
+def test_retry_preserves_limit_without_demanding_invented_content(client, monkeypatch):
+    """Повтор сохраняет лимит, но не требует дополнять скудный источник выдумками."""
     english = outline(1)
     english["slides"][0]["visual"]["categories"] = ["Before", "After"]
     good = outline(1)
@@ -1263,7 +1263,9 @@ def test_retry_reminds_to_keep_the_slide_count(client, monkeypatch):
         json={"brief": "Продажи А 10 Б 20 млн руб.", "slide_count": 1},
     )
     assert response.status_code == 200, response.text
-    assert "сохрани 1 слайдов" in captured[-1]["messages"][-1]["content"]
+    feedback = captured[-1]["messages"][-1]["content"]
+    assert "не превышай 1" in feedback
+    assert "оставь меньше слайдов" in feedback
 
 
 def test_last_attempt_strips_section_name_from_title(client, monkeypatch):
@@ -1385,7 +1387,6 @@ def test_visual_audit_reads_the_slide_image(monkeypatch):
             "issues": [
                 {"code": "title_conclusion", "message": "Заголовок называет тему"},
                 {"code": "readable", "message": "Текст наезжает на логотип"},
-                "мусор, который модель прислала не по схеме",
             ]
         }
 
@@ -1412,8 +1413,8 @@ def test_visual_audit_reads_the_slide_image(monkeypatch):
     assert "картинк" in seen["prompt"].lower() or "изображени" in seen["prompt"].lower()
 
 
-def test_visual_audit_survives_a_broken_model_answer(monkeypatch):
-    """Сбой проверки по картинке не должен ронять весь аудит."""
+def test_visual_audit_does_not_report_success_after_a_broken_model_answer(monkeypatch):
+    """Сбой модели не превращается в успешную проверку без замечаний."""
     import asyncio
 
     from designer import audit as audit_module
@@ -1423,8 +1424,9 @@ def test_visual_audit_survives_a_broken_model_answer(monkeypatch):
 
     monkeypatch.setattr(audit_module, "vision_completion", broken)
     deck = {"slides": [{"content": {"title": "Т", "bullets": [], "visual": {"kind": "none"}}}]}
-    findings = asyncio.run(audit_module.visual_audit(deck, [{"id": "brief", "text": "и"}], [b"PNG"]))
-    assert findings == []
+    with pytest.raises(HTTPException) as failure:
+        asyncio.run(audit_module.visual_audit(deck, [{"id": "brief", "text": "и"}], [b"PNG"]))
+    assert failure.value.status_code == 502
 
 
 def test_reasoning_models_answer_is_recovered():

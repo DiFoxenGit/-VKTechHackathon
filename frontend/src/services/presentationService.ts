@@ -268,7 +268,8 @@ export const presentationService = {
       language: 'ru',
       slide_count: brief.slideCount,
       content_pack_ids: packIds,
-      // Готовый план вёрстка берёт как есть: модель второй раз не вызывается.
+      contextual_audit: true,
+      // Готовая структура сохраняется; содержание проверяется перед вёрсткой.
       ...(outline ? { outline } : {}),
     });
     const finished = await waitForJob(job.id, state => onStage?.(state.stage, state.progress));
