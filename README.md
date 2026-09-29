@@ -4,6 +4,8 @@
 
 **Сервис, который читает чужой шаблон как набор правил и собирает по нему готовую презентацию**
 
+**Проверяющим:** стенд — http://158.160.225.35 · [пошаговый гайд: запуск, сценарии, API, тесты](docs/test-run.md) · [презентация решения](docs/presentation.pdf)
+
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
@@ -52,6 +54,7 @@ docker compose up --build -d
 ```
 
 - Интерфейс: <http://localhost:3000> — шаблон, бриф, структура, три варианта, аудит и экспорт на одной странице
+- Пошаговая проверка со сценариями и тестами — [docs/test-run.md](docs/test-run.md)
 - API: <http://localhost:8000>, Swagger: <http://localhost:8000/docs>
 - Шаблоны из папки `templates/` импортируются при старте (папка не коммитится: файлы принадлежат организаторам)
 
@@ -208,6 +211,7 @@ docs/               API.md, openapi.json, gap-analysis.md
 
 | Файл | О чём |
 |---|---|
+| [docs/test-run.md](docs/test-run.md) | **гайд для проверяющих**: стенд, готовые сценарии, API, локальный запуск, тесты |
 | [docs/presentation.pdf](docs/presentation.pdf) | презентация решения для сдачи: команда Freak Studio, задача, архитектура, результаты |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | слои, границы, контракты |
 | [MODELS.md](MODELS.md) | модели, лицензии, требования, ограничения |
