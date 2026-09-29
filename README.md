@@ -13,7 +13,7 @@
 [![Кейс](https://img.shields.io/badge/Кейс-VK%20Tech%20·%20ЛЦТ%202026-8A83D1)](#-о-кейсе)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-2EA44F)](#-лицензия)
 
-[Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md) · [Условие кейса](docs/case.md)
+[Презентация решения](docs/presentation.pdf) · [Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md) · [Условие кейса](docs/case.md)
 
 </div>
 
@@ -206,6 +206,7 @@ docs/               API.md, openapi.json, gap-analysis.md
 
 | Файл | О чём |
 |---|---|
+| [docs/presentation.pdf](docs/presentation.pdf) | презентация решения для сдачи: команда Freak Studio, задача, архитектура, результаты |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | слои, границы, контракты |
 | [MODELS.md](MODELS.md) | модели, лицензии, требования, ограничения |
 | [AUDIT.md](AUDIT.md) | проверки и их покрытие тестами |
