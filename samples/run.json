@@ -1,0 +1,29 @@
+{
+  "status": "completed",
+  "brief": "Защита инициативы перед руководством: предложить сервис автоматической вёрстки презентаций и показать результаты из материалов. Не добавлять сроки, ресурсы или решения, которых нет в источнике.",
+  "requested_slides": 12,
+  "source": {
+    "file": "материал-инициатива.md",
+    "sha256": "be1beef567dd9401f1ed4252a889171fc0c645a7710254754232fc0648c3c5ea"
+  },
+  "templates": [
+    {
+      "file": "VK Tech шаблон.pptx",
+      "sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+      "id": "2f8baa6e3b3f49adb7e7088a2a7a41b9"
+    },
+    {
+      "file": "VK_WorkSpace_Клиентская_конференция_Шаблон_03.pptx",
+      "sha256": "1b8883114486c69dff706e9c4fd9382727c4506c2cfa3ec34f86987f1e852f2f",
+      "id": "1ec9e3e1144a4fb6b9c4c0a63ac735d6"
+    },
+    {
+      "file": "Шаблон презентации VK Education.pptx",
+      "sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+      "id": "d1e7dc7ca7f8418d96bb6195acdc0be6"
+    }
+  ],
+  "visual_audit_requested": false,
+  "missing_native_chart": false,
+  "quality": "needs_review"
+}

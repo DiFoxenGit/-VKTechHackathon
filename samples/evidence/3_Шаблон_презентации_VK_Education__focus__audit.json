@@ -1,0 +1,63 @@
+{
+  "issues": [
+    {
+      "id": "73ffef35d8c99d920bd5",
+      "slide_index": 0,
+      "element_id": null,
+      "code": "source_reference",
+      "message": "Нет корректных ссылок на исходные материалы",
+      "box": null,
+      "fixable": false,
+      "category": "deterministic",
+      "severity": "warning"
+    },
+    {
+      "id": "5445033079d0fe30adec",
+      "slide_index": 11,
+      "element_id": null,
+      "code": "fill_ratio",
+      "message": "Слайд заполнен на 13%; ориентир — от 25% до 75%",
+      "box": null,
+      "fixable": false,
+      "category": "deterministic",
+      "severity": "warning"
+    },
+    {
+      "id": "51e213e8b33e61e2eea6",
+      "slide_index": 0,
+      "element_id": "context_0",
+      "code": "title_topic",
+      "message": "Заголовок «Автоматическая вёрстка презентаций: ускоряем работу» не содержит вывод, а лишь обозначает тему.",
+      "box": null,
+      "fixable": false,
+      "category": "contextual",
+      "severity": "warning"
+    },
+    {
+      "id": "706288204fcffdf05664",
+      "slide_index": 11,
+      "element_id": "context_1",
+      "code": "title_topic",
+      "message": "Заголовок «Решить о внедрении сервиса автоматической вёрстки» является директивой, а не выводом.",
+      "box": null,
+      "fixable": false,
+      "category": "contextual",
+      "severity": "warning"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 4
+  },
+  "contextual": {
+    "status": "completed",
+    "input": "structured_text"
+  },
+  "geometry_units": "pt",
+  "limitations": [
+    "Text fit is estimated, not pixel-measured",
+    "Collision checks use template shape boxes, not rendered pixels",
+    "Fill ratio estimates rendered ink inside the template content area",
+    "Contextual audit uses text, not slide images"
+  ]
+}

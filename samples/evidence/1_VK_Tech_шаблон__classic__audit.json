@@ -1,0 +1,18 @@
+{
+  "issues": [],
+  "counts": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "contextual": {
+    "status": "completed",
+    "input": "structured_text"
+  },
+  "geometry_units": "pt",
+  "limitations": [
+    "Text fit is estimated, not pixel-measured",
+    "Collision checks use template shape boxes, not rendered pixels",
+    "Fill ratio estimates rendered ink inside the template content area",
+    "Contextual audit uses text, not slide images"
+  ]
+}
