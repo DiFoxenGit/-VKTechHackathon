@@ -1,0 +1,85 @@
+{
+  "issues": [
+    {
+      "id": "0741630ffd679430b318",
+      "slide_index": 1,
+      "element_id": null,
+      "code": "unverified_number",
+      "message": "Числа не найдены дословно в источниках: 2026186",
+      "box": null,
+      "fixable": false,
+      "category": "deterministic",
+      "severity": "warning"
+    },
+    {
+      "id": "e57d6224f380753b55a2",
+      "slide_index": 4,
+      "element_id": null,
+      "code": "text_over_image",
+      "message": "Текст лежит на изображении шаблона: разброс светлоты 16%; под него добавлена подложка, проверьте читаемость",
+      "box": null,
+      "fixable": false,
+      "category": "deterministic",
+      "severity": "warning"
+    },
+    {
+      "id": "16ff705518d893dd1918",
+      "slide_index": 4,
+      "element_id": null,
+      "code": "unverified_number",
+      "message": "Числа не найдены дословно в источниках: 98",
+      "box": null,
+      "fixable": false,
+      "category": "deterministic",
+      "severity": "warning"
+    },
+    {
+      "id": "62d4404be389739076fe",
+      "slide_index": 9,
+      "element_id": null,
+      "code": "text_over_image",
+      "message": "Текст лежит на изображении шаблона: разброс светлоты 29%; под него добавлена подложка, проверьте читаемость",
+      "box": null,
+      "fixable": false,
+      "category": "deterministic",
+      "severity": "warning"
+    },
+    {
+      "id": "b5464b8f7a5f51793639",
+      "slide_index": 4,
+      "element_id": "context_0",
+      "code": "unsupported_fact",
+      "message": "Факт \"Стиль соблюдается в 98% колод\" не содержится в источнике. В источнике указано 2 нарушения из 68 колод, но 98% не упоминается.",
+      "box": null,
+      "fixable": false,
+      "category": "contextual",
+      "severity": "error"
+    },
+    {
+      "id": "50b3dcb6ed26baa470e3",
+      "slide_index": 9,
+      "element_id": "context_1",
+      "code": "unsupported_fact",
+      "message": "Факт \"Автоматизация повышает скорость и качество\" не содержится в источнике \"brief\". В источнике лишь говорится о предложении сервиса и демонстрации результатов, но не о повышении скорости и качества.",
+      "box": null,
+      "fixable": false,
+      "category": "contextual",
+      "severity": "error"
+    }
+  ],
+  "counts": {
+    "errors": 2,
+    "warnings": 4
+  },
+  "contextual": {
+    "status": "completed",
+    "input": "structured_text"
+  },
+  "geometry_units": "pt",
+  "limitations": [
+    "Text fit is estimated, not pixel-measured",
+    "Collision checks use template shape boxes, not rendered pixels",
+    "Fill ratio estimates rendered ink inside the template content area",
+    "Contextual audit uses text, not slide images"
+  ]
+}

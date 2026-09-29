@@ -1,0 +1,1610 @@
+{
+  "id": "141b9ae6a9d041a0ba0870d76dee4472",
+  "template_id": "2f8baa6e3b3f49adb7e7088a2a7a41b9",
+  "title": "Защита инициативы: сервис автоматической вёрстки презентаций",
+  "variant": "split",
+  "revision": 1,
+  "deck": {
+    "width": 720.0,
+    "height": 405.0,
+    "variant": "split",
+    "slides": [
+      {
+        "background": "022852",
+        "bg_luma": 0.1558,
+        "bg_spread": 0.1594,
+        "index": 0,
+        "pattern_index": 0,
+        "image_cover": 0.9999,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": true,
+        "clear_stage": false,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 3.54272,
+          "decoration_area": 0.0,
+          "free_area": 0.0,
+          "branding_in_band": 0.0,
+          "text_slots": 2
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Защита инициативы: сервис автоматической вёрстки презентаций",
+          "bullets": [],
+          "notes": "",
+          "source_refs": [
+            "brief"
+          ],
+          "visual": {
+            "kind": "none",
+            "categories": [],
+            "series": [],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Защита инициативы: сервис автоматической вёрстки презентаций",
+            "box": [
+              194.7816,
+              107.91225000000001,
+              337.6584,
+              113.495
+            ],
+            "font_size": 27.05,
+            "bold": false,
+            "align": "center",
+            "from_template": true,
+            "font": "Play",
+            "color": "FFFFFF",
+            "accent": "0077FF"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9663,
+        "bg_spread": 0.0923,
+        "index": 1,
+        "pattern_index": 46,
+        "image_cover": 0.0108,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.473735,
+          "decoration_area": 0.0,
+          "free_area": 0.12003,
+          "branding_in_band": 0.0138,
+          "text_slots": 22
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Сборка вручную занимает 186 минут",
+          "bullets": [
+            "74 минуты на правки",
+            "19 из 42 колод нарушают фирменный стиль"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "bar",
+            "categories": [
+              "Сборка",
+              "Правки"
+            ],
+            "series": [
+              {
+                "name": "Время",
+                "values": [
+                  186.0,
+                  74.0
+                ]
+              }
+            ],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": "минуты"
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Сборка вручную занимает 186 минут",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              48.6
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• 74 минуты на правки\n• 19 из 42 колод нарушают фирменный стиль",
+            "box": [
+              21.599999999999998,
+              105.3,
+              317.736,
+              243.0
+            ],
+            "font_size": 14.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "visual",
+            "kind": "bar",
+            "box": [
+              360.93600000000004,
+              105.3,
+              317.736,
+              243.0
+            ],
+            "data": {
+              "kind": "bar",
+              "categories": [
+                "Сборка",
+                "Правки"
+              ],
+              "series": [
+                {
+                  "name": "Время",
+                  "values": [
+                    186.0,
+                    74.0
+                  ]
+                }
+              ],
+              "columns": [],
+              "rows": [],
+              "steps": [],
+              "unit": "минуты"
+            },
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9334,
+        "bg_spread": 0.116,
+        "index": 2,
+        "pattern_index": 11,
+        "image_cover": 0.0,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.447715,
+          "decoration_area": 0.0,
+          "free_area": 0.13543,
+          "branding_in_band": 0.0,
+          "text_slots": 21
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Дизайн-отдел из 4 человек обслуживает 11 запросов в неделю",
+          "bullets": [
+            "4 дизайнеры",
+            "11 запросов в неделю",
+            "27 запросов поступает",
+            "Средний срок ожидания 6 дней"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "table",
+            "categories": [],
+            "series": [],
+            "columns": [
+              "Показатель",
+              "Значение"
+            ],
+            "rows": [
+              [
+                "Дизайнеры",
+                "4"
+              ],
+              [
+                "Запросы в неделю",
+                "11"
+              ],
+              [
+                "Поступающие",
+                "27"
+              ],
+              [
+                "Средний срок ожидания",
+                "6 дней"
+              ]
+            ],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Дизайн-отдел из 4 человек обслуживает 11 запросов в неделю",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• 4 дизайнеры\n• 11 запросов в неделю\n• 27 запросов поступает\n• Средний срок ожидания 6 дней",
+            "box": [
+              21.599999999999998,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "font_size": 14.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "visual",
+            "kind": "table",
+            "box": [
+              360.93600000000004,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "data": {
+              "kind": "table",
+              "categories": [],
+              "series": [],
+              "columns": [
+                "Показатель",
+                "Значение"
+              ],
+              "rows": [
+                [
+                  "Дизайнеры",
+                  "4"
+                ],
+                [
+                  "Запросы в неделю",
+                  "11"
+                ],
+                [
+                  "Поступающие",
+                  "27"
+                ],
+                [
+                  "Средний срок ожидания",
+                  "6 дней"
+                ]
+              ],
+              "steps": [],
+              "unit": ""
+            },
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9388,
+        "bg_spread": 0.157,
+        "index": 3,
+        "pattern_index": 41,
+        "image_cover": 0.0023,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": false,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.34016,
+          "decoration_area": 0.0,
+          "free_area": 0.1317,
+          "branding_in_band": 0.00362,
+          "text_slots": 5
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Сервис принимает шаблон и материалы, генерирует колоду",
+          "bullets": [
+            "Принимает pptx шаблон",
+            "Разбирает дизайн-систему",
+            "Собирает план колоды",
+            "Вёрстка по системе",
+            "Аудит качества до публикации"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "none",
+            "categories": [],
+            "series": [],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Сервис принимает шаблон и материалы, генерирует колоду",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body_left",
+            "kind": "text",
+            "role": "body",
+            "text": "• Принимает pptx шаблон\n• Разбирает дизайн-систему\n• Собирает план колоды",
+            "box": [
+              21.599999999999998,
+              166.72008333333335,
+              272.24999999999994,
+              78.2
+            ],
+            "font_size": 18.0,
+            "bold": true,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body_right",
+            "kind": "text",
+            "role": "body",
+            "text": "• Вёрстка по системе\n• Аудит качества до публикации",
+            "box": [
+              315.45,
+              166.72008333333335,
+              272.24999999999994,
+              78.2
+            ],
+            "font_size": 18.0,
+            "bold": true,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9767,
+        "bg_spread": 0.0673,
+        "index": 4,
+        "pattern_index": 47,
+        "image_cover": 0.0168,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.321439,
+          "decoration_area": 0.0,
+          "free_area": 0.11654,
+          "branding_in_band": 0.01799,
+          "text_slots": 10
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Экспорт в pptx, pdf, html; слайды остаются редактируемыми",
+          "bullets": [
+            "Экспорт в pptx с нативными объектами",
+            "Экспорт в pdf и html",
+            "Слайды редактируемы без преобразования в картинки"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "none",
+            "categories": [],
+            "series": [],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Экспорт в pptx, pdf, html; слайды остаются редактируемыми",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• Экспорт в pptx с нативными объектами\n• Экспорт в pdf и html\n• Слайды редактируемы без преобразования в картинки",
+            "box": [
+              21.599999999999998,
+              166.57102500000002,
+              355.86432,
+              125.0
+            ],
+            "font_size": 18.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "picture",
+            "kind": "image",
+            "role": "picture",
+            "box": [
+              399.06432000000007,
+              124.21552361246533,
+              279.60767999999996,
+              209.71100277506935
+            ],
+            "asset": {
+              "id": "builtin-presentation",
+              "ref": "builtin:illustrations/presentation.svg",
+              "kind": "illustration",
+              "format": "svg",
+              "ratio": 1.3333,
+              "mono": false,
+              "source": "builtin",
+              "color": null
+            },
+            "fit": "contain",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9737,
+        "bg_spread": 0.0914,
+        "index": 5,
+        "pattern_index": 23,
+        "image_cover": 0.0046,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [
+          1039,
+          1044,
+          1049
+        ],
+        "pattern_choice": {
+          "score": 1.296917,
+          "decoration_area": 0.0,
+          "free_area": 0.10935,
+          "branding_in_band": 0.02608,
+          "text_slots": 4
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Время сборки колоды сократилось с 186 до 4 минут",
+          "bullets": [
+            "4 минуты вместо 186",
+            "Время до первой версии с 6 дней до 1 дня"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "bar",
+            "categories": [
+              "Текущее",
+              "Сервис"
+            ],
+            "series": [
+              {
+                "name": "Время",
+                "values": [
+                  186.0,
+                  4.0
+                ]
+              }
+            ],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": "минуты"
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Время сборки колоды сократилось с 186 до 4 минут",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• 4 минуты вместо 186\n• Время до первой версии с 6 дней до 1 дня",
+            "box": [
+              21.599999999999998,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "font_size": 12.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "visual",
+            "kind": "bar",
+            "box": [
+              360.93600000000004,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "data": {
+              "kind": "bar",
+              "categories": [
+                "Текущее",
+                "Сервис"
+              ],
+              "series": [
+                {
+                  "name": "Время",
+                  "values": [
+                    186.0,
+                    4.0
+                  ]
+                }
+              ],
+              "columns": [],
+              "rows": [],
+              "steps": [],
+              "unit": "минуты"
+            },
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9663,
+        "bg_spread": 0.0923,
+        "index": 6,
+        "pattern_index": 46,
+        "image_cover": 0.0108,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.253735,
+          "decoration_area": 0.0,
+          "free_area": 0.12003,
+          "branding_in_band": 0.0138,
+          "text_slots": 22
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Нарушений фирменного стиля в пилоте — 2 из 68",
+          "bullets": [
+            "2 из 68 колод нарушили стиль",
+            "Все нарушения исправлены автоматическими правками"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "none",
+            "categories": [],
+            "series": [],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Нарушений фирменного стиля в пилоте — 2 из 68",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• 2 из 68 колод нарушили стиль\n• Все нарушения исправлены автоматическими правками",
+            "box": [
+              21.599999999999998,
+              189.97102500000003,
+              355.86432,
+              78.2
+            ],
+            "font_size": 18.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "picture",
+            "kind": "image",
+            "role": "picture",
+            "box": [
+              399.06432000000007,
+              124.21552361246533,
+              279.60767999999996,
+              209.71100277506935
+            ],
+            "asset": {
+              "id": "builtin-launch",
+              "ref": "builtin:illustrations/launch.svg",
+              "kind": "illustration",
+              "format": "svg",
+              "ratio": 1.3333,
+              "mono": false,
+              "source": "builtin",
+              "color": null
+            },
+            "fit": "contain",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9334,
+        "bg_spread": 0.116,
+        "index": 7,
+        "pattern_index": 11,
+        "image_cover": 0.0,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.227715,
+          "decoration_area": 0.0,
+          "free_area": 0.13543,
+          "branding_in_band": 0.0,
+          "text_slots": 21
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Сервис работает на одной машине 2 vCPU / 2 GB RAM",
+          "bullets": [
+            "2 vCPU",
+            "2 GB RAM",
+            "Модель gpt-oss-20b"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "table",
+            "categories": [],
+            "series": [],
+            "columns": [
+              "Показатель",
+              "Значение"
+            ],
+            "rows": [
+              [
+                "CPU",
+                "2 vCPU"
+              ],
+              [
+                "RAM",
+                "2 GB"
+              ],
+              [
+                "Модель",
+                "gpt-oss-20b"
+              ]
+            ],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Сервис работает на одной машине 2 vCPU / 2 GB RAM",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• 2 vCPU\n• 2 GB RAM\n• Модель gpt-oss-20b",
+            "box": [
+              21.599999999999998,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "font_size": 14.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "visual",
+            "kind": "table",
+            "box": [
+              360.93600000000004,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "data": {
+              "kind": "table",
+              "categories": [],
+              "series": [],
+              "columns": [
+                "Показатель",
+                "Значение"
+              ],
+              "rows": [
+                [
+                  "CPU",
+                  "2 vCPU"
+                ],
+                [
+                  "RAM",
+                  "2 GB"
+                ],
+                [
+                  "Модель",
+                  "gpt-oss-20b"
+                ]
+              ],
+              "steps": [],
+              "unit": ""
+            },
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.986,
+        "bg_spread": 0.0584,
+        "index": 8,
+        "pattern_index": 13,
+        "image_cover": 0.0,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.162771,
+          "decoration_area": 0.0,
+          "free_area": 0.08264,
+          "branding_in_band": 0.05171,
+          "text_slots": 9
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Стоимость инференса за 6 недель пилота — 1 400 рублей",
+          "bullets": [
+            "1 400 руб за 6 недель"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "none",
+            "categories": [],
+            "series": [],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Стоимость инференса за 6 недель пилота — 1 400 рублей",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "1 400 руб за 6 недель",
+            "box": [
+              21.599999999999998,
+              213.37102500000003,
+              355.86432,
+              31.400000000000002
+            ],
+            "font_size": 18.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "picture",
+            "kind": "image",
+            "role": "picture",
+            "box": [
+              399.06432000000007,
+              124.21552361246533,
+              279.60767999999996,
+              209.71100277506935
+            ],
+            "asset": {
+              "id": "builtin-money",
+              "ref": "builtin:illustrations/money.svg",
+              "kind": "illustration",
+              "format": "svg",
+              "ratio": 1.3333,
+              "mono": false,
+              "source": "builtin",
+              "color": null
+            },
+            "fit": "contain",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9388,
+        "bg_spread": 0.157,
+        "index": 9,
+        "pattern_index": 41,
+        "image_cover": 0.0023,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.15967,
+          "decoration_area": 0.0,
+          "free_area": 0.1317,
+          "branding_in_band": 0.00362,
+          "text_slots": 5
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Пилот шёл 6 недель на двух командах, собрано 68 презентаций",
+          "bullets": [
+            "6 недель",
+            "2 команды",
+            "68 презентаций",
+            "38 запросов закрыто"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "table",
+            "categories": [],
+            "series": [],
+            "columns": [
+              "Показатель",
+              "Значение"
+            ],
+            "rows": [
+              [
+                "Длительность",
+                "6 недель"
+              ],
+              [
+                "Команды",
+                "2"
+              ],
+              [
+                "Презентаций",
+                "68"
+              ],
+              [
+                "Запросов закрыто",
+                "38"
+              ]
+            ],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Пилот шёл 6 недель на двух командах, собрано 68 презентаций",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              534.8808,
+              73.388
+            ],
+            "font_size": 24.38,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• 6 недель\n• 2 команды\n• 68 презентаций\n• 38 запросов закрыто",
+            "box": [
+              21.599999999999998,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "font_size": 18.0,
+            "bold": true,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "visual",
+            "kind": "table",
+            "box": [
+              360.93600000000004,
+              109.84205,
+              317.736,
+              238.45795
+            ],
+            "data": {
+              "kind": "table",
+              "categories": [],
+              "series": [],
+              "columns": [
+                "Показатель",
+                "Значение"
+              ],
+              "rows": [
+                [
+                  "Длительность",
+                  "6 недель"
+                ],
+                [
+                  "Команды",
+                  "2"
+                ],
+                [
+                  "Презентаций",
+                  "68"
+                ],
+                [
+                  "Запросов закрыто",
+                  "38"
+                ]
+              ],
+              "steps": [],
+              "unit": ""
+            },
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9842,
+        "bg_spread": 0.0518,
+        "index": 10,
+        "pattern_index": 24,
+        "image_cover": 0.0,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.1172,
+          "decoration_area": 0.0,
+          "free_area": 0.0859,
+          "branding_in_band": 0.03715,
+          "text_slots": 9
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Риски: слабая модель, непроверенные шаблоны, нагрузка >20 задач",
+          "bullets": [
+            "Слабая модель может выдумать цифры",
+            "Неизвестный шаблон может быть плохо сделан",
+            "Нагрузка выше 20 задач требует внешней очереди"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "none",
+            "categories": [],
+            "series": [],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": ""
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Риски: слабая модель, непроверенные шаблоны, нагрузка >20 задач",
+            "box": [
+              21.599999999999998,
+              22.27905,
+              268.68240000000003,
+              80.2
+            ],
+            "font_size": 18.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• Слабая модель может выдумать цифры\n• Неизвестный шаблон может быть плохо сделан\n• Нагрузка выше 20 задач требует внешней очереди",
+            "box": [
+              21.599999999999998,
+              158.27702500000004,
+              355.86432,
+              148.4
+            ],
+            "font_size": 16.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "picture",
+            "kind": "image",
+            "role": "picture",
+            "box": [
+              399.06432000000007,
+              127.62152361246534,
+              279.60767999999996,
+              209.71100277506935
+            ],
+            "asset": {
+              "id": "builtin-risk",
+              "ref": "builtin:illustrations/risk.svg",
+              "kind": "illustration",
+              "format": "svg",
+              "ratio": 1.3333,
+              "mono": false,
+              "source": "builtin",
+              "color": null
+            },
+            "fit": "contain",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "background": "FFFFFF",
+        "bg_luma": 0.9605,
+        "bg_spread": 0.121,
+        "index": 11,
+        "pattern_index": 5,
+        "image_cover": 1.0,
+        "background_kind": "solid",
+        "needs_scrim": false,
+        "native_cover": false,
+        "clear_stage": true,
+        "drop_shapes": [],
+        "pattern_choice": {
+          "score": 1.9588,
+          "decoration_area": 0.0,
+          "free_area": 0.0,
+          "branding_in_band": 0.0,
+          "text_slots": 2
+        },
+        "layout_index": 0,
+        "content": {
+          "title": "Сервис повышает эффективность и соблюдение стиля",
+          "bullets": [
+            "Сокращение времени сборки с 186 до 4 мин",
+            "Сокращение времени до первой версии с 6 до 1 дня",
+            "Снижение нарушений стиля до 2 из 68",
+            "Экономия ресурсов на инференсе"
+          ],
+          "notes": "",
+          "source_refs": [
+            "5441fff3297340d489b25ea6a3f41a68"
+          ],
+          "visual": {
+            "kind": "bar",
+            "categories": [
+              "До",
+              "После"
+            ],
+            "series": [
+              {
+                "name": "Сервис повышает эффективность и соблюдение стиля",
+                "values": [
+                  186.0,
+                  4.0
+                ]
+              }
+            ],
+            "columns": [],
+            "rows": [],
+            "steps": [],
+            "unit": "мин"
+          }
+        },
+        "elements": [
+          {
+            "id": "title",
+            "kind": "text",
+            "role": "title",
+            "text": "Сервис повышает эффективность и соблюдение стиля",
+            "box": [
+              131.54399999999998,
+              22.52205,
+              547.128,
+              93.2
+            ],
+            "font_size": 32.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "body",
+            "kind": "text",
+            "role": "body",
+            "text": "• Сокращение времени сборки с 186 до 4 мин\n• Сокращение времени до первой версии с 6 до 1 дня\n• Снижение нарушений стиля до 2 из 68\n• Экономия ресурсов на инференсе",
+            "box": [
+              131.54399999999998,
+              129.89705,
+              262.764,
+              218.40295
+            ],
+            "font_size": 16.0,
+            "bold": false,
+            "align": "left",
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF"
+          },
+          {
+            "id": "visual",
+            "kind": "bar",
+            "box": [
+              415.908,
+              129.89705,
+              262.764,
+              218.40295
+            ],
+            "data": {
+              "kind": "bar",
+              "categories": [
+                "До",
+                "После"
+              ],
+              "series": [
+                {
+                  "name": "Сервис повышает эффективность и соблюдение стиля",
+                  "values": [
+                    186.0,
+                    4.0
+                  ]
+                }
+              ],
+              "columns": [],
+              "rows": [],
+              "steps": [],
+              "unit": "мин"
+            },
+            "font": "Play",
+            "color": "000000",
+            "accent": "0077FF",
+            "bold": false,
+            "align": "left"
+          }
+        ]
+      }
+    ]
+  },
+  "audit": {
+    "issues": [],
+    "counts": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "contextual": {
+      "status": "completed",
+      "input": "structured_text"
+    },
+    "geometry_units": "pt",
+    "limitations": [
+      "Text fit is estimated, not pixel-measured",
+      "Collision checks use template shape boxes, not rendered pixels",
+      "Fill ratio estimates rendered ink inside the template content area",
+      "Contextual audit uses text, not slide images"
+    ]
+  },
+  "workflow": {
+    "version": "1.12.0",
+    "agents": {
+      "outline": "outline.v5.txt",
+      "audit": "audit.v3.txt",
+      "audit_image": "audit.image.v2.txt",
+      "condense": "condense.v1.txt",
+      "assets": "assets.v1.txt",
+      "image_check": "image.check.v1.txt"
+    },
+    "narratives": "narratives.v1.json",
+    "variants": [
+      {
+        "id": "classic",
+        "description": "Вертикальный рассказ: текст сверху, визуализация снизу"
+      },
+      {
+        "id": "split",
+        "description": "Две колонки: текст слева, визуализация или тезисы справа"
+      },
+      {
+        "id": "focus",
+        "description": "Акцент: визуализация сверху, краткие выводы снизу"
+      }
+    ],
+    "changelog": [
+      {
+        "version": "1.12.0",
+        "agents": {
+          "outline": "v5",
+          "audit": "v3",
+          "audit_image": "v2"
+        },
+        "why": "Проверка архивов 27.09: неподтверждённые сроки и бюджет в адаптации доклада, отсутствие графиков при наличии сравнимых данных. Приоритет источников над каркасом и объёмом; строгая полнота контекстного аудита, ошибки модели больше не означают чистый отчёт. Эталоны включают HTML и полные отчёты."
+      },
+      {
+        "version": "1.11.0",
+        "agents": {
+          "outline": "v4",
+          "audit": "v2"
+        },
+        "why": "Живой прогон: 7 из 12 заголовков выглядели как «Ожидаемый эффект: скорость сборки» — модель ставила названия шагов каркаса префиксом, и аудит по картинке помечал их как тему вместо вывода (Приложение 1, вопрос 1). Промпт планировщика теперь прямо запрещает такой префикс, а детерминированная проверка возвращает модели заголовки, открытые шагом каркаса, и отмечает оставшиеся находкой title_topic. Финальный шаг с просьбами больше не подталкивает придумывать решения, которых нет в материалах. Текстовый аудит явно проверяет связность соседних слайдов (вопрос 11) и заголовки-темы; числа в таблицах и подписях схем сверяются с материалами так же, как в тезисах."
+      },
+      {
+        "version": "1.10.0",
+        "agents": {
+          "image_check": "v1"
+        },
+        "why": "Задача со звёздочкой: слайду, где нет своей визуализации, картинку теперь можно нарисовать. Описание собирается детерминированно из заголовка слайда и палитры шаблона, а сгенерированная картинка проходит проверку агентом image_check: если генератор написал на ней буквы, картинка отбрасывается — чужие слова рядом с выверенным текстом слайда хуже, чем отсутствие иллюстрации. Генерация включается переменными DESIGNER_IMAGE_MODEL и DESIGNER_IMAGE_BASE_URL; без них колода собирается как раньше."
+      },
+      {
+        "version": "1.9.0",
+        "agents": {
+          "assets": "v1"
+        },
+        "why": "Слайды выходили голым текстом: иконки и иллюстрации шаблона лежали в файле, но не использовались. Картинки шаблона теперь собираются при импорте, а агент assets подписывает их по контакт-листу (16 картинок за вызов), чтобы вёрстка подбирала иконку к тезису по смыслу. Без мультимодальной модели работает встроенный набор SVG с тегами."
+      },
+      {
+        "version": "1.8.0",
+        "agents": {
+          "outline": "v3 + титульный слайд и типографика тезиса"
+        },
+        "why": "Живой прогон на девяти колодах: модель писала тезисы то со строчной буквы, то с точкой в конце, и разнобой был виден на слайде. Правило добавлено в промпт, а результат приводится к нему детерминированно — ждать от модели аккуратности в мелочах дороже, чем починить кодом. Тогда же описан титульный слайд: колода открывалась не названием, а первым содержательным слайдом, и он вставал на обложечную страницу шаблона — четыре тезиса поверх фонового фото. Ослаблены две проверки, из-за которых колода падала целиком: разряды числа («1 400» в материалах и «1400» на слайде) и подписи визуализации на чужом языке на последней попытке — такая визуализация снимается, а не роняет генерацию."
+      },
+      {
+        "version": "1.7.0",
+        "agents": {
+          "outline": "v3 + каркасы повествования"
+        },
+        "why": "Состав слайдов не должен быть одинаковым для продукта, проекта, фичи и инициативы. Добавлен конфиг narratives.v1.json: у каждого назначения свой каркас, а слайд про команду появляется только там, где он уместен и есть о ком рассказывать."
+      },
+      {
+        "version": "1.6.0",
+        "agents": {
+          "outline": "v3 (плотность слайда)"
+        },
+        "why": "Колоды выходили пустыми: один-два коротких тезиса на слайд, аудит отмечал заполненность ниже четверти. Промпт требует три-пять законченных тезисов по 6-14 слов там, где материал это позволяет."
+      },
+      {
+        "version": "1.5.0",
+        "agents": {
+          "condense": "v1"
+        },
+        "why": "Текст должен помещаться в место, которое даёт шаблон. Вместимость слайда считается по дизайн-системе, перегруженные слайды уходят агенту condense, а если модель недоступна — подрезаются детерминированно."
+      },
+      {
+        "version": "1.4.0",
+        "agents": {
+          "audit_image": "v1"
+        },
+        "why": "Приложение 1 требует контентных проверок по картинке слайда. Добавлен агент audit_image: слайд рендерится в PNG и уходит мультимодальной модели с одиннадцатью вопросами «да/нет»."
+      },
+      {
+        "version": "1.3.0",
+        "agents": {
+          "outline": "v3 (расширён набор схем)"
+        },
+        "why": "Появились схемы cycle, pyramid, timeline и comparison, а пиктограммы стали композициями фигур вместо кружков. Промпт объясняет, когда брать каждую схему, и ограничивает подписи шестью короткими элементами."
+      },
+      {
+        "version": "1.2.0",
+        "agents": {
+          "outline": "v2 → v3"
+        },
+        "why": "Второй живой прогон: аудит нашёл шесть чисел, выведенных моделью самостоятельно (проценты и кратности из пары значений), и один заголовок, не влезающий в отведённую шаблоном полосу. Промпт запрещает производные числа и ограничивает заголовок 70 символами."
+      },
+      {
+        "version": "1.1.0",
+        "agents": {
+          "outline": "v1 → v2"
+        },
+        "why": "Живой прогон на gpt-oss-20b дал английские подписи осей в русской колоде, пустую единицу измерения, шесть тезисов-заполнителей на слайд и одну визуализацию на десять слайдов. Промпт теперь требует единый язык внутри визуализаций, обязательную единицу, запрещает воду и задаёт ориентир по доле слайдов с визуализацией."
+      },
+      {
+        "version": "1.0.0",
+        "agents": {
+          "outline": "v1",
+          "audit": "v1"
+        },
+        "why": "Первая версия воркфлоу"
+      }
+    ],
+    "sha256": {
+      "assets.v1.txt": "cfb50321a6dd9718abcf7af3021013eec4af0ffca64ce53c97d1d966dae9117b",
+      "audit.image.v1.txt": "a28c122cd8f7d41ebcec4e7a11466272beb6bde2e21c746ca058068489dadb49",
+      "audit.image.v2.txt": "78e297b92cd5efdf225767f41f44602d240835ed8f023cbba553aa17c2b86e11",
+      "audit.v1.txt": "849e32a3c48d7c299e63d619aa4428f5bfe304ac1c842b3e88b39f4b0c92a392",
+      "audit.v2.txt": "25baa05de85bda68362007c831d3fe5ef357d5aaf655843d3da373fcbc18f335",
+      "audit.v3.txt": "35144f21c2721f1a34785dd9cc4143933c1b04ad18e4b0bda7c3668814e1c767",
+      "condense.v1.txt": "96b8651044a905fc2b242708b5e7c42b0b9215ed0c0e85f5059f993cf303bf71",
+      "image.check.v1.txt": "8b6797927d0e32d04895a472836a8094d5de947bf9a1b3a3fcc86f9c7e89af0d",
+      "manifest.json": "fe2a20e22da694b02ace3b39164b9032df0052975a8e823ed3a908ab988a4615",
+      "narratives.v1.json": "d1836579ae11bc88633364c5c28fbdd04f3d3961f2c8f480dc702d1e1ded1e1f",
+      "outline.v1.txt": "de17a15f92e8a57444c6b0c28f8129302ece3767c873d2c3c4a6a0ae2a33b2ea",
+      "outline.v2.txt": "3067000832be84be8d7c873c0603683d8fadd8c6c8a4fcfac9b96c56f3c4e674",
+      "outline.v3.txt": "ac065d8f8d863f1e956d54926b671364e3125e9e2783363d3278db77a9928f22",
+      "outline.v4.txt": "2d3565d222a70492e014a2dfdfbca5b430ae004045d6e43ccc65def110aa247a",
+      "outline.v5.txt": "6287fd28d80d68179115d3f0bfd2268a4fbf5da4039bdf71af911a1fc577dca7"
+    }
+  },
+  "generation": {
+    "mode": "llm",
+    "model": "gpt://b1g5nlmfmdtalq4pami5/gpt-oss-20b",
+    "provider": "openai",
+    "purpose": "initiative",
+    "language": "ru"
+  },
+  "created_at": 1790707580.12468,
+  "content_pack_ids": [
+    "5441fff3297340d489b25ea6a3f41a68"
+  ],
+  "illustrations_id": null,
+  "export_check": {
+    "opens": true,
+    "slides": 12,
+    "native_objects": 55,
+    "raster_slides": [],
+    "charts": [
+      {
+        "slide": 1,
+        "series": 1,
+        "legend": false,
+        "axis_title": true,
+        "value_labels": true
+      },
+      {
+        "slide": 5,
+        "series": 1,
+        "legend": false,
+        "axis_title": true,
+        "value_labels": true
+      },
+      {
+        "slide": 11,
+        "series": 1,
+        "legend": false,
+        "axis_title": true,
+        "value_labels": true
+      }
+    ],
+    "moved_branding": []
+  },
+  "exports": {
+    "pptx": "/api/v1/presentations/141b9ae6a9d041a0ba0870d76dee4472/export/pptx?revision=1",
+    "pdf": "/api/v1/presentations/141b9ae6a9d041a0ba0870d76dee4472/export/pdf?revision=1",
+    "html": "/api/v1/presentations/141b9ae6a9d041a0ba0870d76dee4472/export/html?revision=1"
+  }
+}
