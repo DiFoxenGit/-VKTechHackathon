@@ -266,7 +266,10 @@ export const presentationService = {
       brief: brief.text,
       purpose,
       language: 'ru',
-      slide_count: brief.slideCount,
+      // С готовой структурой объём задаёт она: модель могла собрать меньше слайдов,
+      // чем просили, а пользователь — добавить или удалить слайды. Сервер требует
+      // совпадения и иначе отвечает 422.
+      slide_count: outline ? outline.slides.length : brief.slideCount,
       content_pack_ids: packIds,
       contextual_audit: true,
       // Готовая структура сохраняется; содержание проверяется перед вёрсткой.
