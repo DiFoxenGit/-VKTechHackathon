@@ -1,9 +1,4 @@
 /// <reference types="vite/client" />
-import JSZip from 'jszip';
-import playCyrillic400 from '@fontsource/play/files/play-cyrillic-400-normal.woff2?inline';
-import playCyrillic700 from '@fontsource/play/files/play-cyrillic-700-normal.woff2?inline';
-import playLatin400 from '@fontsource/play/files/play-latin-400-normal.woff2?inline';
-import playLatin700 from '@fontsource/play/files/play-latin-700-normal.woff2?inline';
 import type { AuditIssue, Brief, Deck, Layout, Slide, Template } from './types';
 
 /** These counts, colours and fonts were read from the three supplied PPTX files. */
@@ -162,6 +157,9 @@ export async function importTemplate(file: File): Promise<Template> {
   if (!file.size) throw new Error('Этот файл пустой. Выберите другой PPTX.');
   const buffer = await file.arrayBuffer();
   validateZipDirectory(buffer);
+  const { default: JSZip } = await import('jszip').catch(error => {
+    throw new Error('Не удалось загрузить модуль чтения PPTX. Проверьте подключение и повторите импорт.', { cause: error });
+  });
   const zip = await JSZip.loadAsync(buffer);
   const presentation = zip.file('ppt/presentation.xml');
   if (!presentation) throw new Error('В файле нет структуры презентации PowerPoint.');
@@ -246,9 +244,21 @@ export function getSlideTypography(slide: Slide, template: Template, layout: Lay
   return { title: 3.2, body: 1.8 };
 }
 
-const embeddedPlayFonts = `@font-face{font-family:Play;font-style:normal;font-weight:400;src:url('${playCyrillic400}') format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Play;font-style:normal;font-weight:700;src:url('${playCyrillic700}') format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Play;font-style:normal;font-weight:400;src:url('${playLatin400}') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:Play;font-style:normal;font-weight:700;src:url('${playLatin700}') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}`;
+// Export-only font data stays out of the first screen's JavaScript bundle.
+async function embeddedPlayFonts(): Promise<string> {
+  const [cyrillic400, cyrillic700, latin400, latin700] = await Promise.all([
+    import('@fontsource/play/files/play-cyrillic-400-normal.woff2?inline'),
+    import('@fontsource/play/files/play-cyrillic-700-normal.woff2?inline'),
+    import('@fontsource/play/files/play-latin-400-normal.woff2?inline'),
+    import('@fontsource/play/files/play-latin-700-normal.woff2?inline'),
+  ]).catch(error => {
+    throw new Error('Не удалось загрузить шрифты для экспорта. Проверьте подключение и повторите попытку.', { cause: error });
+  });
+  const [playCyrillic400, playCyrillic700, playLatin400, playLatin700] = [cyrillic400.default, cyrillic700.default, latin400.default, latin700.default];
+  return `@font-face{font-family:Play;font-style:normal;font-weight:400;src:url('${playCyrillic400}') format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Play;font-style:normal;font-weight:700;src:url('${playCyrillic700}') format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Play;font-style:normal;font-weight:400;src:url('${playLatin400}') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:Play;font-style:normal;font-weight:700;src:url('${playLatin700}') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}`;
+}
 
-function htmlDocument(deck: Deck, template: Template): string {
+async function htmlDocument(deck: Deck, template: Template): Promise<string> {
   const primary = safeColor(template.color, '#0077FF');
   const secondary = safeColor(template.secondary, '#FF3885');
   const layout: Layout = ['classic', 'story', 'focus'].includes(deck.layout) ? deck.layout : 'classic';
@@ -258,7 +268,7 @@ function htmlDocument(deck: Deck, template: Template): string {
     return `<section class="slide-canvas layout-${layout} ${slide.kind === 'cover' ? 'is-cover' : ''}" aria-label="Слайд ${index + 1}" style="--body-size:${sizes.body}cqw;--title-size:${sizes.title}cqw"><div class="slide-brand"><span class="vk-mark">${template.custom ? 's' : 'vk'}</span><span>${escapeHtml(template.name.replace('VK ', ''))}</span></div><div class="slide-content"><div class="slide-eyebrow">${eyebrow}</div><h3>${escapeHtml(slide.title || 'Название слайда')}</h3>${slide.body ? `<p>${escapeHtml(slide.body)}</p>` : ''}</div><div class="slide-accent" aria-hidden="true"><div></div><div></div><div></div></div><div class="slide-bottom"><span>${escapeHtml(template.name)} · Презентация</span><span>${String(index + 1).padStart(2, '0')} / ${String(deck.slides.length).padStart(2, '0')}</span></div></section>`;
   }).join('\n');
   return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(deck.title)}</title><style>
-${template.font === 'Play' ? embeddedPlayFonts : ''}
+${template.font === 'Play' ? await embeddedPlayFonts() : ''}
 *{box-sizing:border-box}body{margin:0;padding:32px 0;background:#e9edf3;font-family:'${escapeHtml(safeFont(template.font))}',Arial,sans-serif}h3,p{margin:0}.slide-canvas{--slide-color:${primary};--slide-secondary:${secondary};aspect-ratio:16/9;background:#fff;position:relative;overflow:hidden;container-type:inline-size;color:#243149;text-align:left;box-shadow:0 3px 18px #192e5610;width:min(1280px,calc(100vw - 32px));margin:0 auto 32px;break-after:page;page-break-after:always}.slide-brand{position:absolute;left:7%;top:8%;font-size:3cqw;display:flex;gap:1.2cqw;align-items:center;z-index:2;color:var(--slide-color)}.vk-mark{font-family:Arial,sans-serif;font-size:1.1em;letter-spacing:-.15em;padding-right:.2em;font-weight:900}.slide-content{position:absolute;left:7%;top:26%;width:66%;z-index:2}.slide-eyebrow{font-size:1.3cqw;letter-spacing:.22cqw;color:var(--slide-color);margin-bottom:3cqw;font-weight:650}.slide-content h3{font-size:var(--title-size);line-height:1.16;font-weight:750;letter-spacing:-.16cqw;overflow-wrap:anywhere;white-space:pre-wrap}.slide-content p{font-size:var(--body-size);line-height:1.55;font-weight:400;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:2.5cqw;color:#64718a}.slide-bottom{position:absolute;left:7%;right:7%;bottom:6%;display:flex;justify-content:space-between;font-size:1.25cqw;letter-spacing:.03cqw;color:#91a0b5;z-index:2}.slide-accent{position:absolute;right:0;top:0;width:19%;height:100%;background:var(--slide-color)}.slide-accent>div{position:absolute;left:16%;right:16%;border:1px solid #ffffff45;height:15%;top:43%;border-radius:1.5cqw;transform:rotate(-25deg)}.slide-accent>div:nth-child(2){top:50%;background:#ffffff22}.slide-accent>div:nth-child(3){top:57%;background:#ffffff33}.layout-classic .slide-bottom{right:23%}.layout-classic.is-cover .slide-content{top:30%}.layout-story{background:var(--slide-color);color:#fff}.layout-story .slide-brand,.layout-story .slide-eyebrow{color:#ffffffc9}.layout-story .slide-content p{color:#ffffffc4}.layout-story .slide-content{width:65%;top:25%}.layout-story .slide-bottom{color:#ffffff90}.layout-story .slide-accent{background:#ffffff0e;right:-10%;top:10%;width:35%;height:90%;transform:rotate(23deg)}.layout-story .slide-accent>div{background:#ffffff0e;border-color:#ffffff32}.layout-focus .slide-accent{height:1.5%;top:0;width:100%}.layout-focus .slide-accent>div{display:none}.layout-focus .slide-content{text-align:center;width:82%;left:9%;top:30%}.layout-focus .slide-eyebrow{margin-bottom:2.4cqw}.layout-focus .slide-content p{margin-top:2cqw}.layout-focus .slide-brand{left:50%;transform:translateX(-50%);font-size:2.7cqw}.layout-focus .slide-bottom{color:#9da9ba}@page{size:13.333333in 7.5in;margin:0}@media print{html,body{margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.slide-canvas{width:13.333333in;height:7.5in;margin:0;box-shadow:none;page-break-inside:avoid;break-inside:avoid}.slide-canvas:last-child{break-after:auto;page-break-after:auto}}
 </style></head><body>${slideHtml}</body></html>`;
 }
@@ -274,20 +284,40 @@ function download(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-export function exportHtml(deck: Deck, template: Template): void {
-  download(new Blob([htmlDocument(deck, template)], { type: 'text/html;charset=utf-8' }), `${safeFilename(deck.title)}.html`);
+export async function exportHtml(deck: Deck, template: Template): Promise<void> {
+  download(new Blob([await htmlDocument(deck, template)], { type: 'text/html;charset=utf-8' }), `${safeFilename(deck.title)}.html`);
 }
 
-export function exportPrint(deck: Deck, template: Template): void {
+export async function exportPrint(deck: Deck, template: Template): Promise<void> {
+  // Reserve the window during the click so lazy font loading cannot lose user activation.
   const popup = window.open('', '_blank');
   if (!popup) throw new Error('Браузер заблокировал окно печати. Разрешите всплывающие окна для этого сайта и повторите.');
   popup.opener = null;
-  popup.document.open();
-  popup.document.write(htmlDocument(deck, template));
-  popup.document.close();
-  const print = () => { popup.focus(); popup.print(); };
-  if (popup.document.fonts) void popup.document.fonts.ready.then(() => popup.setTimeout(print, 200));
-  else popup.setTimeout(print, 300);
+  try {
+    popup.document.write('<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Подготовка PDF</title></head><body style="margin:0;padding:64px 24px;background:#f4f7fb;color:#243149;font:16px/1.6 Arial,sans-serif;text-align:center"><h1 style="font-size:24px">Подготавливаем презентацию…</h1><p role="status">Загружаем шрифты и готовим слайды к печати.</p></body></html>');
+    popup.document.close();
+    const html = await htmlDocument(deck, template);
+    if (popup.closed) throw new Error('Окно печати закрыто. Повторите экспорт PDF, когда будете готовы.');
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+    const toolbar = popup.document.createElement('div');
+    toolbar.className = 'print-actions';
+    toolbar.innerHTML = '<p>В окне печати выберите «Сохранить как PDF».</p><button type="button">Открыть окно печати</button>';
+    popup.document.body.prepend(toolbar);
+    const toolbarStyle = popup.document.createElement('style');
+    toolbarStyle.textContent = '.print-actions{display:flex;justify-content:center;align-items:center;gap:20px;flex-wrap:wrap;padding:0 24px 24px;font:14px/1.5 Arial,sans-serif;color:#243149}.print-actions button{border:0;border-radius:10px;padding:12px 18px;background:#0077ff;color:#fff;font:600 14px Arial,sans-serif;cursor:pointer}.print-actions button:focus-visible{outline:3px solid #243149;outline-offset:3px}@media print{.print-actions{display:none!important}}';
+    popup.document.head.appendChild(toolbarStyle);
+    const print = () => { if (!popup.closed) { popup.focus(); popup.print(); } };
+    toolbar.querySelector('button')!.addEventListener('click', print);
+    await popup.document.fonts?.ready;
+    await new Promise<void>(resolve => window.setTimeout(resolve, 200));
+    if (popup.closed) throw new Error('Окно печати закрыто. Повторите экспорт PDF, когда будете готовы.');
+    print();
+  } catch (error) {
+    if (!popup.closed) popup.close();
+    throw error;
+  }
 }
 
 /** Use the same font and approximate CSS wrapping to position editable text boxes. */
@@ -311,7 +341,9 @@ function textLineCount(text: string, width: number, size: number, font: string, 
 }
 
 export async function exportPptx(deck: Deck, template: Template): Promise<void> {
-  const { default: PptxGenJS } = await import('pptxgenjs');
+  const { default: PptxGenJS } = await import('pptxgenjs').catch(error => {
+    throw new Error('Не удалось загрузить модуль экспорта PPTX. Проверьте подключение и повторите попытку.', { cause: error });
+  });
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';
   pptx.author = 'Slide Studio';

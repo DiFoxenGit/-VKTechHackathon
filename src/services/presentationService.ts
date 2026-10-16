@@ -1,7 +1,27 @@
 import { createDemoDeck, templates as localTemplates } from '../engine';
 import type { AuditIssue, Brief, Deck, Slide, Template } from '../types';
 
-const API_BASE = (import.meta.env.VITE_PRESENTATIONS_API_BASE_URL || '/presentations/api/v1').replace(/\/$/, '');
+const API_BASE = (import.meta.env.DEV ? '/presentations/api/v1' : import.meta.env.VITE_PRESENTATIONS_API_BASE_URL || '/presentations/api/v1').replace(/\/$/, '');
+const REQUEST_TIMEOUT = 30_000;
+const TRANSFER_TIMEOUT = 120_000;
+const GENERATION_TIMEOUT = 300_000;
+
+/** Percentages describe measured transfer bytes or the server job, never elapsed time. */
+export type ServiceProgress = {
+  stage: 'preparing' | 'submitting' | 'queued' | 'generating' | 'fetching' | 'uploading' | 'processing' | 'downloading' | 'complete';
+  progress?: number;
+  loaded?: number;
+  total?: number;
+  jobId?: string;
+  serverStage?: string;
+  message?: string;
+};
+
+export type ServiceOptions = {
+  /** Cancels browser requests and polling; an accepted server job may still finish. */
+  signal?: AbortSignal;
+  onProgress?: (event: ServiceProgress) => void;
+};
 
 type BackendTemplate = {
   id: string;
@@ -16,6 +36,7 @@ type Job = {
   id: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
   progress?: number;
+  stage?: string;
   presentation_ids?: string[];
   error?: string;
 };
@@ -32,29 +53,145 @@ type BackendPresentation = {
   exports?: Partial<Record<'pptx' | 'pdf' | 'html', string>>;
 };
 
+class ApiError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
+
 function apiError(detail: unknown, status: number): Error {
+  if (typeof detail === 'string' && /LibreOffice is required/i.test(detail)) {
+    return new ApiError('Экспорт в этот формат временно недоступен. Скачайте PPTX или попробуйте позже.', status);
+  }
   if (Array.isArray(detail)) {
     const messages = detail.map(item => typeof item === 'object' && item && 'msg' in item ? String(item.msg) : String(item)).filter(Boolean);
-    if (messages.length) return new Error(messages.join('; '));
+    if (messages.length) return new ApiError(messages.join('; '), status);
   }
-  return new Error(typeof detail === 'string' && detail ? detail : `Ошибка API (${status})`);
+  const fallback = status === 413 ? 'Файл слишком большой. Выберите файл до 50 МБ.'
+    : status === 429 ? 'Сервер занят. Подождите немного и повторите попытку.'
+    : status >= 500 ? 'Сервер временно недоступен. Попробуйте ещё раз через минуту.'
+    : `Не удалось выполнить запрос (${status}). Попробуйте ещё раз.`;
+  return new ApiError(typeof detail === 'string' && detail ? detail : fallback, status);
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers = new Headers(init.headers);
-  headers.set('Accept', 'application/json');
-  if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-  const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
-  if (!response.ok) {
-    let detail: unknown = null;
-    try { detail = (await response.json()).detail; } catch { /* The proxy may return an HTML error page. */ }
-    throw apiError(detail, response.status);
-  }
-  return response.json() as Promise<T>;
+function abortError(): DOMException {
+  return new DOMException('Операция отменена.', 'AbortError');
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => window.setTimeout(resolve, ms));
+function checkAborted(signal?: AbortSignal | null): void {
+  if (signal?.aborted) throw abortError();
+}
+
+function timeoutError(): Error {
+  const error = new Error('Сервер долго не отвечает. Проверьте соединение и повторите попытку.');
+  error.name = 'TimeoutError';
+  return error;
+}
+
+async function withTimeout<T>(signal: AbortSignal | null | undefined, timeout: number, action: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  checkAborted(signal);
+  const controller = new AbortController();
+  const cancel = () => controller.abort(abortError());
+  signal?.addEventListener('abort', cancel, { once: true });
+  const timer = window.setTimeout(() => controller.abort(timeoutError()), timeout);
+  try {
+    const result = await action(controller.signal);
+    checkAborted(signal);
+    if (controller.signal.aborted) throw controller.signal.reason;
+    return result;
+  } catch (error) {
+    if (controller.signal.aborted) throw controller.signal.reason;
+    if (error instanceof TypeError) throw new Error('Не удалось связаться с сервером. Проверьте подключение к интернету и повторите попытку.');
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+    signal?.removeEventListener('abort', cancel);
+  }
+}
+
+async function checkResponse(response: Response): Promise<void> {
+  if (response.ok) return;
+  let detail: unknown = null;
+  try { detail = (await response.json()).detail; } catch { /* The proxy may return an HTML error page. */ }
+  throw apiError(detail, response.status);
+}
+
+async function request<T>(path: string, init: RequestInit = {}, timeout = REQUEST_TIMEOUT): Promise<T> {
+  return withTimeout(init.signal, timeout, async signal => {
+    const headers = new Headers(init.headers);
+    headers.set('Accept', 'application/json');
+    if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
+    const response = await fetch(`${API_BASE}${path}`, { ...init, signal, headers });
+    await checkResponse(response);
+    try { return await response.json() as T; }
+    catch (error) {
+      if (signal.aborted) throw error;
+      throw new Error('Сервер вернул некорректный ответ. Попробуйте ещё раз.');
+    }
+  });
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  checkAborted(signal);
+  return new Promise((resolve, reject) => {
+    const cancel = () => { window.clearTimeout(timer); reject(abortError()); };
+    const timer = window.setTimeout(() => { signal?.removeEventListener('abort', cancel); resolve(); }, ms);
+    signal?.addEventListener('abort', cancel, { once: true });
+  });
+}
+
+function upload<T>(path: string, file: File, options: ServiceOptions): Promise<T> {
+  checkAborted(options.signal);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const cancel = () => xhr.abort();
+    const finish = () => options.signal?.removeEventListener('abort', cancel);
+    xhr.open('POST', `${API_BASE}${path}`);
+    xhr.timeout = TRANSFER_TIMEOUT;
+    xhr.responseType = 'json';
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.upload.onprogress = event => options.onProgress?.({
+      stage: 'uploading',
+      progress: event.lengthComputable && event.total > 0 ? Math.round(event.loaded / event.total * 100) : undefined,
+      loaded: event.loaded,
+      total: event.lengthComputable ? event.total : undefined,
+      message: 'Загружаем файл на сервер',
+    });
+    xhr.upload.onload = () => options.onProgress?.({ stage: 'processing', message: 'Файл загружен. Обрабатываем содержимое' });
+    xhr.onload = () => {
+      finish();
+      if (xhr.status < 200 || xhr.status >= 300) { reject(apiError(xhr.response?.detail, xhr.status)); return; }
+      if (!xhr.response) { reject(new Error('Сервер вернул некорректный ответ. Попробуйте загрузить файл ещё раз.')); return; }
+      options.onProgress?.({ stage: 'complete', progress: 100 });
+      resolve(xhr.response as T);
+    };
+    xhr.onerror = () => { finish(); reject(new Error('Не удалось загрузить файл. Проверьте соединение и повторите попытку.')); };
+    xhr.ontimeout = () => { finish(); reject(timeoutError()); };
+    xhr.onabort = () => { finish(); reject(abortError()); };
+    options.signal?.addEventListener('abort', cancel, { once: true });
+    const form = new FormData();
+    form.append('file', file, file.name);
+    options.onProgress?.({ stage: 'uploading', progress: 0, loaded: 0, message: 'Загружаем файл на сервер' });
+    // A callback can cancel synchronously, before send() has activated the XHR.
+    if (options.signal?.aborted) { finish(); reject(abortError()); return; }
+    xhr.send(form);
+  });
+}
+
+function jobProgress(job: Job): ServiceProgress {
+  const messages: Record<string, string> = {
+    outline: 'Собираем структуру презентации',
+    balance: 'Распределяем содержание по слайдам',
+    assets: 'Подбираем материалы шаблона',
+    illustrations: 'Готовим иллюстрации',
+    contextual_audit: 'Проверяем содержание',
+    layout_and_audit: 'Верстаем слайды и проверяем оформление',
+  };
+  return {
+    stage: job.status === 'queued' ? 'queued' : 'generating',
+    progress: typeof job.progress === 'number' && Number.isFinite(job.progress) ? Math.max(0, Math.min(100, job.progress)) : undefined,
+    jobId: job.id,
+    serverStage: job.stage,
+    message: job.status === 'queued' ? 'Ожидаем свободное место на сервере' : messages[job.stage || ''] || 'Собираем презентацию',
+  };
 }
 
 function color(value: string | undefined, fallback: string): string {
@@ -107,6 +244,7 @@ function outlineFromBrief(brief: Brief) {
 
 function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
   const sourceSlides = record.deck?.slides || [];
+  if (!Array.isArray(sourceSlides) || !sourceSlides.length) throw new Error('Сервер вернул презентацию без слайдов. Попробуйте создать её ещё раз.');
   const slides: Slide[] = sourceSlides.map((slide, index) => {
     const content = slide.content || {};
     return {
@@ -145,35 +283,38 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
 
 /** Browser-side adapter for the production presentation API. */
 export interface PresentationService {
-  listTemplates(): Promise<Template[]>;
-  uploadTemplate(file: File): Promise<Template>;
-  uploadContent(file: File): Promise<ContentPack>;
-  generate(brief: Brief, templateId: string): Promise<Deck>;
-  download(deck: Deck, format: 'pptx' | 'pdf' | 'html'): Promise<void>;
+  listTemplates(options?: ServiceOptions): Promise<Template[]>;
+  uploadTemplate(file: File, options?: ServiceOptions): Promise<Template>;
+  uploadContent(file: File, options?: ServiceOptions): Promise<ContentPack>;
+  generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
+  download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
 
 export const presentationService: PresentationService = {
-  async listTemplates() {
-    const response = await request<{ items: BackendTemplate[] }>('/templates');
+  async listTemplates(options = {}) {
+    options.onProgress?.({ stage: 'fetching', message: 'Загружаем шаблоны' });
+    const response = await request<{ items: BackendTemplate[] }>('/templates', { signal: options.signal });
+    options.onProgress?.({ stage: 'complete', progress: 100 });
     return response.items.map(mapTemplate);
   },
 
-  async uploadTemplate(file) {
-    const form = new FormData();
-    form.append('file', file, file.name);
-    return mapTemplate(await request<BackendTemplate>('/templates', { method: 'POST', body: form }));
+  async uploadTemplate(file, options = {}) {
+    return mapTemplate(await upload<BackendTemplate>('/templates', file, options));
   },
 
-  async uploadContent(file) {
-    const form = new FormData();
-    form.append('file', file, file.name);
-    return request<ContentPack>('/content-packs', { method: 'POST', body: form });
+  async uploadContent(file, options = {}) {
+    return upload<ContentPack>('/content-packs', file, options);
   },
 
-  async generate(brief, templateId) {
+  async generate(brief, templateId, options = {}) {
+    checkAborted(options.signal);
+    const startedAt = Date.now();
+    options.onProgress?.({ stage: 'preparing', message: 'Подготавливаем материалы' });
     const outline = outlineFromBrief(brief);
+    options.onProgress?.({ stage: 'submitting', message: 'Отправляем задание на сервер' });
     const job = await request<Job>('/generations', {
       method: 'POST',
+      signal: options.signal,
       body: JSON.stringify({
         brief: brief.text,
         purpose: 'project',
@@ -187,27 +328,60 @@ export const presentationService: PresentationService = {
     });
 
     let current = job;
-    for (let attempt = 0; attempt < 250; attempt++) {
-      if (current.status === 'completed') break;
+    let polls = 0;
+    while (current.status !== 'completed') {
       if (current.status === 'failed') throw new Error(current.error || 'Генерация презентации завершилась ошибкой.');
-      await delay(1200);
-      current = await request<Job>(`/jobs/${job.id}`);
+      options.onProgress?.(jobProgress(current));
+      checkAborted(options.signal);
+      const remaining = GENERATION_TIMEOUT - (Date.now() - startedAt);
+      if (remaining <= 0) throw new Error('Генерация занимает больше 5 минут. Сервер может продолжать работу; попробуйте снова позже.');
+      // Check the accepted job immediately. Back off only during longer generation.
+      const interval = polls === 0 ? 0 : polls < 10 ? 800 : 1500;
+      if (interval) await delay(Math.min(interval, remaining), options.signal);
+      const requestBudget = GENERATION_TIMEOUT - (Date.now() - startedAt);
+      if (requestBudget <= 0) throw new Error('Генерация занимает больше 5 минут. Сервер может продолжать работу; попробуйте снова позже.');
+      current = await request<Job>(`/jobs/${encodeURIComponent(job.id)}`, { signal: options.signal }, Math.min(REQUEST_TIMEOUT, requestBudget));
+      polls++;
     }
-    if (current.status !== 'completed') throw new Error('Сервер не завершил генерацию за 5 минут. Попробуйте ещё раз.');
     const presentationId = current.presentation_ids?.[0];
     if (!presentationId) throw new Error('Сервер не вернул готовую презентацию.');
-    return mapPresentation(await request<BackendPresentation>(`/presentations/${presentationId}`), brief);
+    options.onProgress?.({ stage: 'fetching', jobId: job.id, message: 'Презентация собрана. Открываем результат' });
+    const deck = mapPresentation(await request<BackendPresentation>(`/presentations/${encodeURIComponent(presentationId)}`, { signal: options.signal }), brief);
+    options.onProgress?.({ stage: 'complete', progress: 100, jobId: job.id });
+    return deck;
   },
 
-  async download(deck, format) {
-    const url = deck.exports?.[format] || `${API_BASE}/presentations/${deck.id}/export/${format}?revision=${deck.revision || 1}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      let detail: unknown = null;
-      try { detail = (await response.json()).detail; } catch { /* Preserve a useful generic message for binary errors. */ }
-      throw apiError(detail, response.status);
-    }
-    const blob = await response.blob();
+  async download(deck, format, options = {}) {
+    checkAborted(options.signal);
+    const exportPath = deck.exports?.[format] || `${API_BASE}/presentations/${encodeURIComponent(deck.id)}/export/${format}?revision=${deck.revision || 1}`;
+    // The backend may omit the reverse proxy prefix in its root-relative export URLs.
+    const routedPath = /^\/api\/v1(?:\/|$)/.test(exportPath) ? `${API_BASE}${exportPath.slice('/api/v1'.length)}` : exportPath;
+    const url = new URL(routedPath, new URL(API_BASE, window.location.href)).href;
+    options.onProgress?.({ stage: 'preparing', message: `Готовим файл ${format.toUpperCase()}` });
+    const blob = await withTimeout(options.signal, TRANSFER_TIMEOUT, async signal => {
+      const response = await fetch(url, { signal });
+      await checkResponse(response);
+      // Browsers decode compressed responses, so their Content-Length cannot measure decoded bytes.
+      const encoded = response.headers.get('Content-Encoding');
+      const length = encoded && encoded !== 'identity' ? 0 : Number(response.headers.get('Content-Length'));
+      const total = Number.isFinite(length) && length > 0 ? length : undefined;
+      options.onProgress?.({ stage: 'downloading', loaded: 0, total, message: 'Скачиваем файл' });
+      if (!response.body) return response.blob();
+      const reader = response.body.getReader();
+      const chunks: ArrayBuffer[] = [];
+      let loaded = 0;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value.slice().buffer);
+          loaded += value.byteLength;
+          options.onProgress?.({ stage: 'downloading', loaded, total, progress: total ? Math.min(100, Math.round(loaded / total * 100)) : undefined, message: 'Скачиваем файл' });
+        }
+      } finally { reader.releaseLock(); }
+      return new Blob(chunks, { type: response.headers.get('Content-Type') || 'application/octet-stream' });
+    });
+    checkAborted(options.signal);
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = objectUrl;
@@ -216,5 +390,6 @@ export const presentationService: PresentationService = {
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+    options.onProgress?.({ stage: 'complete', progress: 100, loaded: blob.size, total: blob.size });
   },
 };

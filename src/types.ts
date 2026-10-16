@@ -13,7 +13,7 @@ export type Template = {
 
 export type Slide = { id: string; title: string; body: string; kind: 'cover' | 'content' | 'closing' };
 export type Layout = 'classic' | 'story' | 'focus';
-export type Brief = { text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string; contentPackIds?: string[] };
+export type Brief = { text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string; materialName?: string; contentPackIds?: string[] };
 export type Deck = {
   id: string;
   title: string;
