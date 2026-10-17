@@ -21,7 +21,7 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
 from .assets import color_roles, draw_asset
-from .analytics import CHARTS
+from .analytics_bridge import CHARTS
 from .analytic_export import add_chart, add_source, numeric_cell
 from .fonts import printable
 from .layout import STAT_BAR, STAT_INSET, estimated_text_height

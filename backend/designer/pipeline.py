@@ -9,7 +9,7 @@ from .algorithms.context import select_context
 from .algorithms.validation import validate_outline
 from .algorithms.balance import balance_plan, apply_condensation, finish_balance
 from .comparisons import add_comparison_charts
-from .analytics import analyse_sources, build_outline, verify_outline
+from .analytics_bridge import analyse_sources, build_outline, verify_outline
 LOGGER = logging.getLogger("designer.pipeline")
 
 

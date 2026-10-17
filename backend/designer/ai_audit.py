@@ -33,7 +33,7 @@ async def visual_audit(deck, sources, images):
             "visual": slide["content"]["visual"],
             "sources": selected,
             "source_context_complete": complete_sources,
-            "verified_analytics": [{"analysis_id": r["analysis_id"], "profile": r["profile"], "facts": [{k:v for k,v in f.items() if k != "rows"} for f in r["facts"]]} for r in sources[0].get("_analysis_results", [])] if sources else [],
+            "verified_analytics": [{"analysis_id": r["analysis_id"], "profile": r["profile"], "facts": [{k:v for k,v in f.items() if k not in {"rows","evidence"}} for f in r["facts"][:100]]} for r in sources[0].get("_analysis_results", [])] if sources else [],
         }
         try:
             result = await vision_completion(prompt, payload, image)
@@ -79,7 +79,7 @@ async def contextual_audit(deck, sources):
 
     result = await completion(
         "audit", {"slides": [s["content"] for s in deck["slides"]], "sources": select_context(sources, " ".join(s["content"]["title"] for s in deck["slides"])),
-                  "verified_analytics": [{"analysis_id": r["analysis_id"], "profile": r["profile"], "facts": [{k:v for k,v in f.items() if k != "rows"} for f in r["facts"]]} for r in sources[0].get("_analysis_results", [])] if sources else []},
+                  "verified_analytics": [{"analysis_id": r["analysis_id"], "profile": r["profile"], "facts": [{k:v for k,v in f.items() if k not in {"rows","evidence"}} for f in r["facts"][:100]]} for r in sources[0].get("_analysis_results", [])] if sources else []},
         validate=lambda result: validate_contextual_issues(result, count),
     )
     issues = []

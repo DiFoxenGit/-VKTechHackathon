@@ -3,14 +3,22 @@ export type Visual = {
   columns: string[]; rows: string[][]; unit: string; source: string;
   x_label: string; y_label: string; x_values: number[];
 };
+export type AnalysisRequest = {
+  goal?: string; task?: 'dynamics'|'comparison'|'shares'|'distribution'|'relationship'|'reference'|'summary';
+  dimension?: string | null; series_dimension?: string | null; metrics?: string[];
+  aggregation?: 'sum'|'mean'|'median'|'count'; unit?: string;
+  filters?: Record<string,(string|number|boolean|null)[]>;
+};
 export type AnalysisResult = {
   analysis_id: string; dataset_id: string; selected: string; title: string;
   status: string; reason?: string; source_file: string; sheet: string; source_hash: string;
   candidates: {kind: string; reason: string}[]; warnings: string[];
-  profile: {row_count: number; columns: {name: string; type: string; role: string; missing: number}[]};
+  profile: {row_count: number; columns: {id: string; name: string; kind: string; role: string; missing: number}[]};
+  analysis_request?: AnalysisRequest; packId?: string;
+  contract?: {schema_version: '1.0'; dataset_ref: unknown; analysis: unknown; visualization: unknown; data: unknown; facts: unknown[]; presentation: unknown; status: string};
   facts: unknown[]; provenance: unknown[]; visual: Visual;
 };
-export type Material = { id: string; name: string; text: string; goal?: string; file_report?: {name: string; status: string; reason?: string}[] };
+export type Material = { id: string; name: string; text: string; goal?: string; analysisRequests?: Record<string,AnalysisRequest>; file_report?: {name: string; status: string; reason?: string}[] };
 export type Brandbook = {id: string; name: string; tokens: {colors?: string[]; font?: string; background?: string}; warnings: string[]};
 export const visualNames: Record<string, string> = {table:'Таблица',bar:'Столбцы',line:'Линия',pie:'Круговая',scatter:'Точечная',histogram:'Гистограмма',grouped_bar:'Группированные столбцы',stacked_bar:'Накопительные столбцы',kpi:'Ключевой показатель'};
 export function parseVisual(input: unknown): Visual | undefined {

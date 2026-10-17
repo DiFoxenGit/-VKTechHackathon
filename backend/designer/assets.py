@@ -874,6 +874,8 @@ def parse_pack_zip(data, parse_text, report=None):
         for name in sorted(names):
             if name == "manifest.json":
                 continue
+            if report is not None and any(v["name"] == name and v["status"] == "rejected" for v in report):
+                continue
             suffix = PurePosixPath(name).suffix.lower()
             payload = archive.read(name)
             if suffix in TEXT_SUFFIXES:

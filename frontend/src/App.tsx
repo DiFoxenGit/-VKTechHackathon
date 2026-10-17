@@ -14,6 +14,7 @@ import type { Saved } from './storage';
 import { visualMarkup, visualStyles } from './analytics';
 import type { AnalysisResult } from './analytics';
 import { AnalysisPanel } from './components/AnalysisPanel';
+import { AnalysisControls } from './components/AnalysisControls';
 
 type Screen = 'create' | 'outline' | 'design' | 'editor' | 'projects' | 'templates';
 type Operation = 'generation' | 'material' | 'template' | 'pptx' | 'pdf' | 'html';
@@ -284,7 +285,7 @@ export default function App() {
   }
   async function previewAnalysis() {
     const controller=beginOperation('material');if(!controller)return;
-    try {const items:AnalysisResult[]=[];for(const id of brief.contentPackIds||[])items.push(...(await presentationService.analyseContent(id,brief.materialFiles?.find(f=>f.id===id)?.goal||brief.text,operationOptions(controller))).items);if(!controller.signal.aborted){setAnalysisPreview(items);if(!items.length)setToast('В материалах не найдены структурированные таблицы');}}
+    try {const items:AnalysisResult[]=[];for(const id of brief.contentPackIds||[])items.push(...(await presentationService.analyseContent(id,brief.materialFiles?.find(f=>f.id===id)?.goal||brief.text,operationOptions(controller),brief.materialFiles?.find(f=>f.id===id)?.analysisRequests)).items.map(result=>({...result,packId:id})));if(!controller.signal.aborted){setAnalysisPreview(items);if(!items.length)setToast('В материалах не найдены структурированные таблицы');}}
     catch(error){if(!controller.signal.aborted)setError(error instanceof Error?error.message:'Не удалось проанализировать данные');}
     finally{finishOperation(controller);}
   }
@@ -360,7 +361,7 @@ export default function App() {
           <div className="material-files">{brief.materialFiles?.map(file=><div key={file.id} className="attached-material"><FileText size={15}/><span>{file.name}</span><IconButton label={`Удалить ${file.name}`} disabled={Boolean(busy)} onClick={()=>{setBrief(prev=>{const files=(prev.materialFiles||[]).filter(f=>f.id!==file.id);return {...prev,materialFiles:files,contentPackIds:(prev.contentPackIds||[]).filter(id=>id!==file.id),materials:files.map(f=>f.text).join('\n\n')};});setAnalysisPreview([]);}}><X size={14}/></IconButton><label className="material-analysis-goal">Цель анализа<input aria-label={`Цель анализа ${file.name}`} placeholder="Автоматически из описания. Например: доли каналов" value={file.goal||''} maxLength={1000} disabled={Boolean(busy)} onChange={e=>{const goal=e.target.value;setBrief(prev=>({...prev,materialFiles:prev.materialFiles?.map(f=>f.id===file.id?{...f,goal}:f)}));setAnalysisPreview([]);}}/></label>{file.file_report?.map((entry,i)=><small key={i}>{entry.status==='accepted'?'Принят':'Отклонён'}: {entry.name}{entry.reason ? ` · ${entry.reason}` : ''}</small>)}</div>)}</div>
           <div className="data-actions"><button className="secondary-button" disabled={Boolean(busy)} onClick={()=>brandbookInput.current?.click()}><Upload size={16}/>Загрузить брендбук</button>{Boolean(brief.contentPackIds?.length)&&<button className="secondary-button" disabled={Boolean(busy)} onClick={()=>void previewAnalysis()}>Проверить данные</button>}</div>
           {brief.brandbook&&<div className="brandbook-info"><strong>{brief.brandbook.name}</strong><button className="text-button" disabled={Boolean(busy)} onClick={()=>setBrief(prev=>({...prev,brandbook:undefined}))}>Удалить</button><p>Брендбук имеет приоритет над шаблоном. Поддержка: JSON-токены, явные палитра/шрифт в текстовом PDF, brandbook.json в ZIP. Файлы .fig и сканы не поддерживаются.</p>{brief.brandbook.warnings.map((w,i)=><p key={i}>{w}</p>)}</div>}
-          {analysisPreview.length>0&&<AnalysisPanel items={analysisPreview}/>}
+          {analysisPreview.length>0&&<><AnalysisPanel items={analysisPreview}/>{analysisPreview.map(result=><AnalysisControls key={result.analysis_id} result={result} value={brief.materialFiles?.find(f=>f.id===result.packId)?.analysisRequests?.[result.dataset_id]||result.analysis_request||{}} onChange={selection=>{setBrief(prev=>({...prev,materialFiles:prev.materialFiles?.map(f=>f.id===result.packId?{...f,analysisRequests:{...f.analysisRequests,[result.dataset_id]:selection}}:f)}));setToast('Параметры изменены. Нажмите «Проверить данные» для пересчёта');}}/>)}</>}
           <div className="home-fineprint">Бриф сохраняется автоматически. Создание может занять несколько минут.</div></>}
           {decks.length > 0 && <section className="home-recent"><div><h2>Продолжить работу</h2><button onClick={() => navigate('projects')}>Все презентации<ArrowRight size={14} /></button></div><div className="home-recent-list">{decks.slice(0, 2).map(d => <button key={d.id} onClick={() => openDeck(d)}><span className="recent-deck-icon"><Presentation size={19} /></span><span><strong>{d.title || 'Без названия'}</strong><small>{slideCountLabel(d.slides.length)} · {new Date(d.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small></span><ArrowUpRight size={17} /></button>)}</div></section>}
         </section>}

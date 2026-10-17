@@ -5,7 +5,7 @@ import { runPresentationPipeline } from '../pipeline/presentationPipeline';
 import type { PipelineDependencies, PipelineStage } from '../pipeline/presentationPipeline';
 import type { AuditIssue, Brief, Deck, Slide, Template } from '../types';
 import { parseVisual } from '../analytics';
-import type { Material, Brandbook, AnalysisResult } from '../analytics';
+import type { Material, Brandbook, AnalysisRequest, AnalysisResult } from '../analytics';
 
 const API_BASE = (import.meta.env.DEV ? '/presentations/api/v1' : import.meta.env.VITE_PRESENTATIONS_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
 const REQUEST_TIMEOUT = 30_000;
@@ -282,7 +282,7 @@ export interface PresentationService {
   uploadTemplate(file: File, options?: ServiceOptions): Promise<Template>;
   uploadContent(file: File, options?: ServiceOptions): Promise<ContentPack>;
   uploadBrandbook(file: File, options?: ServiceOptions): Promise<Brandbook>;
-  analyseContent(packId: string, goal: string, options?: ServiceOptions): Promise<{items: AnalysisResult[]}>;
+  analyseContent(packId: string, goal: string, options?: ServiceOptions, selections?: Record<string,AnalysisRequest>): Promise<{items: AnalysisResult[]}>;
   generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
   download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
@@ -302,6 +302,7 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       content_pack_ids: brief.contentPackIds || [],
       contextual_audit: false,
       analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n'),
+      analysis_requests: Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
       analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
       ...(brief.brandbook ? {brandbook_id: brief.brandbook.id} : {}),
       template_id: templateId,
@@ -359,8 +360,8 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
     async uploadBrandbook(file, options = {}) {
       return upload<Brandbook>('/brandbooks', file, options);
     },
-    async analyseContent(packId, goal, options = {}) {
-      return request<{items: AnalysisResult[]}>(`/content-packs/${encodeURIComponent(packId)}/analysis?goal=${encodeURIComponent(goal)}`, {signal: options.signal});
+    async analyseContent(packId, goal, options = {}, selections = {}) {
+      return request<{items: AnalysisResult[]}>(`/content-packs/${encodeURIComponent(packId)}/analysis`, {method: 'POST',body:JSON.stringify({goal,requests:selections}),signal: options.signal});
     },
 
     async generate(brief, templateId, options = {}) {

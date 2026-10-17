@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from .analytics.models import AnalysisRequest
 
 
 class StrictModel(BaseModel):
@@ -101,12 +102,18 @@ class Brief(StrictModel):
     content_pack_ids: list[str] = Field(default_factory=list, max_length=10)
 
 
+class PackAnalysisRequest(StrictModel):
+    goal: str = Field(default="", max_length=1000)
+    requests: dict[str, AnalysisRequest] = Field(default_factory=dict, max_length=256)
+
+
 class GenerateRequest(Brief):
     contextual_audit: bool = False
     template_id: str
     outline: Outline | None = None
     analysis_goal: str = Field(default="", max_length=1000)
     analysis_goals: dict[str, str] = Field(default_factory=dict, max_length=10)
+    analysis_requests: dict[str, AnalysisRequest] = Field(default_factory=dict, max_length=256)
     brandbook_id: str | None = None
     style_overrides: dict = Field(default_factory=dict)
 

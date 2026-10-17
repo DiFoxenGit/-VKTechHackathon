@@ -1,6 +1,6 @@
 import type { AuditIssue, Brief, Deck, Layout, Slide, Template } from './types';
 import { parseVisual } from './analytics';
-import type { AnalysisResult } from './analytics';
+import type { AnalysisRequest, AnalysisResult } from './analytics';
 
 export type Saved = { brief: Brief; decks: Deck[]; customTemplates: Template[] };
 export const STORAGE_KEY = 'slide-studio:v1';
@@ -25,7 +25,7 @@ function normalizeBrief(value: unknown, fallback: Brief = DEFAULT_BRIEF): Brief 
     materials: text(source.materials, fallback.materials),
     ...(typeof source.materialName === 'string' ? { materialName: source.materialName } : {}),
     contentPackIds: Array.isArray(source.contentPackIds) ? [...new Set(source.contentPackIds.filter(identifier))] : [...(fallback.contentPackIds || [])],
-    ...(Array.isArray(source.materialFiles) ? {materialFiles: source.materialFiles.filter(isRecord).filter(m => identifier(m.id) && typeof m.name === 'string' && typeof m.text === 'string').map(m => ({id:String(m.id),name:String(m.name),text:String(m.text),...(typeof m.goal==='string'?{goal:m.goal}:{}),file_report:Array.isArray(m.file_report) ? m.file_report.filter(isRecord).map(f => ({name:text(f.name),status:text(f.status),reason:text(f.reason)})) : undefined})) } : {}),
+    ...(Array.isArray(source.materialFiles) ? {materialFiles: source.materialFiles.filter(isRecord).filter(m => identifier(m.id) && typeof m.name === 'string' && typeof m.text === 'string').map(m => ({id:String(m.id),name:String(m.name),text:String(m.text),...(typeof m.goal==='string'?{goal:m.goal}:{}),...(isRecord(m.analysisRequests)?{analysisRequests:m.analysisRequests as Record<string,AnalysisRequest>}:{}),file_report:Array.isArray(m.file_report) ? m.file_report.filter(isRecord).map(f => ({name:text(f.name),status:text(f.status),reason:text(f.reason)})) : undefined})) } : {}),
     ...(isRecord(source.brandbook) && identifier(source.brandbook.id) && isRecord(source.brandbook.tokens) ? {brandbook:{id:source.brandbook.id,name:text(source.brandbook.name),tokens:{colors:Array.isArray(source.brandbook.tokens.colors)?source.brandbook.tokens.colors.filter((v):v is string=>typeof v==='string'&&/^#?[0-9a-f]{6}$/i.test(v)):[],font:text(source.brandbook.tokens.font)},warnings:Array.isArray(source.brandbook.warnings)?source.brandbook.warnings.filter((v):v is string=>typeof v==='string'):[]}} : {}),
   };
 }

@@ -7,7 +7,7 @@ import pytest
 from openpyxl import Workbook
 from pptx import Presentation
 from fastapi.testclient import TestClient
-from designer.analytics import extract, extract_pack, analyse, build_outline, verify_outline
+from designer.analytics_bridge import extract, extract_pack, analyse, build_outline, verify_outline
 from designer.brandbook import parse_brandbook, apply_style
 from designer.models import Visual
 from designer.app import create_app
@@ -26,7 +26,7 @@ def test_equivalent_csv_xlsx_json():
               extract(json.dumps([dict(zip(matrix[0], row)) for row in matrix[1:]], ensure_ascii=False).encode(), "data.json")[0]]
     results = [analyse(t, "Сравнить регионы") for t in tables]
     assert [r["visual"]["series"][0]["values"] for r in results] == [[2500, 1200.5]] * 3
-    assert [r["facts"][0]["value"] for r in results] == [3700.5] * 3
+    assert [sum(f["value"] for f in r["facts"]) for r in results] == [3700.5] * 3
 
 
 def test_goal_changes_selection_and_category_value_swap_is_rejected():
@@ -35,7 +35,7 @@ def test_goal_changes_selection_and_category_value_swap_is_rejected():
     assert result["selected"] == "line"
     assert result["facts"][-1]["value"] == pytest.approx(133.33333333)
     assert analyse(table, "Сравнить итоги регионов")["selected"] == "bar"
-    sources = [{"id":"pack", "datasets":[table]}]
+    sources = [{"id":"pack", "datasets":[table], "resolved_analysis_requests":{table["dataset_id"]:result["analysis_request"]}}]
     plan = build_outline([result], sources, 10)
     assert verify_outline(plan, [result], sources)
     plan.slides[0].visual.series[0].values.reverse()
@@ -46,19 +46,19 @@ def test_goal_changes_selection_and_category_value_swap_is_rejected():
 def test_gaps_zero_base_negative_shares_and_rates():
     result = analyse(csv("Месяц,Продажи\n2026-01,0\n2026-02,\n2026-03,20"), "Динамика")
     assert result["visual"]["series"][0]["values"] == [0, None, 20]
-    assert any("неположительная" in w for w in result["warnings"])
+    assert any(n["code"]=="analysis.growth_not_comparable" for n in result["contract"]["warnings"])
     assert analyse(csv("Канал,Продажи\nА,-10\nБ,20"), "Доли")["status"] == "refused"
     assert analyse(csv("Регион,Конверсия (%)\nА,10\nА,20"), "Сравнить")["status"] == "refused"
     result = analyse(csv("Месяц,Конверсия (%)\n2026-01,10\n2026-02,20"), "Динамика")
-    assert result["facts"][-1]["unit"] == "п.п."
+    assert result["facts"][-1]["unit"] == "pp"
     assert result["facts"][-1]["value"] == 10
 
 
 def test_histogram_scatter_and_all_rows():
     table = csv("Сумма,Срок\n" + "\n".join(f"{i},{i%9}" for i in range(1,241)))
-    hist = analyse(table, "Распределение суммы")
+    hist = analyse(table, "Распределение суммы", {"metrics":["c1"]})
     assert sum(hist["visual"]["series"][0]["values"]) == 240
-    assert hist["facts"][0]["value"] == 120.5
+    assert next(f for f in hist["facts"] if f["evidence"]["operation"]=="median")["value"] == 120.5
     scatter = analyse(table, "Взаимосвязь")
     assert len(scatter["visual"]["x_values"]) == 240
     result = analyse(table, "Справочная таблица")
@@ -76,8 +76,9 @@ def test_xlsx_multiple_sheets_and_uncached_formula():
     stream=io.BytesIO(); wb.save(stream)
     assert len(extract(stream.getvalue(),"data.xlsx"))==2
     ws["B2"]="=1+1";stream=io.BytesIO();wb.save(stream)
-    with pytest.raises(ValueError,match="формула"):
-        extract(stream.getvalue(),"data.xlsx")
+    imported=extract(stream.getvalue(),"data.xlsx")
+    assert imported[1]["rows"][0][1] is None
+    assert any(n["code"]=="import.formula_without_cache" for n in imported[1]["contract"]["warnings"])
 
 
 def test_zip_report_markdown_and_instruction_is_data():
@@ -89,7 +90,7 @@ def test_zip_report_markdown_and_instruction_is_data():
     tables,report=extract_pack(stream.getvalue(),"data.zip")
     assert len(tables)==1
     assert len([v for v in report if v["status"]=="rejected"])==2
-    assert analyse(tables[0],"Сравнение")["facts"][0]["value"]==30
+    assert sum(f["value"] for f in analyse(tables[0],"Сравнение")["facts"])==30
     text="Отчёт в рублях\n\n| Регион | Продажи |\n| --- | --- |\n| Север | 10 |\n| Юг | 20 |\n\nКонец"
     table=extract(text.encode(),"report.md")[0]
     assert table["source_rows"]==[5,6]
@@ -135,7 +136,7 @@ def test_api_structured_generation_and_safe_edits(tmp_path,monkeypatch):
         assert response.status_code==201,response.text
         pack=response.json();assert len(pack["datasets"][0]["rows"])==2
         result=client.get(f"/api/v1/content-packs/{pack['id']}/analysis?goal=Сравнить").json()["items"][0]
-        assert result["facts"][0]["value"]==30
+        assert sum(f["value"] for f in result["facts"])==30
         job=client.post("/api/v1/generations",json={"brief":"Сравнить результаты регионов","analysis_goal":"Сравнить","slide_count":10,"template_id":template["id"],"content_pack_ids":[pack["id"]]}).json()
         for _ in range(200):
             job=client.get(f"/api/v1/jobs/{job['id']}").json()
@@ -143,7 +144,8 @@ def test_api_structured_generation_and_safe_edits(tmp_path,monkeypatch):
             time.sleep(.01)
         assert job["status"]=="completed",job
         record=client.get(f"/api/v1/presentations/{job['presentation_ids'][0]}").json()
-        assert record["analysis"][0]["facts"][0]["value"]==30
+        assert sum(f["value"] for f in record["analysis"][0]["facts"])==30
+        assert record["analysis_results"][0]["schema_version"]=="1.0"
         assert not any(i["code"] in {"analysis_mismatch","unverified_number","chart_without_data"} for i in record["audit"]["issues"])
         content=record["deck"]["slides"][0]["content"]
         content["visual"]["series"][0]["values"].reverse()

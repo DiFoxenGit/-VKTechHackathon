@@ -44,7 +44,7 @@ def select_context(sources, query, budget=CONTEXT_BUDGET):
     """
     # Full datasets/provenance stay in server storage; a text budget must never
     # accidentally forward their unbounded rows as extra JSON metadata.
-    sources = [{k: v for k, v in source.items() if k not in {"datasets", "_analysis_results"}} for source in sources]
+    sources = [{k: v for k, v in source.items() if k not in {"datasets", "_analysis_results", "analysis_requests", "resolved_analysis_requests"}} for source in sources]
     if type(budget) is not int or budget < 0:
         raise ValueError("context budget must be a nonnegative integer")
     if budget == 0:

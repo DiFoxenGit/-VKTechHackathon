@@ -1177,7 +1177,7 @@ def parse_template(data: bytes, name: str):
 def parse_content(data: bytes, name: str):
     suffix = Path(name).suffix.lower()
     if suffix == ".xlsx":
-        from .analytics import extract
+        from .analytics_bridge import extract
         tables = extract(data, name)
         text = "\n\n".join(t["sheet"] + "\n" + "\n".join(" | ".join(str(v) if v is not None else "" for v in row) for row in [t["columns"], *t["rows"][:20]]) for t in tables)
     elif suffix == ".pdf":

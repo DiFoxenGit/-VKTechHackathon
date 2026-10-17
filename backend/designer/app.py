@@ -44,10 +44,10 @@ from .workflow import workflow
 from .sources import sources_for
 from .inference import llm_settings
 from .layout import compose
-from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit
+from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit, PackAnalysisRequest
 from .parsing import PARSER_VERSION, parse_content, parse_template
 from .storage import Store
-from .analytics import extract_pack, analyse_sources, verify_outline
+from .analytics_bridge import extract_pack, analyse_sources, verify_outline
 from .brandbook import parse_brandbook, apply_style
 
 LOGGER = logging.getLogger(__name__)
@@ -278,7 +278,7 @@ def create_app(data_dir=None, seed_dir=None):
         if suffix == ".zip":
             def pack_text(payload, member):
                 if Path(member).suffix.lower() in (".csv", ".xlsx", ".json"):
-                    from .analytics import extract
+                    from .analytics_bridge import extract
                     tables = extract(payload, member)
                     return "\n\n".join(t["source_file"] + " / " + t["sheet"] + "\n" + "\n".join(" | ".join(str(v) if v is not None else "" for v in row) for row in [t["columns"], *t["rows"][:20]]) for t in tables)
                 return parse_content(payload, member)
@@ -293,7 +293,7 @@ def create_app(data_dir=None, seed_dir=None):
                 archive.writestr(Path(name).name, data)
             return parse_pack_zip(buffer.getvalue(), parse_content)
         if suffix in (".csv", ".xlsx", ".json"):
-            from .analytics import extract
+            from .analytics_bridge import extract
             tables = extract(data, name)
             text = "\n\n".join(t["source_file"] + " / " + t["sheet"] + "\n" + "\n".join(" | ".join(str(v) if v is not None else "" for v in row) for row in [t["columns"], *t["rows"][:20]]) for t in tables)
         else:
@@ -355,7 +355,26 @@ def create_app(data_dir=None, seed_dir=None):
     @api.get("/content-packs/{pack_id}/analysis", tags=["Content"])
     def analyse_pack(pack_id: str, goal: str = Query("", max_length=1000)):
         pack = store.get("content_packs", pack_id)
-        return {"items": analyse_sources([pack], goal), "file_report": pack.get("file_report", [])}
+        try:
+            items = analyse_sources([pack], goal)
+        except ValueError as exc:
+            raise HTTPException(422,str(exc)) from exc
+        return {"items": items, "analysis_results": [r["contract"] for r in items], "file_report": pack.get("file_report", [])}
+
+    @api.post("/content-packs/{pack_id}/analysis", tags=["Content"])
+    def analyse_pack_explicit(pack_id: str, selection: PackAnalysisRequest):
+        pack = store.get("content_packs",pack_id)
+        try:
+            goal = selection.goal
+            requests = selection.requests
+            known = {t["dataset_id"] for t in pack.get("datasets",[])}
+            if set(requests)-known:
+                raise ValueError("Неизвестная таблица в запросе анализа")
+            pack["analysis_requests"] = {k:v.model_dump(mode="json") for k,v in requests.items()}
+            items = analyse_sources([pack],goal)
+        except (ValueError,TypeError) as exc:
+            raise HTTPException(422,str(exc)) from exc
+        return {"items":items,"analysis_results":[r["contract"] for r in items],"file_report":pack.get("file_report",[])}
 
     @api.get("/content-packs", tags=["Content"])
     def content_packs():
@@ -552,6 +571,7 @@ def create_app(data_dir=None, seed_dir=None):
             # Пакеты с картинками нужны снова при правке слайда и исправлениях.
             "content_pack_ids": list(request.content_pack_ids),
             "analysis": sources[0].get("_analysis_results", []),
+            "analysis_results": [r["contract"] for r in sources[0].get("_analysis_results", [])],
             "style": template.get("brandbook"),
             # То же для нарисованных моделью иллюстраций.
             "illustrations_id": illustrations[0] if illustrations else None,
