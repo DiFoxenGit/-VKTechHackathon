@@ -4,7 +4,7 @@
 
 **Сервис, который читает чужой шаблон как набор правил и собирает по нему готовую презентацию**
 
-**Проверяющим:** стенд — http://158.160.225.35 · [пошаговый гайд: запуск, сценарии, API, тесты](docs/test-run.md) · [презентация решения](docs/presentation.pdf)
+**Проверяющим:** [рабочий стенд на auto-sell.site](https://auto-sell.site/presentations/) · [пошаговый гайд: запуск, сценарии, API, тесты](docs/test-run.md) · [презентация решения](docs/presentation.pdf)
 
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -218,12 +218,13 @@ docs/               API.md, openapi.json, gap-analysis.md
 | [AUDIT.md](AUDIT.md) | проверки и их покрытие тестами |
 | [docs/API.md](docs/API.md) | контракт HTTP API и сценарий работы |
 | [docs/deploy.md](docs/deploy.md) | развёртывание на сервере, переменные окружения, домен |
+| [docs/autosell.md](docs/autosell.md) | текущая установка на auto-sell.site, интерфейс H10MS, автодеплой и откат |
 | [docs/gap-analysis.md](docs/gap-analysis.md) | что закрыто по ТЗ и что осталось |
 | [docs/visual-assets.md](docs/visual-assets.md) | иконки, иллюстрации, фактоиды: источники, подбор, композиции |
 
 ## 🤝 Разработка
 
-Ветки `feat/*` и `fix/*`, в `main` репозитория SourceCraft — через предложение изменений с зелёным CI (проверки идут на GitHub-зеркале, см. [docs/deploy.md](docs/deploy.md)). Промпты и конфиги моделей живут отдельными файлами, секреты — только в `.env`.
+Изменения сливаются в `main` основного [GitHub-репозитория](https://github.com/DiFoxenGit/-VKTechHackathon) через pull request с зелёным CI. После слияния CI выкладывает приложение на auto-sell.site; SourceCraft больше не используется. Промпты и конфиги моделей живут отдельными файлами, секреты — только в серверных `.env`-файлах. Настройка поставки описана в [docs/autosell.md](docs/autosell.md).
 
 Материалы кейса (шаблоны организаторов, ТЗ, датасет) в репозиторий не коммитятся. Положите их локально в `templates/`.
 
