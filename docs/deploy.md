@@ -1,5 +1,12 @@
 # Развёртывание на сервере
 
+Текущая рабочая установка — **https://auto-sell.site/presentations/**. Для неё используются
+`deploy/compose.autosell.yml`, `deploy/autosell-deploy.sh` и существующий nginx сервера.
+Пути, ключ CI, тома, модель, проверка и откат описаны в [autosell.md](autosell.md).
+
+Ниже описана универсальная установка на отдельной машине с Caddy. Её команды и пути
+`~/vk-designer` не относятся к текущей установке auto-sell.site.
+
 Сервис разворачивается одной командой на любой машине с Docker. Проверялось на Ubuntu 24.04, 2 vCPU / 2 ГБ RAM / 20 ГБ диска (Yandex Cloud Compute).
 
 ## Что получается
@@ -74,6 +81,11 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 Ключ выдаётся сервисному аккаунту с ролью `ai.languageModels.user`, область действия ключа — `yc.ai.foundationModels.execute`.
 
 ## Автодеплой
+
+Действующий GitHub Actions выкладывает на auto-sell.site при `DEPLOY_TARGET=autosell`.
+Для настройки этого сервера используйте [актуальную инструкцию](autosell.md#развёртывание).
+Описанный ниже приёмник `deploy/ci-receive.sh` оставлен для отдельной установки;
+на auto-sell.site используется `deploy/autosell-receive.sh`.
 
 Основной репозиторий — [DiFoxenGit/-VKTechHackathon](https://github.com/DiFoxenGit/-VKTechHackathon), ветка `main`. SourceCraft больше не используется; файл `deploy/sourcecraft-ci.yaml` оставлен как историческая конфигурация и не участвует в поставке.
 
