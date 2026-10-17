@@ -27,7 +27,7 @@
 
 `deploy/autosell-deploy.sh <SHA>` принимает только коммит из GitHub `origin/main`, последовательно собирает backend и frontend, ожидает healthcheck и затем переключает nginx. Перед переключением сохраняются конфигурация nginx, предыдущий SHA и теги образов. При ошибке скрипт восстанавливает их. Сборки выполняются последовательно; Node ограничен 512 МБ heap для сервера с 2 ГБ RAM.
 
-Для GitHub Actions используется отдельный SSH-ключ, ограниченный командой из `deploy/autosell-receive.sh`. Приёмник устанавливается вне репозитория в `/root/vk-presentations-main-ci/receive.sh`, а публичный ключ — в `authorized_keys` с `restrict,command=...`. Переменные `DEPLOY_HOST` и `DEPLOY_USER` указывают на этот сервер; `DEPLOY_KNOWN_HOSTS` содержит его проверенный ключ. Ключ доступа root с рабочей машины в GitHub не передаётся.
+Для GitHub Actions используется отдельный SSH-ключ, ограниченный командой из `deploy/autosell-receive.sh`. Приёмник устанавливается вне репозитория в `/root/vk-presentations-main-ci/receive.sh`, а публичный ключ — в `authorized_keys` с `restrict,command=...`. Переменные `DEPLOY_HOST` и `DEPLOY_USER` указывают на этот сервер; `DEPLOY_KNOWN_HOSTS` содержит его проверенный ключ. После установки приёмника задаётся `DEPLOY_TARGET=autosell`: до этого автодеплой пропускается, чтобы старые настройки другого сервера не получили новую выкладку. Ключ доступа root с рабочей машины в GitHub не передаётся.
 
 ## Проверка
 

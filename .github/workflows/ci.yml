@@ -17,12 +17,12 @@ jobs:
   # Доставка на сервер: только push в main и только после зелёных проверок.
   deploy:
     name: Deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_TARGET == 'autosell'
     needs: [tests]
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: http://${{ vars.DEPLOY_HOST }}
+      url: https://auto-sell.site/presentations/
     concurrency:
       group: production
       cancel-in-progress: false

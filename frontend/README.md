@@ -70,7 +70,7 @@ npx --yes --package @playwright/cli playwright-cli --session qa-edge run-code --
 
 Точка интеграции: `src/services/presentationService.ts`. Здесь находятся типизированные вызовы шаблонов, контент-паков, генерации/job и серверного экспорта. Методы принимают `ServiceOptions` с `signal` и `onProgress`; проценты отражают измеренные байты или `job.progress`, а не расчёт по времени. Запросы ограничены таймаутами, отмена останавливает запросы и опрос статуса.
 
-В production базовый адрес задаётся `VITE_PRESENTATIONS_API_BASE_URL`; по умолчанию используется `/presentations/api/v1`, поэтому сборка работает под `/presentations/`. Перед production-сборкой убедитесь, что локальная переменная не указывает на localhost.
+В production базовый адрес задаётся `VITE_PRESENTATIONS_API_BASE_URL`; по умолчанию используется `/api/v1` и корень сайта. Для auto-sell.site задаются `VITE_API_URL=/presentations/api/v1` и `VITE_APP_BASE_PATH=/presentations/`. Перед production-сборкой убедитесь, что локальная переменная не указывает на localhost.
 
 ## Структура проекта
 
@@ -111,4 +111,4 @@ PDF с заданием использован для определения п�
 
 Сбой подключённого ИИ по умолчанию останавливает генерацию. Явная настройка `aiFailure: 'fallback'` разрешает алгоритмический результат с предупреждением. Отмена не превращается в fallback; ожидание модели ограничено таймаутом. Заметки, полученные с сервера, сохраняются вместе с проектом и переносятся в локальный PPTX после редактирования.
 
-Серверное разделение реализовано отдельно в репозитории `DiFoxenGit/-VKTechHackathon`: `backend/designer/pipeline.py`, `algorithms/`, `ai.py`, `ai_audit.py` и `ai_assets.py`. Его схема и проверки описаны в `ARCHITECTURE.md` того репозитория.
+Серверное разделение находится в этом же репозитории: `backend/designer/pipeline.py`, `algorithms/`, `ai.py`, `ai_audit.py` и `ai_assets.py`. Его схема и проверки описаны в `ARCHITECTURE.md` того репозитория.
