@@ -32,11 +32,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      # Юнит-тесты фронтенда — node:test без зависимостей; TypeScript Node 24
-      # понимает сам, поэтому npm ci для них не нужен.
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
       - name: Frontend unit tests
         working-directory: frontend
         run: npm test

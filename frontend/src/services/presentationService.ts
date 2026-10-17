@@ -1,324 +1,413 @@
-/** Единственное место, где интерфейс встречается с бэкендом.
- *
- * Прототип задумывался с этим швом: экраны работают со своими типами
- * (`Template`, `Deck`, `AuditIssue`), а здесь они собираются из ответов API.
- * Браузерного движка больше нет — колоду собирает сервис, поэтому то, что
- * видно на экране, совпадает с тем, что уедет в pptx.
- */
-import { api, waitForJob } from './api';
-import { count } from '../plural';
-import type {
-  ApiAuditIssue,
-  ApiOutline,
-  ApiPresentation,
-  ApiPurpose,
-  ApiSlideContent,
-  ApiTemplateSummary,
-  ApiWorkflow,
-} from './apiTypes';
-import type { AuditIssue, Brief, Deck, Layout, Slide, Template } from '../types';
+import { templates as localTemplates } from '../data/templates';
+import { toBackendOutline } from '../algorithms/outline';
+import type { Outline } from '../algorithms/outline';
+import { runPresentationPipeline } from '../pipeline/presentationPipeline';
+import type { PipelineDependencies, PipelineStage } from '../pipeline/presentationPipeline';
+import type { AuditIssue, Brief, Deck, Slide, Template } from '../types';
 
-/** Варианты вёрстки сервиса в терминах экранов прототипа. */
-export const LAYOUTS: Record<Layout, 'classic' | 'split' | 'focus'> = {
-  classic: 'classic',
-  story: 'split',
-  focus: 'focus',
+const API_BASE = (import.meta.env.DEV ? '/presentations/api/v1' : import.meta.env.VITE_PRESENTATIONS_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
+const REQUEST_TIMEOUT = 30_000;
+const TRANSFER_TIMEOUT = 120_000;
+const GENERATION_TIMEOUT = 300_000;
+
+/** Percentages describe measured transfer bytes or the server job, never elapsed time. */
+export type ServiceProgress = {
+  stage: 'preparing' | 'submitting' | 'queued' | 'generating' | 'fetching' | 'uploading' | 'processing' | 'downloading' | 'complete';
+  progress?: number;
+  loaded?: number;
+  total?: number;
+  jobId?: string;
+  serverStage?: string;
+  message?: string;
 };
 
-const VARIANTS: Record<string, Layout> = { classic: 'classic', split: 'story', focus: 'focus' };
+export type ServiceOptions = {
+  /** Cancels browser requests and polling; an accepted server job may still finish. */
+  signal?: AbortSignal;
+  onProgress?: (event: ServiceProgress) => void;
+};
 
-export type Project = {
+type BackendTemplate = {
   id: string;
+  name: string;
+  tokens?: { fonts?: string[]; font_sizes?: number[]; colors?: string[]; theme?: Record<string, string> };
+  layouts?: Array<{ index: number; name: string }>;
+};
+
+type ContentPack = { id: string; name: string; text: string; sha256: string };
+
+type Job = {
+  id: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  progress?: number;
+  stage?: string;
+  presentation_ids?: string[];
+  error?: string;
+  warnings?: string[];
+};
+
+type BackendPresentation = {
+  id: string;
+  title: string;
+  template_id: string;
+  variant: 'classic' | 'split' | 'focus' | string;
   revision: number;
-  layout: Layout;
-  deck: Deck;
-  issues: AuditIssue[];
-  exports: { pptx: string; pdf: string; html: string } | undefined;
-  /** Проверка записанного файла: открывается ли и из чего собраны слайды. */
-  file: { opens: boolean; slides: number; native_objects: number; raster_slides: number[] } | undefined;
+  created_at?: number;
+  deck?: { slides?: Array<{ content?: { title?: string; bullets?: string[]; notes?: string } }> };
+  audit?: { issues?: Array<{ id: string; slide_index: number | null; code: string; message: string; fixable: boolean; severity: 'warning' | 'error' }> };
+  exports?: Partial<Record<'pptx' | 'pdf' | 'html', string>>;
 };
 
-function hex(value: string | undefined, fallback: string) {
-  return value && /^[\da-f]{6}$/i.test(value) ? `#${value}` : fallback;
+class ApiError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
 }
 
-/** Паспорт дизайн-системы шаблона в карточку галереи. */
-export function toTemplate(source: ApiTemplateSummary): Template {
-  const tokens = source.tokens;
-  const colors = (tokens?.colors ?? []).filter(c => /^[\da-f]{6}$/i.test(c));
-  const accents = (tokens as { accents?: string[] } | undefined)?.accents ?? colors;
-  const choice = (tokens as { font_choice?: { title?: { selected?: string } } } | undefined)?.font_choice;
-  const fonts = tokens?.fonts ?? [];
-  const sizes = tokens?.font_sizes ?? [];
+function apiError(detail: unknown, status: number): Error {
+  if (typeof detail === 'string' && /LibreOffice is required/i.test(detail)) {
+    return new ApiError('Экспорт в этот формат временно недоступен. Скачайте PPTX или попробуйте позже.', status);
+  }
+  if (Array.isArray(detail)) {
+    const messages = detail.map(item => typeof item === 'object' && item && 'msg' in item ? String(item.msg) : String(item)).filter(Boolean);
+    if (messages.length) return new ApiError(messages.join('; '), status);
+  }
+  const fallback = status === 413 ? 'Файл слишком большой. Выберите файл до 50 МБ.'
+    : status === 429 ? 'Сервер занят. Подождите немного и повторите попытку.'
+    : status >= 500 ? 'Сервер временно недоступен. Попробуйте ещё раз через минуту.'
+    : `Не удалось выполнить запрос (${status}). Попробуйте ещё раз.`;
+  return new ApiError(typeof detail === 'string' && detail ? detail : fallback, status);
+}
+
+function abortError(): DOMException {
+  return new DOMException('Операция отменена.', 'AbortError');
+}
+
+function checkAborted(signal?: AbortSignal | null): void {
+  if (signal?.aborted) throw abortError();
+}
+
+function timeoutError(): Error {
+  const error = new Error('Сервер долго не отвечает. Проверьте соединение и повторите попытку.');
+  error.name = 'TimeoutError';
+  return error;
+}
+
+async function withTimeout<T>(signal: AbortSignal | null | undefined, timeout: number, action: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  checkAborted(signal);
+  const controller = new AbortController();
+  const cancel = () => controller.abort(abortError());
+  signal?.addEventListener('abort', cancel, { once: true });
+  const timer = window.setTimeout(() => controller.abort(timeoutError()), timeout);
+  try {
+    const result = await action(controller.signal);
+    checkAborted(signal);
+    if (controller.signal.aborted) throw controller.signal.reason;
+    return result;
+  } catch (error) {
+    if (controller.signal.aborted) throw controller.signal.reason;
+    if (error instanceof TypeError) throw new Error('Не удалось связаться с сервером. Проверьте подключение к интернету и повторите попытку.');
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+    signal?.removeEventListener('abort', cancel);
+  }
+}
+
+async function checkResponse(response: Response): Promise<void> {
+  if (response.ok) return;
+  let detail: unknown = null;
+  try { detail = (await response.json()).detail; } catch { /* The proxy may return an HTML error page. */ }
+  throw apiError(detail, response.status);
+}
+
+async function request<T>(path: string, init: RequestInit = {}, timeout = REQUEST_TIMEOUT): Promise<T> {
+  return withTimeout(init.signal, timeout, async signal => {
+    const headers = new Headers(init.headers);
+    headers.set('Accept', 'application/json');
+    if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
+    const response = await fetch(`${API_BASE}${path}`, { ...init, signal, headers });
+    await checkResponse(response);
+    try { return await response.json() as T; }
+    catch (error) {
+      if (signal.aborted) throw error;
+      throw new Error('Сервер вернул некорректный ответ. Попробуйте ещё раз.');
+    }
+  });
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  checkAborted(signal);
+  return new Promise((resolve, reject) => {
+    const cancel = () => { window.clearTimeout(timer); reject(abortError()); };
+    const timer = window.setTimeout(() => { signal?.removeEventListener('abort', cancel); resolve(); }, ms);
+    signal?.addEventListener('abort', cancel, { once: true });
+  });
+}
+
+function upload<T>(path: string, file: File, options: ServiceOptions): Promise<T> {
+  checkAborted(options.signal);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const cancel = () => xhr.abort();
+    const finish = () => options.signal?.removeEventListener('abort', cancel);
+    xhr.open('POST', `${API_BASE}${path}`);
+    xhr.timeout = TRANSFER_TIMEOUT;
+    xhr.responseType = 'json';
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.upload.onprogress = event => options.onProgress?.({
+      stage: 'uploading',
+      progress: event.lengthComputable && event.total > 0 ? Math.round(event.loaded / event.total * 100) : undefined,
+      loaded: event.loaded,
+      total: event.lengthComputable ? event.total : undefined,
+      message: 'Загружаем файл на сервер',
+    });
+    xhr.upload.onload = () => options.onProgress?.({ stage: 'processing', message: 'Файл загружен. Обрабатываем содержимое' });
+    xhr.onload = () => {
+      finish();
+      if (xhr.status < 200 || xhr.status >= 300) { reject(apiError(xhr.response?.detail, xhr.status)); return; }
+      if (!xhr.response) { reject(new Error('Сервер вернул некорректный ответ. Попробуйте загрузить файл ещё раз.')); return; }
+      options.onProgress?.({ stage: 'complete', progress: 100 });
+      resolve(xhr.response as T);
+    };
+    xhr.onerror = () => { finish(); reject(new Error('Не удалось загрузить файл. Проверьте соединение и повторите попытку.')); };
+    xhr.ontimeout = () => { finish(); reject(timeoutError()); };
+    xhr.onabort = () => { finish(); reject(abortError()); };
+    options.signal?.addEventListener('abort', cancel, { once: true });
+    const form = new FormData();
+    form.append('file', file, file.name);
+    options.onProgress?.({ stage: 'uploading', progress: 0, loaded: 0, message: 'Загружаем файл на сервер' });
+    // A callback can cancel synchronously, before send() has activated the XHR.
+    if (options.signal?.aborted) { finish(); reject(abortError()); return; }
+    xhr.send(form);
+  });
+}
+
+function jobProgress(job: Job): ServiceProgress {
+  const messages: Record<string, string> = {
+    outline: 'Собираем структуру презентации',
+    balance: 'Распределяем содержание по слайдам',
+    assets: 'Подбираем материалы шаблона',
+    illustrations: 'Готовим иллюстрации',
+    contextual_audit: 'Проверяем содержание',
+    layout_and_audit: 'Верстаем слайды и проверяем оформление',
+  };
   return {
-    id: source.id,
-    name: source.name.replace(/\.pptx$/i, ''),
-    description: fonts.length
-      ? `${fonts.slice(0, 2).join(', ')} · ${count(sizes.length, 'кегль', 'кегля', 'кеглей')} · ${count(colors.length, 'цвет', 'цвета', 'цветов')}`
-      : 'Дизайн-система разобрана из файла',
-    color: hex(accents[0] ?? colors[0], '#0674ff'),
-    secondary: hex(accents[1] ?? colors[1], '#8a83d1'),
-    font: choice?.title?.selected || fonts[0] || 'Manrope Variable',
-    layoutCount: source.layouts?.length ?? 0,
-    slideCount: (source as { slide_count?: number }).slide_count ?? 0,
-    tag: `${Math.round(source.width / 914400)}:${Math.round(source.height / 914400)}`,
-    custom: false,
+    stage: job.status === 'queued' ? 'queued' : 'generating',
+    progress: typeof job.progress === 'number' && Number.isFinite(job.progress) ? Math.max(0, Math.min(100, job.progress)) : undefined,
+    jobId: job.id,
+    serverStage: job.stage,
+    message: job.status === 'queued' ? 'Ожидаем свободное место на сервере' : messages[job.stage || ''] || 'Собираем презентацию',
   };
 }
 
-function kindOf(index: number, total: number): Slide['kind'] {
-  if (index === 0) return 'cover';
-  return index === total - 1 ? 'closing' : 'content';
+function color(value: string | undefined, fallback: string): string {
+  return value && /^[0-9a-f]{6}$/i.test(value.replace(/^#/, '')) ? `#${value.replace(/^#/, '')}` : fallback;
 }
 
-/** Слайды сервиса в плоскую модель экранов: заголовок и текст одной строкой. */
-export function toDeck(source: ApiPresentation): Deck {
-  const slides = source.deck.slides.map((slide, index) => ({
-    id: `${source.id}:${index}`,
-    title: slide.content.title,
-    body: slide.content.bullets.join('\n'),
-    kind: kindOf(index, source.deck.slides.length),
-  }));
+function templateLabel(name: string): { name: string; description: string; tag: string } {
+  const lower = name.toLocaleLowerCase('ru-RU');
+  if (lower.includes('education')) return { name: 'VK Education', description: 'Образовательные проекты и выступления', tag: 'Образование' };
+  if (lower.includes('workspace') || lower.includes('work_space')) return { name: 'VK WorkSpace', description: 'Командная работа, встречи и конференции', tag: 'Для команд' };
+  if (lower.includes('tech')) return { name: 'VK Tech', description: 'Корпоративные презентации и продуктовые истории', tag: 'Корпоративный' };
+  return { name, description: 'Шаблон из библиотеки презентаций', tag: 'Загруженный шаблон' };
+}
+
+function mapTemplate(item: BackendTemplate): Template {
+  const label = templateLabel(item.name);
+  const tokens = item.tokens || {};
+  const palette = (tokens.colors || []).filter(value => /^[0-9a-f]{6}$/i.test(value) && !/^(?:0{6}|f{6})$/i.test(value));
+  const known = localTemplates.find(template => template.name === label.name);
   return {
-    id: source.id,
-    title: source.title,
+    id: item.id,
+    name: label.name,
+    description: known?.description || label.description,
+    color: color(tokens.theme?.accent1 || palette[0], known?.color || '#0077FF'),
+    secondary: color(tokens.theme?.accent2 || palette[1], known?.secondary || '#FF3885'),
+    font: tokens.fonts?.find(font => !/symbol|wingdings|consolas/i.test(font)) || known?.font || 'Arial',
+    layoutCount: item.layouts?.length || known?.layoutCount || 0,
+    slideCount: known?.slideCount || 0,
+    tag: label.tag,
+  };
+}
+
+function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
+  const sourceSlides = record.deck?.slides || [];
+  if (!Array.isArray(sourceSlides) || !sourceSlides.length) throw new Error('Сервер вернул презентацию без слайдов. Попробуйте создать её ещё раз.');
+  const slides: Slide[] = sourceSlides.map((slide, index) => {
+    const content = slide.content || {};
+    return {
+      id: `${record.id}-${index}`,
+      title: content.title || `Слайд ${index + 1}`,
+      body: (content.bullets || []).join('\n'),
+      ...(typeof content.notes === 'string' ? { notes: content.notes } : {}),
+      kind: index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content',
+    };
+  });
+  const serverIssues: AuditIssue[] = (record.audit?.issues || []).map(issue => {
+    const index = issue.slide_index == null ? 0 : Math.max(0, Math.min(issue.slide_index, Math.max(0, sourceSlides.length - 1)));
+    return {
+      id: issue.id,
+      slideId: `${record.id}-${index}`,
+      severity: issue.severity,
+      title: `Проверка: ${issue.code}`,
+      description: issue.message,
+      fixable: issue.fixable,
+      rule: issue.code,
+    };
+  });
+  return {
+    id: record.id,
+    title: record.title,
     slides,
-    templateId: source.template_id,
-    layout: VARIANTS[source.variant] ?? 'classic',
-    updatedAt: new Date().toISOString(),
-    revision: source.revision,
+    templateId: record.template_id,
+    layout: record.variant === 'focus' ? 'focus' : record.variant === 'split' ? 'story' : 'classic',
+    updatedAt: record.created_at ? new Date(record.created_at * 1000).toISOString() : new Date().toISOString(),
+    brief: { ...brief },
+    remote: true,
+    revision: record.revision,
+    exports: record.exports,
+    serverIssues,
   };
 }
 
-const SEVERITY: Record<string, AuditIssue['severity']> = { error: 'error', warning: 'warning' };
-
-export function toIssues(source: ApiPresentation | { audit?: { issues?: ApiAuditIssue[] } }, deckId: string): AuditIssue[] {
-  return (source.audit?.issues ?? []).map(issue => ({
-    id: issue.id,
-    slideId: `${deckId}:${issue.slide_index ?? 0}`,
-    severity: SEVERITY[issue.severity] ?? 'warning',
-    title: issue.message,
-    description: issue.element_id
-      ? `Блок «${issue.element_id}», слайд ${(issue.slide_index ?? 0) + 1}`
-      : `Слайд ${(issue.slide_index ?? 0) + 1}`,
-    fixable: issue.category !== 'contextual' && Boolean(issue.fixable),
-    rule: issue.code,
-    boxed: Boolean(issue.box),
-    // Детерминированные правила, текстовый агент и агент по картинке помечают
-    // свои находки по-разному — пользователю полезно знать, кто это нашёл.
-    origin:
-      issue.category !== 'contextual'
-        ? 'rule'
-        : issue.element_id === 'slide_image'
-          ? 'image'
-          : 'text',
-  }));
+/** Browser-side adapter for the production presentation API. */
+export interface PresentationService {
+  listTemplates(options?: ServiceOptions): Promise<Template[]>;
+  uploadTemplate(file: File, options?: ServiceOptions): Promise<Template>;
+  uploadContent(file: File, options?: ServiceOptions): Promise<ContentPack>;
+  generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
+  download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
 
-function toProject(source: ApiPresentation): Project {
-  return {
-    id: source.id,
-    revision: source.revision,
-    layout: VARIANTS[source.variant] ?? 'classic',
-    deck: toDeck(source),
-    issues: toIssues(source, source.id),
-    exports: source.exports,
-    file: source.export_check,
-  };
-}
-
-/** Текст слайда обратно в структуру сервиса: пустые строки не хранятся. */
-function toContent(previous: ApiSlideContent, slide: Slide): ApiSlideContent {
-  return {
-    ...previous,
-    title: slide.title,
-    bullets: slide.body.split('\n').map(line => line.trim()).filter(Boolean),
-  };
-}
-
-/** Правки экрана «Структура» обратно в план сервиса.
- *
- * Визуализации и ссылки на источники интерфейс не показывает, поэтому они
- * берутся из исходного плана по номеру слайда: пользователь правит текст, а
- * диаграммы и таблицы остаются на своих местах.
- */
-export function toOutline(deck: Deck, source: ApiOutline | null): ApiOutline {
-  return {
-    title: source?.title || deck.title,
-    slides: deck.slides.map(slide => {
-      const index = Number(slide.id.split(':')[1]);
-      const original = Number.isInteger(index) ? source?.slides[index] : undefined;
-      return {
-        title: slide.title,
-        bullets: slide.body.split('\n').map(line => line.trim()).filter(Boolean),
-        notes: original?.notes ?? '',
-        source_refs: original?.source_refs?.length ? original.source_refs : ['brief'],
-        visual: original?.visual ?? { kind: 'none' },
-      };
-    }),
-  };
-}
-
-/** План сервиса в плоскую модель экранов: черновик, которого ещё нет на сервере. */
-export function draftDeck(outline: ApiOutline, templateId: string): Deck {
-  return {
-    id: 'draft',
-    title: outline.title,
-    slides: outline.slides.map((slide, index) => ({
-      id: `draft:${index}`,
-      title: slide.title,
-      body: slide.bullets.join('\n'),
-      kind: kindOf(index, outline.slides.length),
-    })),
-    templateId,
-    layout: 'classic',
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-/** Версия сценария генерации — то, чем именно собрана колода. */
-export type WorkflowInfo = {
-  version: string;
-  agents: { role: string; file: string; sha: string }[];
-  latest: { version: string; why: string } | undefined;
-};
-
-/** Имена агентов на языке пользователя: в API они служебные. */
-const AGENT_ROLES: Record<string, string> = {
-  outline: 'Структура и текст',
-  audit: 'Проверка текста',
-  audit_image: 'Проверка по изображению',
-  condense: 'Сокращение текста',
-  assets: 'Подбор иллюстраций',
-};
-
-function toWorkflow(source: ApiWorkflow): WorkflowInfo {
-  const sha = source.sha256 ?? {};
-  return {
-    version: source.version,
-    agents: Object.entries(source.agents ?? {}).map(([key, file]) => ({
-      role: AGENT_ROLES[key] ?? key,
-      file,
-      // Префикса хватает, чтобы сверить промпт с тем, что лежит в репозитории.
-      sha: (sha[file] ?? '').slice(0, 8),
-    })),
-    latest: source.changelog?.[0],
-  };
-}
-
-/** Ширины миниатюр, которые рисует сервер: лента, холст, крупный просмотр. */
-export type ThumbWidth = 320 | 640 | 1280;
-
-/** Слайд колоды картинкой. Ревизия в адресе сбрасывает кеш после правки. */
-export function slideThumbnail(deckId: string, index: number, width: ThumbWidth, revision?: number | string): string {
-  const version = revision === undefined ? '' : `&revision=${encodeURIComponent(String(revision))}`;
-  return `/presentations/${deckId}/slides/${index}/thumbnail?width=${width}${version}`;
-}
-
-/** Обложка шаблона картинкой. У шаблона-заглушки, пока список не пришёл, её нет. */
-export function templateThumbnail(templateId: string): string | null {
-  return templateId ? `/templates/${templateId}/thumbnail` : null;
-}
-
-export const presentationService = {
-  /** Чем собрана колода: версия сценария, промпты агентов и последнее изменение. */
-  async workflow(): Promise<WorkflowInfo> {
-    return toWorkflow(await api.workflow());
-  },
-
-  /** Только структура: быстрый шаг до вёрстки, его показывает экран «Структура». */
-  async createOutline(brief: Brief, packIds: string[], purpose: ApiPurpose): Promise<ApiOutline> {
-    return api.createOutline({
-      brief: brief.text,
-      purpose,
+async function renderPresentation(brief: Brief, templateId: string, outline: Outline, options: ServiceOptions, useServerAi: boolean): Promise<Deck> {
+  checkAborted(options.signal);
+  const startedAt = Date.now();
+  options.onProgress?.({ stage: 'submitting', message: 'Отправляем задание на сервер' });
+  const job = await request<Job>('/generations', {
+    method: 'POST',
+    signal: options.signal,
+    body: JSON.stringify({
+      brief: [brief.text, brief.audience ? `Для кого: ${brief.audience}` : '', brief.goal ? `Цель: ${brief.goal}` : '', !brief.contentPackIds?.length ? brief.materials : ''].filter(Boolean).join('\n\n'),
+      purpose: 'project',
       language: 'ru',
       slide_count: brief.slideCount,
-      content_pack_ids: packIds,
-    });
-  },
+      content_pack_ids: brief.contentPackIds || [],
+      contextual_audit: false,
+      template_id: templateId,
+      ...(useServerAi ? {} : { outline: toBackendOutline(outline, brief.contentPackIds) }),
+    }),
+  });
 
-  async listTemplates(): Promise<Template[]> {
-    const items = await api.listTemplates();
-    return items.map(toTemplate);
-  },
+  let current = job;
+  let polls = 0;
+  while (current.status !== 'completed') {
+    if (current.status === 'failed') throw new Error(current.error || 'Генерация презентации завершилась ошибкой.');
+    options.onProgress?.(jobProgress(current));
+    checkAborted(options.signal);
+    const remaining = GENERATION_TIMEOUT - (Date.now() - startedAt);
+    if (remaining <= 0) throw new Error('Генерация занимает больше 5 минут. Сервер может продолжать работу; попробуйте снова позже.');
+    // Check the accepted job immediately. Back off only during longer generation.
+    const interval = polls === 0 ? 0 : polls < 10 ? 800 : 1500;
+    if (interval) await delay(Math.min(interval, remaining), options.signal);
+    const requestBudget = GENERATION_TIMEOUT - (Date.now() - startedAt);
+    if (requestBudget <= 0) throw new Error('Генерация занимает больше 5 минут. Сервер может продолжать работу; попробуйте снова позже.');
+    current = await request<Job>(`/jobs/${encodeURIComponent(job.id)}`, { signal: options.signal }, Math.min(REQUEST_TIMEOUT, requestBudget));
+    polls++;
+  }
+  const presentationId = current.presentation_ids?.[0];
+  if (!presentationId) throw new Error('Сервер не вернул готовую презентацию.');
+  options.onProgress?.({ stage: 'fetching', jobId: job.id, message: 'Презентация собрана. Открываем результат' });
+  const deck = mapPresentation(await request<BackendPresentation>(`/presentations/${encodeURIComponent(presentationId)}`, { signal: options.signal }), brief);
+  const warnings = Array.isArray(current.warnings) ? current.warnings.filter((warning): warning is string => typeof warning === 'string' && Boolean(warning.trim())) : [];
+  deck.serverIssues = [...(deck.serverIssues || []), ...warnings.map((warning, index): AuditIssue => ({
+    id: `${deck.id}-pipeline-warning-${index}`, slideId: deck.slides[0].id,
+    severity: 'warning', title: 'Замечание при сборке', description: warning,
+    fixable: false, rule: 'pipeline-warning',
+  }))];
+  return deck;
+}
 
-  async importTemplate(file: File): Promise<Template> {
-    return toTemplate(await api.uploadTemplate(file));
-  },
+export function createPresentationService(aiDependencies: PipelineDependencies = {}): PresentationService {
+  let serverAiConfigured = false;
+  return {
+    async listTemplates(options = {}) {
+      options.onProgress?.({ stage: 'fetching', message: 'Загружаем шаблоны' });
+      const response = await request<{ items: BackendTemplate[]; llm_configured?: boolean }>('/templates', { signal: options.signal });
+      serverAiConfigured = response.llm_configured === true;
+      options.onProgress?.({ stage: 'complete', progress: 100 });
+      return response.items.map(mapTemplate);
+    },
 
-  async uploadMaterial(file: File) {
-    const pack = await api.uploadContentPack(file, file.name);
-    const counts = pack.asset_counts;
-    const pictures = counts ? counts.icon + counts.illustration + counts.photo : 0;
-    return { id: pack.id, name: pack.name, text: pack.text, pictures };
-  },
+    async uploadTemplate(file, options = {}) {
+      return mapTemplate(await upload<BackendTemplate>('/templates', file, options));
+    },
 
-  /** Бриф → три свёрстанных варианта. `onStage` показывает, что идёт сейчас. */
-  async createDecks(
-    brief: Brief,
-    packIds: string[],
-    purpose: ApiPurpose,
-    onStage?: (stage: string, progress: number) => void,
-    outline?: ApiOutline,
-  ): Promise<{ projects: Project[]; warnings: string[] }> {
-    const job = await api.startGeneration({
-      template_id: brief.templateId,
-      brief: brief.text,
-      purpose,
-      language: 'ru',
-      // С готовой структурой объём задаёт она: модель могла собрать меньше слайдов,
-      // чем просили, а пользователь — добавить или удалить слайды. Сервер требует
-      // совпадения и иначе отвечает 422.
-      slide_count: outline ? outline.slides.length : brief.slideCount,
-      content_pack_ids: packIds,
-      contextual_audit: true,
-      // Готовая структура сохраняется; содержание проверяется перед вёрсткой.
-      ...(outline ? { outline } : {}),
-    });
-    const finished = await waitForJob(job.id, state => onStage?.(state.stage, state.progress));
-    const decks = await Promise.all(finished.presentation_ids.map(id => api.presentation(id)));
-    return { projects: decks.map(toProject), warnings: finished.warnings ?? [] };
-  },
+    async uploadContent(file, options = {}) {
+      return upload<ContentPack>('/content-packs', file, options);
+    },
 
-  async open(id: string): Promise<Project> {
-    return toProject(await api.presentation(id));
-  },
+    async generate(brief, templateId, options = {}) {
+      const messages: Partial<Record<PipelineStage, string>> = {
+        prepare: 'Подготавливаем материалы', algorithms: 'Распределяем исходный текст по слайдам',
+        ai: aiDependencies.ai ? 'Обрабатываем содержание с помощью ИИ' : 'Используем исходное содержание',
+        validate: 'Проверяем структуру содержания', assemble: 'Собираем структуру презентации', audit: 'Проверяем слайды',
+      };
+      const { prepared, result } = await runPresentationPipeline({ ...brief, templateId }, {
+        ...aiDependencies,
+        render: prepared => renderPresentation(prepared.brief, templateId, prepared.outline, options, serverAiConfigured && !aiDependencies.ai),
+      }, {
+        signal: options.signal,
+        onStage: stage => { if (messages[stage]) options.onProgress?.({ stage: 'preparing', message: messages[stage] }); },
+      });
+      if (prepared.aiStatus === 'fallback') {
+        const warning = prepared.issues.find(issue => issue.rule === 'ai-fallback')!;
+        result.serverIssues = [...(result.serverIssues || []), { ...warning, id: `${result.id}-ai-fallback`, slideId: result.slides[0].id }];
+      }
+      options.onProgress?.({ stage: 'complete', progress: 100 });
+      return result;
+    },
 
-  /** Колоды этого браузера. Пользователей у сервиса нет, поэтому весь список
-   *  сервера — это чужие презентации; показываем только созданные здесь. */
-  async recent(own: ReadonlySet<string>, limit = 12): Promise<Project[]> {
-    // Свои колоды грузятся прямо по id: список сервера отдаёт не больше 100
-    // записей, и колода постарше в нём бы просто не нашлась. Последние созданные —
-    // первыми; удалённые на сервере пропускаются.
-    const ids = [...own].slice(-limit).reverse();
-    const loaded = await Promise.all(ids.map(id => api.presentation(id).catch(() => null)));
-    return loaded.filter((item): item is ApiPresentation => item !== null).map(toProject);
-  },
+    async download(deck, format, options = {}) {
+      checkAborted(options.signal);
+      const exportPath = deck.exports?.[format] || `${API_BASE}/presentations/${encodeURIComponent(deck.id)}/export/${format}?revision=${deck.revision || 1}`;
+      // The backend may omit the reverse proxy prefix in its root-relative export URLs.
+      const routedPath = /^\/api\/v1(?:\/|$)/.test(exportPath) ? `${API_BASE}${exportPath.slice('/api/v1'.length)}` : exportPath;
+      const url = new URL(routedPath, new URL(API_BASE, window.location.href)).href;
+      options.onProgress?.({ stage: 'preparing', message: `Готовим файл ${format.toUpperCase()}` });
+      const blob = await withTimeout(options.signal, TRANSFER_TIMEOUT, async signal => {
+        const response = await fetch(url, { signal });
+        await checkResponse(response);
+        // Browsers decode compressed responses, so their Content-Length cannot measure decoded bytes.
+        const encoded = response.headers.get('Content-Encoding');
+        const length = encoded && encoded !== 'identity' ? 0 : Number(response.headers.get('Content-Length'));
+        const total = Number.isFinite(length) && length > 0 ? length : undefined;
+        options.onProgress?.({ stage: 'downloading', loaded: 0, total, message: 'Скачиваем файл' });
+        if (!response.body) return response.blob();
+        const reader = response.body.getReader();
+        const chunks: ArrayBuffer[] = [];
+        let loaded = 0;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value.slice().buffer);
+            loaded += value.byteLength;
+            options.onProgress?.({ stage: 'downloading', loaded, total, progress: total ? Math.min(100, Math.round(loaded / total * 100)) : undefined, message: 'Скачиваем файл' });
+          }
+        } finally { reader.releaseLock(); }
+        return new Blob(chunks, { type: response.headers.get('Content-Type') || 'application/octet-stream' });
+      });
+      checkAborted(options.signal);
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `${deck.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '').trim() || 'Презентация'}.${format}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+      options.onProgress?.({ stage: 'complete', progress: 100, loaded: blob.size, total: blob.size });
+    },
+  };
+}
 
-  async saveSlide(project: Project, index: number, slide: Slide): Promise<Project> {
-    const current = await api.presentation(project.id);
-    const content = toContent(current.deck.slides[index].content, slide);
-    return toProject(await api.editSlide(project.id, index, current.revision, content));
-  },
-
-  async applyFixes(project: Project, issueIds: string[]): Promise<Project> {
-    return toProject(await api.applyFixes(project.id, project.revision, issueIds));
-  },
-
-  async recheck(project: Project, options?: { contextual?: boolean; visual?: boolean }): Promise<AuditIssue[]> {
-    const report = await api.runAudit(project.id, options);
-    return toIssues({ audit: report }, project.id);
-  },
-
-  /** Превью слайда приходит SVG с авторизацией, поэтому отдаём blob-ссылку. */
-  async preview(project: Project, index: number, highlight = true): Promise<string> {
-    const blob = await api.download(
-      `/presentations/${project.id}/slides/${index}/preview?highlight=${highlight}`,
-    );
-    return URL.createObjectURL(blob);
-  },
-
-  async download(project: Project, format: 'pptx' | 'pdf' | 'html'): Promise<Blob> {
-    return api.download(api.exportPath(project.id, format, project.revision));
-  },
-};
+export const presentationService = createPresentationService();

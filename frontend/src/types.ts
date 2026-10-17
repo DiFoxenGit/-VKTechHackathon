@@ -11,8 +11,20 @@ export type Template = {
   custom?: boolean;
 };
 
-export type Slide = { id: string; title: string; body: string; kind: 'cover' | 'content' | 'closing' };
+export type Slide = { id: string; title: string; body: string; kind: 'cover' | 'content' | 'closing'; notes?: string };
 export type Layout = 'classic' | 'story' | 'focus';
-export type Brief = { text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string };
-export type Deck = { id: string; title: string; slides: Slide[]; templateId: string; layout: Layout; updatedAt: string; brief?: Brief; /** Ревизия на сервере: по ней кешируются миниатюры. */ revision?: number };
-export type AuditIssue = { id: string; slideId: string; severity: 'warning' | 'error'; title: string; description: string; fixable: boolean; rule: string; /** У находки есть рамка: её можно обвести на превью. */ boxed: boolean; /** Кто нашёл: правило, модель по тексту или модель по картинке слайда. */ origin: 'rule' | 'text' | 'image' };
+export type Brief = { text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string; materialName?: string; contentPackIds?: string[] };
+export type Deck = {
+  id: string;
+  title: string;
+  slides: Slide[];
+  templateId: string;
+  layout: Layout;
+  updatedAt: string;
+  brief?: Brief;
+  remote?: boolean;
+  revision?: number;
+  exports?: Partial<Record<'pptx' | 'pdf' | 'html', string>>;
+  serverIssues?: AuditIssue[];
+};
+export type AuditIssue = { id: string; slideId: string; severity: 'warning' | 'error'; title: string; description: string; fixable: boolean; rule: string };

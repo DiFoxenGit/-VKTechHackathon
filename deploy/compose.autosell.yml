@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ../backend
+    env_file: ../.env.autosell
+    environment:
+      DESIGNER_DATA_DIR: /data
+      DESIGNER_TEMPLATE_DIR: /templates
+      DESIGNER_BASE_PATH: /presentations
+      DESIGNER_DOCS: "0"
+    ports:
+      - "127.0.0.1:8078:8000"
+    volumes:
+      - designer-data:/data
+      - "${AUTOSELL_TEMPLATE_DIR:-/root/vk-presentations/Датасет}:/templates:ro"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        VITE_API_URL: /presentations/api/v1
+        VITE_APP_BASE_PATH: /presentations/
+    ports:
+      - "127.0.0.1:8079:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  designer-data:

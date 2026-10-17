@@ -17,12 +17,12 @@ jobs:
   # Доставка на сервер: только push в main и только после зелёных проверок.
   deploy:
     name: Deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_TARGET == 'autosell'
     needs: [tests]
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: http://${{ vars.DEPLOY_HOST }}
+      url: https://auto-sell.site/presentations/
     concurrency:
       group: production
       cancel-in-progress: false
@@ -49,4 +49,4 @@ jobs:
       - name: Check public health
         env:
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "http://$DEPLOY_HOST/health"
+        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "https://auto-sell.site/presentations/health"
