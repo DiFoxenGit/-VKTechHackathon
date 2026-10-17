@@ -35,7 +35,7 @@ def _dataset(table):
 
 def extract(data, name):
     imported = import_datasets(data, name)
-    if imported.rejected:
+    if imported.rejected and (not imported.datasets or any(not n.params.get("sheet") for n in imported.rejected)):
         # Plain text is still valid material for the ordinary text pipeline.
         if PurePosixPath(name).suffix.lower() in {".txt", ".md"} and all(n.code == "import.no_table" for n in imported.rejected):
             return []
@@ -46,6 +46,13 @@ def extract(data, name):
 def extract_pack(data, name):
     suffix = PurePosixPath(name).suffix.lower()
     if suffix != ".zip":
+        if suffix == ".xlsx":
+            imported = import_datasets(data,name)
+            if imported.rejected and any(not n.params.get("sheet") for n in imported.rejected):
+                raise ValueError("; ".join(explain(n) for n in imported.rejected))
+            report = [dict(name=name,status="accepted",tables=len(imported.datasets))] if imported.datasets else []
+            report.extend(dict(name=name+" / "+str(n.params.get("sheet","")),status="rejected",reason=explain(n)) for n in imported.rejected)
+            return [_table(d) for d in imported.datasets],report
         tables = extract(data, name) if suffix in FORMATS else []
         return tables, [dict(name=name, status="accepted", tables=len(tables))]
     from .analytics.importing import safe_archive, ImportFailure
@@ -55,7 +62,7 @@ def extract_pack(data, name):
     except ImportFailure as exc:
         raise ValueError(explain(exc.notice)) from exc
     imported = import_datasets(data, name)
-    rejected = {n.params.get("file", ""): n for n in imported.rejected}
+    rejected = {n.params.get("file", ""): n for n in imported.rejected if not n.params.get("sheet")}
     if "" in rejected:
         raise ValueError(explain(rejected[""]))
     report = []
@@ -71,6 +78,7 @@ def extract_pack(data, name):
             report.append(dict(name=entry.filename, status="accepted" if accepted else "rejected",
                 tables=sum(d.ref.archive_path == entry.filename for d in imported.datasets),
                 reason="" if accepted else explain(notice)))
+    report.extend(dict(name=str(n.params.get("file",name))+" / "+str(n.params["sheet"]),status="rejected",reason=explain(n)) for n in imported.rejected if n.params.get("sheet"))
     return [_table(d) for d in imported.datasets], report
 
 
@@ -111,14 +119,14 @@ def _visuals(result):
         facts = {f.id:f for f in result.facts}
         return [dict(**{**common, "unit":facts[f].unit}, categories=[f],
                      series=[dict(name=presentation.y_label or f, values=[facts[f].value])]) for f in data.kpi_fact_ids]
-    if len(data.series)>8:
-        raise ValueError("Для экспорта более 8 серий уточните метрики или фильтр; данные сохранены целиком")
     categories = data.categories
     if kind == "histogram":
         categories = [f"{a:.6g} – {b:.6g}" for a,b in data.bins]
-    return [dict(**common, categories=[categories[i] for i in page],
-        series=[dict(name=s.name, values=[s.values[i] for i in page]) for s in data.series])
-        for page in data.pages or [list(range(len(categories)))]]
+    pages = data.pages or [list(range(i,min(i+20,len(categories)))) for i in range(0,len(categories),20)]
+    series_pages = data.series_pages or [list(range(i,min(i+5,len(data.series)))) for i in range(0,len(data.series),5)]
+    return [dict(**common,categories=[categories[i] for i in page],
+        series=[dict(name=data.series[s].name,values=[data.series[s].values[i] for i in page]) for s in series_page])
+        for page in pages for series_page in series_pages]
 
 
 def _view(result, request, source_id=None):

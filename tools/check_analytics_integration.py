@@ -16,7 +16,7 @@ def main():
     args=parser.parse_args()
     output=ROOT/"output"/"dima-integration";output.mkdir(parents=True,exist_ok=True)
     samples=ROOT/"samples"/"analytics"
-    report={"synthetic":True,"source_commit":"bb1e712","checks":[],"runs":[]}
+    report={"synthetic":True,"source_commit":"108199a","checks":[],"runs":[]}
     with httpx.Client(base_url=args.url,timeout=180) as client:
         def req(method,url,**kw):
             response=client.request(method,url,**kw);response.raise_for_status();return response

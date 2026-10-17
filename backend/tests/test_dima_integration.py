@@ -68,6 +68,33 @@ def test_zip_paths_rejections_and_unsafe_asset_paths():
         extract_pack(stream.getvalue(),"unsafe.zip")
 
 
+def test_series_pages_keep_every_category_metric_pair():
+    columns=["Category"]+[f"Metric {i}" for i in range(12)]
+    matrix={"columns":columns,"rows":[[f"C{r}"]+[r*100+i for i in range(12)] for r in range(25)]}
+    table=extract(json.dumps(matrix).encode(),"series.json")[0]
+    source={"id":"pack","datasets":[table]}
+    results=analyse_sources([source],"comparison")
+    outline=build_outline(results,[source],30)
+    assert len(outline.slides)==6
+    assert all(len(s.visual.series)<=5 for s in outline.slides)
+    observed={(category,s.name):value for slide in outline.slides for s in slide.visual.series for category,value in zip(slide.visual.categories,s.values)}
+    expected={(c,s["name"]):v for s in results[0]["contract"]["data"]["series"] for c,v in zip(results[0]["contract"]["data"]["categories"],s["values"])}
+    assert observed==expected
+    assert verify_outline(outline,results,[source])
+
+
+def test_xlsx_empty_sheet_is_reported_without_losing_valid_sheet():
+    from openpyxl import Workbook
+    workbook=Workbook();workbook.active.title="Data"
+    workbook.active.append(["Category","Value"]);workbook.active.append(["North",10])
+    workbook.create_sheet("Empty")
+    stream=io.BytesIO();workbook.save(stream)
+    tables,report=extract_pack(stream.getvalue(),"data.xlsx")
+    assert len(tables)==1 and tables[0]["sheet"]=="Data"
+    assert any(r["status"]=="rejected" and "Empty" in r["name"] for r in report)
+    assert len(extract(stream.getvalue(),"data.xlsx"))==1
+
+
 def test_explicit_api_request_resolves_ambiguity_without_changing_contract(tmp_path,monkeypatch):
     monkeypatch.delenv("DESIGNER_TEMPLATE_DIR",raising=False)
     with TestClient(create_app(tmp_path)) as client:

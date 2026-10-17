@@ -7,6 +7,7 @@ export type AnalysisRequest = {
   goal?: string; task?: 'dynamics'|'comparison'|'shares'|'distribution'|'relationship'|'reference'|'summary';
   dimension?: string | null; series_dimension?: string | null; metrics?: string[];
   aggregation?: 'sum'|'mean'|'median'|'count'; unit?: string;
+  number_locale?: 'decimal_comma'|'decimal_point'|null;
   filters?: Record<string,(string|number|boolean|null)[]>;
 };
 export type AnalysisResult = {
