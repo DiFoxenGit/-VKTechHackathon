@@ -4,7 +4,7 @@ import type { AnalysisRequest, AnalysisResult } from './analytics';
 
 export type Saved = { brief: Brief; decks: Deck[]; customTemplates: Template[] };
 export const STORAGE_KEY = 'slide-studio:v1';
-export const DEFAULT_BRIEF: Brief = { text: '', audience: 'Коллеги и команда', goal: 'Представить идею', slideCount: 10, templateId: 'tech', materials: '', contentPackIds: [] };
+export const DEFAULT_BRIEF: Brief = { narrative:true, text: '', audience: 'Коллеги и команда', goal: 'Представить идею', slideCount: 10, templateId: 'tech', materials: '', contentPackIds: [] };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -17,6 +17,7 @@ const integer = (value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): va
 function normalizeBrief(value: unknown, fallback: Brief = DEFAULT_BRIEF): Brief {
   const source = isRecord(value) ? value : {};
   return {
+    narrative: typeof source.narrative === "boolean" ? source.narrative : true,
     text: text(source.text, fallback.text),
     audience: text(source.audience, fallback.audience),
     goal: text(source.goal, fallback.goal),
@@ -82,7 +83,7 @@ function normalizeDeck(value: unknown): Deck | null {
     usedIds.add(id);
     const kind: Slide['kind'] = item.kind === 'cover' || item.kind === 'content' || item.kind === 'closing'
       ? item.kind : index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content';
-    return { id, title: item.title, body: item.body, kind, ...(typeof item.notes === 'string' ? { notes: item.notes } : {}), ...(parseVisual(item.visual)?{visual:parseVisual(item.visual)}:{}),...(identifier(item.analysisId)?{analysisId:item.analysisId}:{}),...(Array.isArray(item.sourceRefs)?{sourceRefs:item.sourceRefs.filter(identifier)}:{}) };
+    return { id, title: item.title, body: item.body, kind, ...(typeof item.previewUrl === "string" && item.previewUrl.startsWith("/") ? {previewUrl:item.previewUrl}:{}), ...(isRecord(item.rawVisual)?{rawVisual:item.rawVisual}:{}), ...(typeof item.notes === 'string' ? { notes: item.notes } : {}), ...(parseVisual(item.visual)?{visual:parseVisual(item.visual)}:{}),...(identifier(item.analysisId)?{analysisId:item.analysisId}:{}),...(Array.isArray(item.sourceRefs)?{sourceRefs:item.sourceRefs.filter(identifier)}:{}) };
   });
   const templateId = identifier(value.templateId) ? value.templateId : DEFAULT_BRIEF.templateId;
   const layout: Layout = value.layout === 'story' || value.layout === 'focus' ? value.layout : 'classic';
@@ -99,6 +100,7 @@ function normalizeDeck(value: unknown): Deck | null {
     updatedAt,
     ...(brief ? { brief } : {}),
     ...(typeof value.remote === 'boolean' ? { remote: value.remote } : {}),
+    ...(isRecord(value.variantPreviews)?{variantPreviews:Object.fromEntries(Object.entries(value.variantPreviews).filter(([k,v])=>["classic","story","focus"].includes(k)&&typeof v==="string"&&v.startsWith("/")))}:{}),
     ...(integer(value.revision, 1) ? { revision: value.revision } : {}),
     ...(exports ? { exports } : {}),
     ...(serverIssues ? { serverIssues } : {}),

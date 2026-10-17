@@ -64,6 +64,8 @@ async def run_generation(request, template, sources, *, outline_factory, balance
     if analysis_results:
         on_stage("analytics", 8)
         sources[0]["_analysis_results"] = analysis_results
+        if getattr(request, "narrative", False):
+            sources[0]["_story"] = {"goal": request.brief}
         outline = build_outline(analysis_results, sources, request.slide_count)
         for result in analysis_results:
             warnings.extend(result["warnings"])

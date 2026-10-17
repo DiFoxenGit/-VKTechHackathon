@@ -243,6 +243,8 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
       body: (content.bullets || []).join('\n'),
       ...(typeof content.notes === 'string' ? { notes: content.notes } : {}),
       visual: parseVisual(content.visual),
+      rawVisual: content.visual as Record<string, unknown> | undefined,
+      previewUrl: `${API_BASE}/presentations/${encodeURIComponent(record.id)}/slides/${index}/thumbnail?width=1280&revision=${record.revision}`,
       analysisId: content.analysis_id,
       sourceRefs: content.source_refs,
       kind: index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content',
@@ -284,6 +286,7 @@ export interface PresentationService {
   uploadBrandbook(file: File, options?: ServiceOptions): Promise<Brandbook>;
   analyseContent(packId: string, goal: string, options?: ServiceOptions, selections?: Record<string,AnalysisRequest>): Promise<{items: AnalysisResult[]}>;
   generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
+  save(deck: Deck, options?: ServiceOptions): Promise<Deck>;
   download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
 
@@ -301,6 +304,7 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       slide_count: brief.slideCount,
       content_pack_ids: brief.contentPackIds || [],
       contextual_audit: false,
+      narrative: brief.narrative === true,
       analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n'),
       analysis_requests: Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
       analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
@@ -330,6 +334,10 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
   if (!presentationId) throw new Error('Сервер не вернул готовую презентацию.');
   options.onProgress?.({ stage: 'fetching', jobId: job.id, message: 'Презентация собрана. Открываем результат' });
   const deck = mapPresentation(await request<BackendPresentation>(`/presentations/${encodeURIComponent(presentationId)}`, { signal: options.signal }), brief);
+  const previewIndex=Math.max(0,deck.slides.findIndex(s=>s.analysisId));
+  deck.variantPreviews = Object.fromEntries((current.presentation_ids||[]).map((id,index)=>[
+    ['classic','story','focus'][index], `${API_BASE}/presentations/${encodeURIComponent(id)}/slides/${previewIndex}/thumbnail?width=640&revision=1`
+  ]));
   const warnings = Array.isArray(current.warnings) ? current.warnings.filter((warning): warning is string => typeof warning === 'string' && Boolean(warning.trim())) : [];
   deck.serverIssues = [...(deck.serverIssues || []), ...warnings.map((warning, index): AuditIssue => ({
     id: `${deck.id}-pipeline-warning-${index}`, slideId: deck.slides[0].id,
@@ -383,6 +391,18 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
       }
       options.onProgress?.({ stage: 'complete', progress: 100 });
       return result;
+    },
+
+    async save(deck, options = {}) {
+      options.onProgress?.({stage:'processing', message:'Сохраняем изменения и фирменное оформление'});
+      const record = await request<BackendPresentation>(`/presentations/${encodeURIComponent(deck.id)}`, {
+        method:'PATCH', signal:options.signal, body:JSON.stringify({
+          revision:deck.revision, title:deck.title, variant:deck.layout==='story'?'split':deck.layout,
+          slides:deck.slides.map(s=>({title:s.title, bullets:s.body ? s.body.split('\n') : [], notes:s.notes||'',
+            source_refs:s.sourceRefs||[], analysis_id:s.analysisId||'', visual:s.visual||s.rawVisual||{kind:'none'}})),
+        }),
+      }, TRANSFER_TIMEOUT);
+      return {...mapPresentation(record, deck.brief || {text:deck.title, audience:'', goal:'', slideCount:deck.slides.length, templateId:deck.templateId, materials:''}), variantPreviews:deck.variantPreviews};
     },
 
     async download(deck, format, options = {}) {

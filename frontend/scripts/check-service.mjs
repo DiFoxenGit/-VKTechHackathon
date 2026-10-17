@@ -123,3 +123,18 @@ const packService = createPresentationService();
 await packService.generate({...brief, text: 'Тема', slideCount: 2, materials: 'Факт из файла', contentPackIds: ['pack-id']}, 'template');
 assert.deepEqual(submitted.outline.slides[1].source_refs, ['pack-id']);
 console.log('PASS: backend AI capability, explicit AI adapter, source references and speaker notes');
+
+let savedPayload;
+globalThis.fetch = async (url, init) => {
+  assert.equal(init.method, 'PATCH');
+  savedPayload=JSON.parse(init.body);
+  return response({...record,revision:2,variant:'split',deck:{slides:[{content:{title:'Изменённый вводный слайд',bullets:['Контекст'],visual:{kind:'none'},notes:'Источник',source_refs:['pack-id']}}]}});
+};
+const edited=await automatic.save({...automaticDeck,revision:1,layout:'story',slides:[{...automaticDeck.slides[0],title:'Изменённый вводный слайд',body:'Контекст',sourceRefs:['pack-id']}]});
+assert.equal(savedPayload.revision,1);
+assert.equal(savedPayload.variant,'split');
+assert.equal(savedPayload.slides[0].title,'Изменённый вводный слайд');
+assert.equal(edited.remote,true);
+assert.equal(edited.revision,2);
+assert(edited.slides[0].previewUrl.includes('revision=2'));
+console.log('PASS: server edits preserve source references, revision and export-backed preview');

@@ -72,14 +72,17 @@ def apply_style(template, brandbook=None, overrides=None):
     palette = rules.get("colors") or target.get("accents") or target["colors"]
     target.update(colors=palette, accents=palette)
     target.setdefault("theme", {}).update({f"accent{i + 1}": color for i, color in enumerate(palette)})
-    background = rules.get("background", "FFFFFF")
-    target["colors"] = list(dict.fromkeys([*palette,background,rules.get("text_color","243149"),"000000","FFFFFF"]))
+    background = rules.get("background") or next((p.get("background") for p in result.get("patterns", []) if p.get("role")=="content" and p.get("background")), target.get("theme", {}).get("lt1", "FFFFFF"))
+    from .parsing import best_text_color, relative_luminance
+    rules["background"] = background
+    rules["text_color"] = rules.get("text_color") or best_text_color(background, ["000000", "FFFFFF"])
+    target["colors"] = list(dict.fromkeys([*palette,background,rules.get("text_color","243149"),"243149","000000","FFFFFF"]))
     target["theme"].update(lt1=background, dk1=rules.get("text_color", "243149"))
     if rules.get("font"):
         target["fonts"] = [rules["font"]]
         target["font_choice"] = {role: {"selected": rules["font"]} for role in ("title", "body")}
     for pattern in result.get("patterns", []):
-        pattern.update(background=background, background_kind="solid", reserved=[], image_cover=0, decoration_area=0, decoration_count=0, bg_luma=1, bg_spread=0)
+        pattern.update(background=background, background_kind="solid", reserved=[], image_cover=0, decoration_area=0, decoration_count=0, bg_luma=relative_luminance(background), bg_spread=0)
         for slot in pattern.get("slots", []):
             if rules.get("font"):
                 slot.setdefault("style", {})["font"] = rules["font"]

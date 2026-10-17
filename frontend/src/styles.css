@@ -20,3 +20,9 @@
 .material-button strong{font-size:13px}.brief-selects select{font-size:13px}.workspace-picker strong{font-size:12px}.template-caption strong{font-size:12px}
 @media(max-width:680px){.form-footer{bottom:76px;padding:9px}.brief-selects select{font-size:12px}.template-caption strong{font-size:10px}}
 @media print{.sidebar,.topbar,.editor-toolbar,.filmstrip,.slide-edit-panel,.audit-panel,.page-footer,.canvas-topline,.canvas-pagination{display:none!important}.app-main{margin:0;width:100%}.editor-workspace{display:block}.canvas-workspace{padding:0}}
+
+/* Server previews are rendered from the same PPTX revision as the export. */
+.server-canvas { display:flex!important; padding:0!important; overflow:hidden; background:#edf0f5; }
+.server-canvas img { display:block; width:100%; height:100%; object-fit:contain; }
+.story-toggle { display:flex; align-items:center; gap:10px; margin:14px 0; font-size:14px; }
+.story-toggle input { width:17px; height:17px; accent-color:#0077ff; }

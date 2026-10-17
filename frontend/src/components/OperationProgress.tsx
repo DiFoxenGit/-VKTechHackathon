@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import { Check, CheckCircle2, Clock3, Download, FileUp, Presentation } from 'lucide-react';
 import type { ServiceProgress } from '../services/presentationService';
 
-export type OperationKind = 'generation' | 'material' | 'template' | 'pptx' | 'pdf' | 'html';
+export type OperationKind = 'save' | 'generation' | 'material' | 'template' | 'pptx' | 'pdf' | 'html';
 
 type OperationProgressProps = {
   kind: OperationKind;
@@ -40,6 +40,7 @@ function formatBytes(bytes: number): string {
 }
 
 function operationCopy(kind: OperationKind, stage: ServiceProgress['stage']) {
+  if (kind === 'save') return {title:'Сохраняем оформление', detail:'Обновляем файл и предпросмотр с учётом правок.'};
   if (kind === 'generation') return generationStages[stage];
   const upload = kind === 'material' || kind === 'template';
   const format = kind.toUpperCase();

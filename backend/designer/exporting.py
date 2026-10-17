@@ -471,6 +471,13 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             orphans,
             slide_data.get("shape_fixes"),
         )
+        if slide_data.get("analytic_layout") and not template.get("brandbook"):
+            # Large empty layout placeholders can carry a white fill even after
+            # their slide instances are removed (e.g. Education image slots).
+            # They are sample content, not artwork; keep real logos/pictures.
+            for inherited in list(slide.slide_layout.shapes):
+                if inherited.is_placeholder and inherited.width*inherited.height >= deck.slide_width*deck.slide_height*.25:
+                    inherited._element.getparent().remove(inherited._element)
         if template.get("brandbook"):
             # Explicit brandbook wins over inherited template artwork and master.
             for shape in list(slide.shapes):
@@ -536,7 +543,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                     for run in p.runs:
                         _font(run.font, font, size, text_color, line_bold)
             elif kind in CHARTS and (kind not in ("bar", "line") or slide_data["content"].get("analysis_id")):
-                add_chart(slide, element["data"], (x, y, w, max(Pt(60), h - Pt(24))), font, template["tokens"].get("accents") or palette, text_color)
+                chart_palette = [c for c in (template["tokens"].get("accents") or palette) if contrast_ratio(background,c)>=3]
+                add_chart(slide, element["data"], (x, y, w, max(Pt(60), h - Pt(24))), font, chart_palette or [text_color], text_color)
                 add_source(slide, element["data"], (x, y, w, h), font, text_color)
             elif kind in ("bar", "line"):
                 visual = element["data"]
@@ -611,6 +619,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                 table = slide.shapes.add_table(
                     len(rows), len(rows[0]), x, y, w, h - (Pt(24) if visual.get("source") else 0)
                 ).table
+                weights = [max(8, min(50, max(len(str(row[c])) for row in rows))) for c in range(len(rows[0]))]
+                for c, weight in enumerate(weights):
+                    table.columns[c].width = int(w * weight / sum(weights))
                 for r, values in enumerate(rows):
                     for c, value in enumerate(values):
                         cell = table.cell(r, c)

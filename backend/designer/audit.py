@@ -207,9 +207,8 @@ def audit(deck, template, sources, language=None):
     for slide in deck["slides"]:
         index = slide["index"]
         content = slide["content"]
-        analytical_verified = False
+        analytical_verified = bool(verified_analytics) and any(matches_verified_slide(content, s) for s in verified_analytics)
         if content.get("analysis_id"):
-            analytical_verified = any(matches_verified_slide(content, s) for s in verified_analytics)
             if not analytical_verified:
                 issues.append(issue(index, None, "analysis_mismatch", "Аналитические данные или вывод не совпадают с проверенным расчётом", severity="error"))
         elements = slide["elements"]
