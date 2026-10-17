@@ -12,6 +12,7 @@ from designer.app import create_app
 from designer.audit import audit
 from designer.layout import compose
 from designer.models import Visual
+from designer import ai_assets
 from designer.parsing import parse_template
 
 # Corporate templates are not committed: they belong to the case organisers.
@@ -306,7 +307,7 @@ def test_openapi(client):
 
 def test_provider_contract_and_failures(client, monkeypatch):
     import httpx
-    from designer import generation
+    from designer import ai as generation
 
     monkeypatch.setenv("DESIGNER_LLM_BASE_URL", "https://inference.example/v1")
     monkeypatch.setenv("DESIGNER_LLM_MODEL", "test-open-model")
@@ -741,7 +742,7 @@ def mock_provider(monkeypatch, responses):
     """Serve scripted model answers; returns the list of captured requests."""
     import httpx
 
-    from designer import generation
+    from designer import ai as generation
 
     monkeypatch.setenv("DESIGNER_LLM_BASE_URL", "https://inference.example/v1")
     monkeypatch.setenv("DESIGNER_LLM_MODEL", "test-open-model")
@@ -1375,7 +1376,7 @@ def test_visual_audit_reads_the_slide_image(monkeypatch):
     """Контекстные проверки Приложения 1 идут по картинке, а не по тексту."""
     import asyncio
 
-    from designer import audit as audit_module
+    from designer import ai_audit as audit_module
 
     seen = {}
 
@@ -1417,7 +1418,7 @@ def test_visual_audit_does_not_report_success_after_a_broken_model_answer(monkey
     """Сбой модели не превращается в успешную проверку без замечаний."""
     import asyncio
 
-    from designer import audit as audit_module
+    from designer import ai_audit as audit_module
 
     async def broken(prompt, payload, image):
         raise audit_module.InvalidCompletion("модель вернула мусор")
@@ -1830,9 +1831,11 @@ def test_overloaded_slides_are_condensed_to_the_template_capacity(monkeypatch):
     async def fake_condense(agent, payload, validate=None):
         assert agent == "condense"
         assert payload["slides"][0]["limit_chars"] > 0
-        return {"slides": [{"index": 0, "bullets": ["Пилот сервиса завершён"]}]}
+        return validate({"slides": [{"index": 0, "bullets": ["Пилот сервиса завершён"]}]})
 
-    monkeypatch.setattr("designer.generation.completion", fake_condense)
+    monkeypatch.setenv("DESIGNER_LLM_BASE_URL", "https://inference.example/v1")
+    monkeypatch.setenv("DESIGNER_LLM_MODEL", "test-model")
+    monkeypatch.setattr("designer.ai.completion", fake_condense)
     balanced = asyncio.run(balance_outline(plan, template))
     assert balanced["slides"][0]["bullets"] == ["Пилот сервиса завершён"]
     assert not outline_overflow(balanced, capacity)
@@ -1853,7 +1856,7 @@ def test_without_a_model_overflow_is_trimmed_deterministically(monkeypatch):
     async def unavailable(agent, payload, validate=None):
         raise HTTPException(503, "модель не настроена")
 
-    monkeypatch.setattr("designer.generation.completion", unavailable)
+    monkeypatch.setattr("designer.ai.completion", unavailable)
     balanced = asyncio.run(balance_outline(plan, template))
     assert balanced["slides"][0]["bullets"], "текст не должен исчезать целиком"
     assert not outline_overflow(balanced, slide_capacity(template) * 1.2)
@@ -2719,7 +2722,7 @@ def png_photo(width=400, height=300):
 
 def test_drawn_illustration_reaches_the_slide(client, monkeypatch):
     """Задача со звёздочкой целиком: нарисовали, проверили, поставили на слайд."""
-    import designer.generation as generation
+    import designer.ai as generation
 
     prompts = []
 
@@ -2828,7 +2831,7 @@ def test_generated_illustration_is_saved_and_picked_for_its_slide(tmp_path, monk
         },
     ]
     metas = asyncio.run(
-        assets.generate_illustrations(slides, {"accent": "#1478F4"}, folder, owner, limit=2)
+        ai_assets.generate_illustrations(slides, {"accent": "#1478F4"}, folder, owner, limit=2)
     )
     assert len(metas) == 1
     meta = metas[0]
@@ -2865,7 +2868,7 @@ def test_illustration_with_letters_is_dropped(tmp_path, monkeypatch):
         return {"has_text": target["has_text"]}
 
     monkeypatch.setattr(assets_generation(), "vision_completion", fake_vision)
-    kept = asyncio.run(assets.drop_lettered(metas, folder))
+    kept = asyncio.run(ai_assets.drop_lettered(metas, folder))
     assert [m["id"] for m in kept] == ["clean"]
     assert (folder / "clean.png").exists() and not (folder / "lettered.png").exists()
 
@@ -2885,11 +2888,11 @@ def test_image_generation_stays_off_without_a_model(monkeypatch):
 
     monkeypatch.setattr(assets_generation(), "draw_image", explode)
     slides = [{"title": "Тема", "bullets": ["раз"], "visual": {"kind": "none"}}] * 3
-    assert asyncio.run(assets.generate_illustrations(slides, {}, Path("."), "b" * 32)) == []
+    assert asyncio.run(ai_assets.generate_illustrations(slides, {}, Path("."), "b" * 32)) == []
 
 
 def assets_generation():
-    import designer.generation as generation
+    import designer.ai as generation
 
     return generation
 
@@ -3168,7 +3171,7 @@ def pictured_template():
 
 
 def test_template_pictures_are_harvested_and_labelled(client, monkeypatch):
-    import designer.generation as generation
+    import designer.ai as generation
 
     response = client.post("/api/v1/templates", files={"file": ("pictured.pptx", pictured_template())})
     assert response.status_code == 201, response.text

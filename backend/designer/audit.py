@@ -1,28 +1,12 @@
-import asyncio
 import hashlib
-import logging
 import math
 import re
 from collections import Counter
 
-import httpx
-from fastapi import HTTPException
 
-from .generation import (
-    PROMPTS,
-    InvalidCompletion,
-    ask_vision,
-    narrative_beats,
-    topic_title,
-    vision_completion,
-    completion,
-    fabricated_chart,
-    known_numbers,
-    repeated_items,
-    select_context,
-    unsupported_numbers,
-    workflow,
-)
+from .workflow import narrative_beats
+from .algorithms.content import (topic_title, fabricated_chart, known_numbers,
+                                 repeated_items, unsupported_numbers)
 from .language import CYRILLIC, LATIN, foreign_labels, script_of, visual_labels
 from .layout import (
     BUSY_BACKGROUND,
@@ -38,7 +22,6 @@ from .parsing import best_text_color, contrast_ratio, stage_clutter
 from .fonts import missing_glyphs
 from .visuals import CHAR_WIDTH, MIN_LABEL_SIZE, label_plan
 
-LOGGER = logging.getLogger("designer.audit")
 
 MIN_CONTRAST = 4.5
 MAX_BULLETS = 6
@@ -931,69 +914,6 @@ def merge_file_issues(report, check):
     return report
 
 
-async def visual_audit(deck, sources, images):
-    """Контекстные проверки Приложения 1 по изображению каждого слайда.
-
-    Детерминированные правила уже проверили геометрию по координатам; здесь модель
-    смотрит на отрендеренный слайд глазами зрителя и отвечает на вопросы «да/нет».
-    Слайды проверяются параллельно: это самая долгая часть пайплайна.
-    """
-    prompt = (PROMPTS / workflow()["agents"]["audit_image"]).read_text()
-    if len(images) != len(deck["slides"]):
-        raise HTTPException(502, "Visual audit requires an image for every slide")
-
-    async def one(index, slide, image):
-        content = slide["content"]
-        query = " ".join([content["title"], *content["bullets"], *visual_labels(content["visual"])])
-        selected = select_context(sources, query, budget=8000)
-        complete_sources = selected == sources
-        payload = {
-            "slide_index": index,
-            "title": slide["content"]["title"],
-            "bullets": slide["content"]["bullets"],
-            "visual": slide["content"]["visual"],
-            "sources": selected,
-            "source_context_complete": complete_sources,
-        }
-        try:
-            result = await vision_completion(prompt, payload, image)
-            validate_model_issues(result, set(VISUAL_CODES))
-        except (HTTPException, InvalidCompletion, httpx.HTTPError, ValueError) as exc:
-            LOGGER.warning("Visual audit failed on slide %s: %s", index, exc)
-            raise HTTPException(
-                502, f"Не удалось проверить слайд {index + 1} по изображению; повторите проверку"
-            ) from exc
-        findings = []
-        if not complete_sources:
-            findings.append(issue(
-                index, "slide_image", "source_context_incomplete",
-                "Материалы слишком велики для проверки по изображению: использованы отобранные фрагменты. Полнота проверки фактов не подтверждена.",
-                category="contextual",
-            ))
-        for item in result["issues"]:
-            code = str(item.get("code", "content"))[:60]
-            findings.append(
-                issue(
-                    index,
-                    "slide_image",
-                    code,
-                    (VISUAL_CODES.get(code, "Замечание по слайду") + ": ")
-                    + str(item.get("message", ""))[:600],
-                    category="contextual",
-                    severity="error" if code in {"facts_supported", "no_typos", "no_garbage"} else "warning",
-                )
-            )
-        return findings
-
-    batches = await asyncio.gather(
-        *(
-            one(index, slide, image)
-            for index, (slide, image) in enumerate(zip(deck["slides"], images))
-        )
-    )
-    return [finding for batch in batches for finding in batch]
-
-
 TEXT_AUDIT_CODES = {
     "unsupported_fact", "title_mismatch", "title_topic", "narrative",
     "language", "typo", "prompt_leak",
@@ -1018,45 +938,6 @@ def validate_model_issues(result, codes):
         ):
             raise ValueError("Each audit finding needs a known code and a non-empty message")
     return result
-
-
-async def contextual_audit(deck, sources):
-    count = len(deck["slides"])
-
-    def validate(result):
-        validate_model_issues(result, TEXT_AUDIT_CODES)
-        checked = result.get("checked_slide_indices")
-        if (
-            not isinstance(checked, list)
-            or any(type(i) is not int for i in checked)
-            or sorted(checked) != list(range(count))
-        ):
-            raise ValueError("checked_slide_indices must list every slide index exactly once")
-        for item in result["issues"]:
-            index = item.get("slide_index")
-            if type(index) is not int or not 0 <= index < count:
-                raise ValueError("Each finding must refer to an existing slide_index")
-        return result
-
-    result = await completion(
-        "audit", {"slides": [s["content"] for s in deck["slides"]], "sources": sources},
-        validate=validate,
-    )
-    issues = []
-    for j, item in enumerate(result["issues"][:200]):
-        index = item.get("slide_index")
-        if isinstance(index, int) and 0 <= index < len(deck["slides"]):
-            issues.append(
-                issue(
-                    index,
-                    f"context_{j}",
-                    str(item.get("code", "content"))[:100],
-                    str(item.get("message", ""))[:2000],
-                    category="contextual",
-                    severity="error" if item["code"] in {"unsupported_fact", "title_mismatch", "typo", "prompt_leak"} else "warning",
-                )
-            )
-    return issues
 
 
 def restore_picture(slide, pattern, finding):
@@ -1212,3 +1093,18 @@ def fix_overflow(slide, element, template, margin_box):
         f"{element['font_size']:g} pt и нет места расширить рамку"
     }
     return element
+
+def validate_contextual_issues(result, count):
+    validate_model_issues(result, TEXT_AUDIT_CODES)
+    checked = result.get("checked_slide_indices")
+    if (
+        not isinstance(checked, list)
+        or any(type(i) is not int for i in checked)
+        or sorted(checked) != list(range(count))
+    ):
+        raise ValueError("checked_slide_indices must list every slide index exactly once")
+    for item in result["issues"]:
+        index = item.get("slide_index")
+        if type(index) is not int or not 0 <= index < count:
+            raise ValueError("Each finding must refer to an existing slide_index")
+    return result

@@ -15,7 +15,7 @@
 [![Кейс](https://img.shields.io/badge/Кейс-VK%20Tech%20·%20ЛЦТ%202026-8A83D1)](#-о-кейсе)
 [![Лицензия](https://img.shields.io/badge/Лицензия-MIT-2EA44F)](#-лицензия)
 
-[Презентация решения](docs/presentation.pdf) · [Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md) · [Условие кейса](docs/case.md)
+[Презентация решения](docs/presentation.pdf) · [Быстрый старт](#-быстрый-старт) · [Архитектура](#-архитектура) · [Алгоритмы и ИИ](docs/algorithm-pipeline.md) · [Деплой](docs/deploy.md) · [API](docs/API.md) · [Аудит](AUDIT.md) · [Модели](MODELS.md) · [Что осталось](docs/gap-analysis.md) · [Условие кейса](docs/case.md)
 
 </div>
 

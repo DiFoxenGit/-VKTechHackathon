@@ -5,7 +5,7 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
-from designer import generation
+from designer import ai as generation
 from designer.inference import llm_settings, require_llm
 
 

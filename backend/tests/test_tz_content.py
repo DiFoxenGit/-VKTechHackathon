@@ -66,8 +66,8 @@ def test_chart_requires_the_cited_source_and_does_not_replace_a_visual():
 
 
 def test_content_audit_retries_incomplete_review_and_counts_unsupported_claims(monkeypatch):
-    from designer import generation
-    from designer.audit import contextual_audit
+    from designer import ai as generation
+    from designer.ai_audit import contextual_audit
 
     slides = [{"content": {"title": title, "bullets": [], "visual": {"kind": "none"}}} for title in [
         "Пилотный запуск можно реализовать в течение нескольких месяцев",
@@ -104,8 +104,8 @@ def test_content_audit_retries_incomplete_review_and_counts_unsupported_claims(m
     {"checked_slide_indices": [0], "issues": [{"slide_index": 0, "code": "typo", "message": ""}]},
 ])
 def test_invalid_text_audit_is_never_clean(monkeypatch, answer):
-    from designer import generation
-    from designer.audit import contextual_audit
+    from designer import ai as generation
+    from designer.ai_audit import contextual_audit
 
     async def ask(messages):
         return json.dumps(answer)
@@ -119,7 +119,7 @@ def test_invalid_text_audit_is_never_clean(monkeypatch, answer):
 
 @pytest.mark.parametrize("answer", [None, {}, {"issues": None}, {"issues": ["garbage"]}])
 def test_invalid_visual_audit_fails_instead_of_returning_zero_issues(monkeypatch, answer):
-    import designer.audit as module
+    import designer.ai_audit as module
 
     async def vision(*args):
         return answer
@@ -178,7 +178,7 @@ def test_failed_visual_review_preserves_existing_report(client, monkeypatch):
 
 
 def test_visual_audit_marks_source_context_limits(monkeypatch):
-    import designer.audit as module
+    import designer.ai_audit as module
 
     seen = []
 

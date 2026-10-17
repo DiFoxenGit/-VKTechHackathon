@@ -314,6 +314,10 @@ def value_axis_title(visual):
     unit = (visual.get("unit") or "").strip()
     series = visual.get("series") or []
     name = (series[0].get("name") or "").strip() if len(series) == 1 else ""
+    # A generated series may repeat the whole slide conclusion. Keep the unit
+    # on the axis; a paragraph there steals space from the chart itself.
+    if len(name) > 40 or len(name.split()) > 6:
+        name = ""
     if name and unit:
         return f"{name}, {unit}"
     return name or unit
@@ -596,6 +600,10 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                     for c, value in enumerate(values):
                         cell = table.cell(r, c)
                         cell.text = printable(str(value), font, coverage)
+                        # Default Office padding adds 7.2 pt per row. LibreOffice
+                        # expands dense tables beyond their planned frame to fit it.
+                        cell.margin_top = cell.margin_bottom = Pt(1)
+                        cell.margin_left = cell.margin_right = Pt(4)
                         cell.fill.solid()
                         cell.fill.fore_color.rgb = RGBColor.from_string(
                             accent if r == 0 else background
@@ -604,6 +612,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                             best_text_color(accent, palette) if r == 0 else text_color
                         )
                         for p in cell.text_frame.paragraphs:
+                            p.space_before = p.space_after = Pt(0)
+                            p.line_spacing = 1.0
                             _font(p.font, font, 13, color, r == 0)
             elif kind == "image":
                 icon = element.get("role") == "icon"
