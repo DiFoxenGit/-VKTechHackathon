@@ -1008,7 +1008,7 @@ def picture_box(asset, box):
 
 def compose(outline, template, variant, assets=None):
     """assets — библиотека картинок колоды (шаблон, пакеты, встроенный набор)."""
-    if outline.get("slides") and all(s.get("analysis_id") for s in outline["slides"]):
+    if outline.get("slides") and any(s.get("analysis_id") for s in outline["slides"]):
         from .analytics_layout import compose_analytics
         return compose_analytics(outline, template, variant)
     if assets is None:

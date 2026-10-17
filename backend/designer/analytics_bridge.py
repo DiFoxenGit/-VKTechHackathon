@@ -101,14 +101,17 @@ def _visuals(result):
                   x_label=axis(presentation.x_label,presentation.x_unit), y_label=axis(presentation.y_label,presentation.y_unit))
     if kind == "table":
         visuals = []
-        for start in range(0, len(data.columns), 7):
-            cols = list(range(start, min(start+7, len(data.columns))))
+        max_cell = max((len(str(v)) for row in data.rows for v in row if v is not None), default=0)
+        column_step = 3 if max_cell > 60 else 7
+        row_step = 3 if max_cell > 100 else 6 if max_cell > 40 else 10
+        for start in range(0, len(data.columns), column_step):
+            cols = list(range(start, min(start+column_step, len(data.columns))))
             if start:
                 cols.insert(0, 0)
             for page in data.pages or [list(range(len(data.rows)))]:
-                for offset in range(0, len(page), 10):
+                for offset in range(0, len(page), row_step):
                     visuals.append(dict(**common, columns=[data.columns[i] for i in cols],
-                        rows=[[fmt(data.rows[r][c]) for c in cols] for r in page[offset:offset+10]]))
+                        rows=[[fmt(data.rows[r][c]) for c in cols] for r in page[offset:offset+row_step]]))
         return visuals
     if kind == "scatter":
         if len(data.points)>2000:
@@ -204,7 +207,10 @@ def build_outline(results, sources, limit):
                                source_refs=[ref], visual=visual, analysis_id=result["analysis_id"]))
     if len(slides) > limit:
         raise ValueError(f"Для полного результата нужно {len(slides)} слайдов, выбран лимит {limit}. Увеличьте число слайдов (максимум 30) или уточните цель агрегации; данные не обрезаны")
-    return Outline.model_validate(dict(title="Аналитика по исходным данным", slides=slides))
+    from .story import add_story
+    slides = add_story(slides, sources, limit)
+    title = sources[0].get("_story", {}).get("goal", "").split("\n")[0][:180] or "Аналитика по исходным данным"
+    return Outline.model_validate(dict(title=title, slides=slides))
 
 
 def matches_verified_slide(slide, reference):
@@ -218,9 +224,16 @@ def verify_outline(outline, results, sources, limit=30):
     _verify_results(results,sources)
     expected = build_outline(results, sources, limit)
     actual = outline.model_dump() if hasattr(outline, "model_dump") else outline
-    if len(actual["slides"]) != len(expected.slides):
+    # Users can reorder slides and edit narrative, but every analytical page
+    # must survive exactly once and retain all its verified content.
+    remaining = [s for s in expected.slides if s.analysis_id]
+    for slide in actual["slides"]:
+        if not slide.get("analysis_id"):
+            continue
+        matched = next((i for i, ref in enumerate(remaining) if matches_verified_slide(slide, ref)), None)
+        if matched is None:
+            raise ValueError("Проверка аналитики: изменены данные, текст или источник; либо продублирован аналитический слайд")
+        remaining.pop(matched)
+    if remaining:
         raise ValueError("Проверка аналитики: потеряны слайды или страницы таблицы")
-    for slide, reference in zip(actual["slides"], expected.slides):
-        if not matches_verified_slide(slide, reference):
-            raise ValueError("Проверка аналитики: изменены категория, значение, источник или проверенный вывод")
     return True

@@ -11,9 +11,9 @@ export type Template = {
   custom?: boolean;
 };
 
-export type Slide = { id: string; title: string; body: string; kind: 'cover' | 'content' | 'closing'; notes?: string; visual?: import('./analytics').Visual; analysisId?: string; sourceRefs?: string[] };
+export type Slide = { previewUrl?: string; rawVisual?: Record<string, unknown>; id: string; title: string; body: string; kind: 'cover' | 'content' | 'closing'; notes?: string; visual?: import('./analytics').Visual; analysisId?: string; sourceRefs?: string[] };
 export type Layout = 'classic' | 'story' | 'focus';
-export type Brief = { text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string; materialName?: string; contentPackIds?: string[]; materialFiles?: import('./analytics').Material[]; brandbook?: import('./analytics').Brandbook };
+export type Brief = { narrative?: boolean; text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string; materialName?: string; contentPackIds?: string[]; materialFiles?: import('./analytics').Material[]; brandbook?: import('./analytics').Brandbook };
 export type Deck = {
   id: string;
   title: string;
@@ -24,6 +24,7 @@ export type Deck = {
   brief?: Brief;
   remote?: boolean;
   revision?: number;
+  variantPreviews?: Partial<Record<Layout,string>>;
   exports?: Partial<Record<'pptx' | 'pdf' | 'html', string>>;
   serverIssues?: AuditIssue[];
   analysis?: import('./analytics').AnalysisResult[];

@@ -44,7 +44,7 @@ from .workflow import workflow
 from .sources import sources_for
 from .inference import llm_settings
 from .layout import compose
-from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit, PackAnalysisRequest
+from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit, PackAnalysisRequest, PresentationEdit
 from .parsing import PARSER_VERSION, parse_content, parse_template
 from .storage import Store
 from .analytics_bridge import extract_pack, analyse_sources, verify_outline
@@ -812,6 +812,24 @@ def create_app(data_dir=None, seed_dir=None):
                 )
             except ValueError as exc:
                 raise HTTPException(422, str(exc)) from exc
+            return save_revision(record)
+
+    @api.patch("/presentations/{presentation_id}", tags=["Presentations"])
+    def edit_presentation(presentation_id: str, request: PresentationEdit):
+        with store.lock:
+            record = copy.deepcopy(store.get("presentations", presentation_id))
+            if record["revision"] != request.revision:
+                raise HTTPException(409, "Версия изменилась. Откройте презентацию заново перед сохранением")
+            template = apply_style(store.get("templates", record["template_id"]), record.get("style"))
+            outline = {"title": request.title, "slides": [s.model_dump() for s in request.slides]}
+            if record.get("analysis"):
+                try:
+                    verify_outline(outline, record["analysis"], record["sources"])
+                except ValueError as exc:
+                    raise HTTPException(422, str(exc)) from exc
+            record["title"], record["variant"] = request.title, request.variant
+            record["deck"] = compose(outline, template, request.variant,
+                deck_library(template, record.get("content_pack_ids"), stored_illustrations(record.get("illustrations_id"))))
             return save_revision(record)
 
     @api.patch(

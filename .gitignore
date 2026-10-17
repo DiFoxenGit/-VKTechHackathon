@@ -34,3 +34,5 @@ Thumbs.db
 # Скриншоты и отчёты локальных прогонов браузера
 output/
 .playwright-cli/
+
+.playwright-mcp/

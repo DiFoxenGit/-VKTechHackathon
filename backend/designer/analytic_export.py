@@ -41,6 +41,9 @@ def add_chart(slide, visual, box, font, palette, text_color):
     types = dict(bar=XL_CHART_TYPE.COLUMN_CLUSTERED, grouped_bar=XL_CHART_TYPE.COLUMN_CLUSTERED,
                  stacked_bar=XL_CHART_TYPE.COLUMN_STACKED, histogram=XL_CHART_TYPE.COLUMN_CLUSTERED,
                  line=XL_CHART_TYPE.LINE, pie=XL_CHART_TYPE.PIE, scatter=XL_CHART_TYPE.XY_SCATTER)
+    horizontal = kind in {"bar", "grouped_bar", "stacked_bar"} and max((len(c) for c in visual["categories"]), default=0) > 22
+    if horizontal:
+        types[kind] = XL_CHART_TYPE.BAR_STACKED if kind == "stacked_bar" else XL_CHART_TYPE.BAR_CLUSTERED
     chart = slide.shapes.add_chart(types[kind], x, y, w, h, data).chart
     chart.font.name, chart.font.size = font, Pt(12)
     chart.font.color.rgb = RGBColor.from_string(text_color)
@@ -58,7 +61,8 @@ def add_chart(slide, visual, box, font, palette, text_color):
         plot.data_labels.font.name, plot.data_labels.font.size = font, Pt(11)
         plot.data_labels.font.color.rgb = RGBColor.from_string(text_color)
         plot.data_labels.position = XL_LABEL_POSITION.CENTER if kind in {"pie", "stacked_bar"} else XL_LABEL_POSITION.ABOVE if kind == "line" else XL_LABEL_POSITION.OUTSIDE_END
-        plot.data_labels.number_format = "0.0%" if kind == "pie" else "#,##0.##"
+        nonzero = [abs(v) for s in visual["series"] for v in s["values"] if v]
+        plot.data_labels.number_format = "0.0%" if kind == "pie" else "0.00E+00" if nonzero and min(nonzero)<.01 else "#,##0.##"
     if kind == "stacked_bar":
         plot.overlap = 100
     if kind == "histogram":

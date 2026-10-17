@@ -108,6 +108,7 @@ class PackAnalysisRequest(StrictModel):
 
 
 class GenerateRequest(Brief):
+    narrative: bool = False
     contextual_audit: bool = False
     template_id: str
     outline: Outline | None = None
@@ -132,3 +133,10 @@ class FixRequest(StrictModel):
 class SlideEdit(StrictModel):
     revision: int = Field(ge=1)
     content: SlideContent
+
+
+class PresentationEdit(StrictModel):
+    revision: int = Field(ge=1)
+    title: str = Field(min_length=1, max_length=240)
+    variant: Literal["classic", "split", "focus"]
+    slides: list[SlideContent] = Field(min_length=1, max_length=30)
