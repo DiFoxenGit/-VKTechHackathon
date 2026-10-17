@@ -1,0 +1,784 @@
+{
+  "$defs": {
+    "Analysis": {
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "title": "Goal",
+          "type": "string"
+        },
+        "task": {
+          "enum": [
+            "dynamics",
+            "comparison",
+            "shares",
+            "distribution",
+            "relationship",
+            "reference",
+            "summary"
+          ],
+          "title": "Task",
+          "type": "string"
+        },
+        "dimension": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimension"
+        },
+        "series_dimension": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Series Dimension"
+        },
+        "metrics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metrics",
+          "type": "array"
+        },
+        "aggregation": {
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "missing_policy": {
+          "const": "preserve_gaps_exclude_from_aggregate",
+          "default": "preserve_gaps_exclude_from_aggregate",
+          "title": "Missing Policy",
+          "type": "string"
+        },
+        "transformations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Transformations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "goal",
+        "task",
+        "aggregation"
+      ],
+      "title": "Analysis",
+      "type": "object"
+    },
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "table",
+            "line",
+            "bar",
+            "histogram",
+            "pie",
+            "scatter",
+            "grouped_bar",
+            "stacked_bar",
+            "kpi"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "rank": {
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "reason": {
+          "$ref": "#/$defs/Notice"
+        }
+      },
+      "required": [
+        "kind",
+        "rank",
+        "reason"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "ColumnProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "number",
+            "date",
+            "category",
+            "text",
+            "empty",
+            "ambiguous"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "metric",
+            "dimension",
+            "time",
+            "identifier",
+            "unknown"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "missing": {
+          "default": 0,
+          "title": "Missing",
+          "type": "integer"
+        },
+        "distinct": {
+          "default": 0,
+          "title": "Distinct",
+          "type": "integer"
+        },
+        "outlier_row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Outlier Row Ids",
+          "type": "array"
+        },
+        "period": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Period",
+          "type": "array"
+        },
+        "periodicity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Periodicity"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "role"
+      ],
+      "title": "ColumnProfile",
+      "type": "object"
+    },
+    "DatasetRef": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "source_sha256": {
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "archive_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Archive Path"
+        },
+        "table": {
+          "title": "Table",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataset_id",
+        "source_sha256",
+        "filename",
+        "table"
+      ],
+      "title": "DatasetRef",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "description": "Source coordinates, not a global whitelist of numbers.",
+      "properties": {
+        "source_sha256": {
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Row Ids",
+          "type": "array"
+        },
+        "column_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Column Ids",
+          "type": "array"
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Parameters",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_sha256",
+        "row_ids",
+        "column_ids",
+        "operation"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Fact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "exact": {
+          "title": "Exact",
+          "type": "string"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "period": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Period",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "rounding_digits": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rounding Digits"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "exact",
+        "unit",
+        "evidence"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "Notice": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "Notice",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "row_id": {
+          "title": "Row Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "row_id"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "Presentation": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "x_label": {
+          "default": "",
+          "title": "X Label",
+          "type": "string"
+        },
+        "y_label": {
+          "default": "",
+          "title": "Y Label",
+          "type": "string"
+        },
+        "x_unit": {
+          "default": "",
+          "title": "X Unit",
+          "type": "string"
+        },
+        "y_unit": {
+          "default": "",
+          "title": "Y Unit",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "period": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Period",
+          "type": "array"
+        },
+        "source_label": {
+          "title": "Source Label",
+          "type": "string"
+        },
+        "conclusion_fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conclusion Fact Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "title",
+        "source_label"
+      ],
+      "title": "Presentation",
+      "type": "object"
+    },
+    "Profile": {
+      "additionalProperties": false,
+      "properties": {
+        "row_count": {
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "column_count": {
+          "title": "Column Count",
+          "type": "integer"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/ColumnProfile"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "hierarchies": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Hierarchies",
+          "type": "array"
+        },
+        "dimension_count": {
+          "title": "Dimension Count",
+          "type": "integer"
+        },
+        "metric_count": {
+          "title": "Metric Count",
+          "type": "integer"
+        },
+        "warnings": {
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "row_count",
+        "column_count",
+        "columns",
+        "dimension_count",
+        "metric_count"
+      ],
+      "title": "Profile",
+      "type": "object"
+    },
+    "Series": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        },
+        "fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fact Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "values",
+        "fact_ids"
+      ],
+      "title": "Series",
+      "type": "object"
+    },
+    "VisualData": {
+      "additionalProperties": false,
+      "properties": {
+        "categories": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Categories",
+          "type": "array"
+        },
+        "series": {
+          "items": {
+            "$ref": "#/$defs/Series"
+          },
+          "title": "Series",
+          "type": "array"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "title": "Points",
+          "type": "array"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Row Ids",
+          "type": "array"
+        },
+        "pages": {
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "bins": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Bins",
+          "type": "array"
+        },
+        "kpi_fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Kpi Fact Ids",
+          "type": "array"
+        }
+      },
+      "title": "VisualData",
+      "type": "object"
+    },
+    "Visualization": {
+      "additionalProperties": false,
+      "properties": {
+        "selected": {
+          "enum": [
+            "table",
+            "line",
+            "bar",
+            "histogram",
+            "pie",
+            "scatter",
+            "grouped_bar",
+            "stacked_bar",
+            "kpi"
+          ],
+          "title": "Selected",
+          "type": "string"
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Candidates",
+          "type": "array"
+        }
+      },
+      "required": [
+        "selected",
+        "candidates"
+      ],
+      "title": "Visualization",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "dataset_ref": {
+      "$ref": "#/$defs/DatasetRef"
+    },
+    "profile": {
+      "$ref": "#/$defs/Profile"
+    },
+    "analysis": {
+      "$ref": "#/$defs/Analysis"
+    },
+    "visualization": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Visualization"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "data": {
+      "$ref": "#/$defs/VisualData"
+    },
+    "facts": {
+      "items": {
+        "$ref": "#/$defs/Fact"
+      },
+      "title": "Facts",
+      "type": "array"
+    },
+    "presentation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Presentation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "warning",
+        "refused"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/$defs/Notice"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "refusal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Notice"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "dataset_ref",
+    "profile",
+    "analysis",
+    "status"
+  ],
+  "title": "AnalysisResult",
+  "type": "object"
+}

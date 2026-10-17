@@ -1,0 +1,16 @@
+{
+  "goal": "справочная таблица",
+  "task": "reference",
+  "dimension": null,
+  "series_dimension": null,
+  "series_additive": false,
+  "metrics": [],
+  "aggregation": "sum",
+  "unit": "",
+  "locale": "ru",
+  "bins": null,
+  "page_size": 10,
+  "slide_budget": 30,
+  "column_types": {},
+  "filters": {}
+}

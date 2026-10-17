@@ -1,0 +1,18 @@
+{
+  "goal": "dynamics",
+  "task": "dynamics",
+  "dimension": "c1",
+  "series_dimension": null,
+  "series_additive": false,
+  "metrics": [
+    "c2"
+  ],
+  "aggregation": "sum",
+  "unit": "units",
+  "locale": "en",
+  "bins": null,
+  "page_size": 10,
+  "slide_budget": 30,
+  "column_types": {},
+  "filters": {}
+}

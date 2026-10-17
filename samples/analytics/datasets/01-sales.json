@@ -1,0 +1,62 @@
+[
+  {
+    "month": "2026-01",
+    "region": "North",
+    "sales": 100
+  },
+  {
+    "month": "2026-01",
+    "region": "South",
+    "sales": 200
+  },
+  {
+    "month": "2026-02",
+    "region": "North",
+    "sales": 200
+  },
+  {
+    "month": "2026-02",
+    "region": "South",
+    "sales": 400
+  },
+  {
+    "month": "2026-03",
+    "region": "North",
+    "sales": 300
+  },
+  {
+    "month": "2026-03",
+    "region": "South",
+    "sales": 600
+  },
+  {
+    "month": "2026-04",
+    "region": "North",
+    "sales": 400
+  },
+  {
+    "month": "2026-04",
+    "region": "South",
+    "sales": 800
+  },
+  {
+    "month": "2026-05",
+    "region": "North",
+    "sales": 500
+  },
+  {
+    "month": "2026-05",
+    "region": "South",
+    "sales": 1000
+  },
+  {
+    "month": "2026-06",
+    "region": "North",
+    "sales": 600
+  },
+  {
+    "month": "2026-06",
+    "region": "South",
+    "sales": 1200
+  }
+]
