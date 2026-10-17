@@ -196,9 +196,22 @@ def audit(deck, template, sources, language=None):
                 f"«{item}» уже сказано в заголовке или на другом слайде",
             )
         )
+    verified_analytics = []
+    if sources and sources[0].get("_analysis_results"):
+        from .analytics_bridge import build_outline, _verify_results, matches_verified_slide
+        try:
+            _verify_results(sources[0]["_analysis_results"], sources)
+            verified_analytics = build_outline(sources[0]["_analysis_results"],sources,30).slides
+        except ValueError:
+            pass
     for slide in deck["slides"]:
         index = slide["index"]
         content = slide["content"]
+        analytical_verified = False
+        if content.get("analysis_id"):
+            analytical_verified = any(matches_verified_slide(content, s) for s in verified_analytics)
+            if not analytical_verified:
+                issues.append(issue(index, None, "analysis_mismatch", "Аналитические данные или вывод не совпадают с проверенным расчётом", severity="error"))
         elements = slide["elements"]
         title_key = (content["title"], tuple(content["bullets"]))
         if title_key in seen:
@@ -284,9 +297,13 @@ def audit(deck, template, sources, language=None):
                 )
             )
         if visual["kind"] == "table":
+            table_element = next((e for e in elements if e["kind"] == "table"), None)
+            # Verified tables are paginated before layout. Account for native
+            # row height (13 pt text + padding), not the legacy 7-row guide.
+            row_limit = min(10, int((table_element["box"][3] - 24) / 18) - 1) if analytical_verified and table_element else MAX_TABLE_ROWS
             if (
                 len(visual["columns"]) > MAX_TABLE_COLUMNS
-                or len(visual["rows"]) > MAX_TABLE_ROWS
+                or len(visual["rows"]) > row_limit
             ):
                 issues.append(
                     issue(
@@ -294,7 +311,7 @@ def audit(deck, template, sources, language=None):
                         None,
                         "table_size",
                         f"Таблица {len(visual['rows'])}×{len(visual['columns'])}; "
-                        f"ориентир — не более {MAX_TABLE_ROWS} строк и {MAX_TABLE_COLUMNS} колонок",
+                        f"ориентир — не более {row_limit} строк и {MAX_TABLE_COLUMNS} колонок",
                     )
                 )
         if visual["kind"] in ("process", "icon", "cycle", "pyramid", "timeline"):
@@ -330,7 +347,7 @@ def audit(deck, template, sources, language=None):
             # Выдуманная диаграмма хуже отсутствующей: столбики по номерам
             # этапов — ошибка, значения не из материалов — как неподтверждённое
             # число в тезисе, предупреждение.
-            reason, ordinal = fabricated_chart(visual, source_numbers)
+            reason, ordinal = ("", False) if analytical_verified else fabricated_chart(visual, source_numbers)
             if reason:
                 issues.append(
                     issue(
@@ -442,7 +459,7 @@ def audit(deck, template, sources, language=None):
             text + "\n" + "\n".join(visual_labels(content.get("visual") or {})),
             source_numbers,
         )
-        if numbers:
+        if numbers and not analytical_verified:
             issues.append(
                 issue(
                     index,
@@ -887,9 +904,9 @@ def file_issues(check):
         missing = []
         if chart.get("series", 0) > 1 and not chart.get("legend"):
             missing.append("легенды")
-        if not chart.get("axis_title"):
+        if not chart.get("axis_title") and chart.get("type") != 5:
             missing.append("подписи осей")
-        if not chart.get("value_labels"):
+        if not chart.get("value_labels") and chart.get("type") != -4169:
             missing.append("подписей значений")
         if missing:
             issues.append(

@@ -1,0 +1,19 @@
+{
+  "goal": "динамика",
+  "task": null,
+  "dimension": "c1",
+  "series_dimension": null,
+  "series_additive": false,
+  "metrics": [
+    "c2"
+  ],
+  "aggregation": "sum",
+  "unit": "RUB",
+  "locale": "ru",
+  "bins": null,
+  "page_size": 10,
+  "slide_budget": 30,
+  "column_types": {},
+  "number_locale": null,
+  "filters": {}
+}

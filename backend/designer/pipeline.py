@@ -2,6 +2,7 @@
 import logging
 import os
 from fastapi import HTTPException
+from starlette.concurrency import run_in_threadpool
 from . import ai
 from .models import Outline
 from .workflow import narrative
@@ -9,6 +10,7 @@ from .algorithms.context import select_context
 from .algorithms.validation import validate_outline
 from .algorithms.balance import balance_plan, apply_condensation, finish_balance
 from .comparisons import add_comparison_charts
+from .analytics_bridge import analyse_sources, build_outline, verify_outline
 LOGGER = logging.getLogger("designer.pipeline")
 
 
@@ -58,10 +60,21 @@ async def run_generation(request, template, sources, *, outline_factory, balance
     testable without FastAPI, a real model, filesystem exports or a job queue.
     """
     on_stage("outline", 5)
-    outline = (request.outline.model_copy(deep=True) if request.outline
+    analysis_results = await run_in_threadpool(analyse_sources,sources,getattr(request, "analysis_goal", "") or request.brief)
+    if analysis_results:
+        on_stage("analytics", 8)
+        sources[0]["_analysis_results"] = analysis_results
+        outline = build_outline(analysis_results, sources, request.slide_count)
+        for result in analysis_results:
+            warnings.extend(result["warnings"])
+    else:
+        outline = (request.outline.model_copy(deep=True) if request.outline
                else await outline_factory(request, sources, warnings))
     on_stage("balance", 12)
-    outline = Outline.model_validate(await balance(outline.model_dump(), template, warnings=warnings))
+    if analysis_results:
+        verify_outline(outline, analysis_results, sources)
+    else:
+        outline = Outline.model_validate(await balance(outline.model_dump(), template, warnings=warnings))
     on_outline(outline.model_dump())
     if label_assets is not None:
         on_stage("assets", 14)
@@ -79,6 +92,8 @@ async def run_generation(request, template, sources, *, outline_factory, balance
             {"slides": [{"content": slide.model_dump()} for slide in outline.slides]}, sources)
     results = []
     for index, variant in enumerate(variants):
+        if analysis_results:
+            verify_outline(outline, analysis_results, sources)
         on_stage("layout_and_audit", 20 + int(index * 75 / max(1, len(variants))))
         result = await render_variant(request, outline.model_dump(), template, sources,
                                       variant["id"], findings, illustrations)

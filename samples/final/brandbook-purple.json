@@ -1,0 +1,12 @@
+{
+  "name": "Фиолетовый демонстрационный стиль",
+  "colors": [
+    "7733BB",
+    "D76543",
+    "228877"
+  ],
+  "font": "Arial",
+  "background": "FFFFFF",
+  "title_size": 28,
+  "body_size": 18
+}

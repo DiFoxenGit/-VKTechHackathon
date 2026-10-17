@@ -798,7 +798,7 @@ def save_assets(folder: Path, harvested):
 # ---------------------------------------------------------------- контент-пакет zip
 
 
-TEXT_SUFFIXES = (".txt", ".md", ".csv", ".json", ".pdf", ".docx", ".pptx")
+TEXT_SUFFIXES = (".txt", ".md", ".csv", ".xlsx", ".json", ".pdf", ".docx", ".pptx")
 IMAGE_SUFFIXES = (".svg", ".png", ".jpg", ".jpeg")
 FOLDER_KINDS = (
     ("icon", "icon"),
@@ -828,7 +828,7 @@ def _svg_kind(geometry):
     return "icon" if len(set(colors)) <= 1 else "illustration"
 
 
-def parse_pack_zip(data, parse_text):
+def parse_pack_zip(data, parse_text, report=None):
     """Zip контент-пакета: тексты для плана и картинки для вёрстки.
 
     manifest.json (необязателен) задаёт вид и теги: {"assets": [{"file":
@@ -841,6 +841,14 @@ def parse_pack_zip(data, parse_text):
 
     check_zip(data)
     texts, assets = [], []
+    def status(name, accepted, reason=""):
+        if report is not None:
+            item = next((v for v in report if v["name"] == name), None)
+            value = {"name": name, "status": "accepted" if accepted else "rejected", "reason": reason}
+            if item is None:
+                report.append(value)
+            else:
+                item.update(value)
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         names = [
             n
@@ -866,12 +874,16 @@ def parse_pack_zip(data, parse_text):
         for name in sorted(names):
             if name == "manifest.json":
                 continue
+            if report is not None and any(v["name"] == name and v["status"] == "rejected" for v in report):
+                continue
             suffix = PurePosixPath(name).suffix.lower()
             payload = archive.read(name)
             if suffix in TEXT_SUFFIXES:
                 try:
                     texts.append(parse_text(payload, name))
-                except ValueError:
+                    status(name, True)
+                except Exception as exc:
+                    status(name, False, "Не удалось прочитать документ: " + str(exc)[:250])
                     LOGGER.info("Skip unreadable text %s in content pack", name)
                 if suffix == ".pptx":
                     assets.extend(harvest_pptx(payload))
@@ -890,6 +902,7 @@ def parse_pack_zip(data, parse_text):
                 try:
                     geometry = parse_svg(payload)
                 except (ValueError, etree.XMLSyntaxError):
+                    status(name, False, "Повреждённый SVG")
                     LOGGER.info("Skip unreadable SVG %s in content pack", name)
                     continue
                 box = geometry["viewbox"]
@@ -903,10 +916,12 @@ def parse_pack_zip(data, parse_text):
             else:
                 fmt = image_format(payload)
                 if not fmt:
+                    status(name, False, "Неподдерживаемое содержимое изображения")
                     continue
                 try:
                     info = inspect_image(payload)
                 except Exception:  # noqa: BLE001 - испорченная картинка пропускается
+                    status(name, False, "Повреждённое изображение")
                     continue
                 kind = kind or classify_image(info) or "photo"
                 meta = {
@@ -924,6 +939,7 @@ def parse_pack_zip(data, parse_text):
                 tags=tag_roots(label),
             )
             assets.append((meta, payload))
+            status(name, True)
     return "\n\n".join(t for t in texts if t.strip()), assets
 
 

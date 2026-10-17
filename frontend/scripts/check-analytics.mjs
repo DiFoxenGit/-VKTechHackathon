@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import PptxGenJS from 'pptxgenjs';
+import JSZip from 'jszip';
+import {loadModule} from './load-module.mjs';
+const {parseVisual,visualMarkup}=await loadModule('src/analytics.ts');
+const {addAnalyticSlide}=await loadModule('src/rendering/analyticExport.ts');
+const template={name:'Demo',font:'Arial',color:'#0077FF'};
+const visual={kind:'line',categories:['А','Б','В'],series:[{name:'Продажи',values:[10,null,30]}],unit:'руб.',source:'data.csv <script>alert(1)</script>',columns:[],rows:[],x_values:[],x_label:'Месяц',y_label:'Продажи (руб.)'};
+assert.ok(parseVisual(visual));
+assert.equal(parseVisual({...visual,series:[{name:'x',values:[1]}]}),undefined);
+assert.equal(parseVisual({...visual,series:[{name:'x',values:[1,NaN,3]}]}),undefined);
+assert.equal(parseVisual({...visual,kind:'scatter',x_values:[]}),undefined);
+const hostile={...visual,categories:['<script>alert(1)</script>','Б','В']};
+assert.ok(!visualMarkup(hostile).includes('<script>'));
+assert.equal((visualMarkup(visual).match(/<polyline /g)||[]).length,2,'a null point must break the line into two segments');
+const deck=new PptxGenJS();deck.layout='LAYOUT_WIDE';
+addAnalyticSlide(deck,{title:'Проверенный вывод',body:'',notes:'Источник и расчёт',analysisId:'verified-1',sourceRefs:['pack'],visual},template,0,1);
+const zip=await JSZip.loadAsync(await deck.write({outputType:'nodebuffer'}));
+const chart=await zip.file('ppt/charts/chart1.xml').async('string');
+assert.ok(chart.includes('<c:lineChart>'),'line remains a native editable chart');
+assert.ok(chart.includes('dispBlanksAs val="gap"'));
+assert.ok(!chart.includes('<c:v>null</c:v>'));
+const cache=chart.match(/<c:numCache>([\s\S]*?)<\/c:numCache>/)?.[1]||'';
+assert.ok(!/<c:pt idx="1">[\s\S]*?<c:v>0<\/c:v>/.test(cache),'missing observation cannot become a synthetic zero');
+assert.ok((await zip.file('ppt/slides/slide1.xml').async('string')).includes('data.csv &lt;script&gt;'));
+const before=JSON.stringify(visual);
+for(const kind of ['bar','pie','scatter','histogram','grouped_bar','stacked_bar','kpi','table']){
+ const v={...visual,kind,series:[{name:'Продажи',values:[10,20,30]}],x_values:kind==='scatter'?[2,5,9]:[],columns:['Регион','Продажи'],rows:[['А','10'],['Б','20']]};
+ const pptx=new PptxGenJS();addAnalyticSlide(pptx,{title:'Проверка',body:'',visual:v},template,0,1);
+ const z=await JSZip.loadAsync(await pptx.write({outputType:'nodebuffer'}));
+ const xml=await z.file('ppt/slides/slide1.xml').async('string');
+ if(kind==='table')assert.ok(xml.includes('<a:tbl>'));
+ else if(kind==='kpi')assert.ok(xml.includes('10 руб.'));
+ else assert.ok(Object.keys(z.files).some(name=>/^ppt\/charts\/chart\d+\.xml$/.test(name)),`${kind} must remain a native chart`);
+}
+assert.equal(JSON.stringify(visual),before,'rendering must not mutate verified data');
+console.log('PASS: native charts/tables, all visual types, missing-point gaps, preserved sources and escaped cell content');

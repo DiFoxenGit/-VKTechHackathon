@@ -1,0 +1,225 @@
+{
+  "schema_version": "1.0",
+  "dataset_ref": {
+    "dataset_id": "8ecb0bbce60d51449f826362",
+    "source_sha256": "e3907c99191d7ab51cc57aa24e9f5139a337222bd609ec916ee7b3392ae2fab2",
+    "filename": "categories.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "profile": {
+    "row_count": 3,
+    "column_count": 2,
+    "columns": [
+      {
+        "id": "c1",
+        "name": "region",
+        "kind": "category",
+        "role": "dimension",
+        "unit": "",
+        "missing": 0,
+        "distinct": 3,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null,
+        "missing_periods": []
+      },
+      {
+        "id": "c2",
+        "name": "sales",
+        "kind": "number",
+        "role": "metric",
+        "unit": "",
+        "missing": 0,
+        "distinct": 3,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null,
+        "missing_periods": []
+      }
+    ],
+    "hierarchies": [],
+    "dimension_count": 1,
+    "metric_count": 1,
+    "warnings": []
+  },
+  "analysis": {
+    "goal": "comparison",
+    "task": "comparison",
+    "dimension": "c1",
+    "series_dimension": null,
+    "metrics": [
+      "c2"
+    ],
+    "aggregation": "sum",
+    "missing_policy": "preserve_gaps_exclude_from_aggregate",
+    "transformations": [
+      "group_by_dimension",
+      "sum",
+      "sort_dimension"
+    ]
+  },
+  "visualization": {
+    "selected": "bar",
+    "candidates": [
+      {
+        "kind": "bar",
+        "rank": 1,
+        "reason": {
+          "code": "candidate.bar",
+          "params": {
+            "task": "comparison",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": null
+          }
+        }
+      },
+      {
+        "kind": "table",
+        "rank": 2,
+        "reason": {
+          "code": "candidate.table",
+          "params": {
+            "task": "comparison",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": null
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "categories": [
+      "West",
+      "South",
+      "North"
+    ],
+    "series": [
+      {
+        "name": "sales",
+        "unit": "units",
+        "values": [
+          30.0,
+          20.0,
+          10.0
+        ],
+        "fact_ids": [
+          "f3",
+          "f2",
+          "f1"
+        ]
+      }
+    ],
+    "points": [],
+    "columns": [],
+    "rows": [],
+    "row_ids": [],
+    "pages": [
+      [
+        0,
+        1,
+        2
+      ]
+    ],
+    "series_pages": [
+      [
+        0
+      ]
+    ],
+    "bins": [],
+    "kpi_fact_ids": []
+  },
+  "facts": [
+    {
+      "id": "f1",
+      "value": 10.0,
+      "exact": "10",
+      "unit": "units",
+      "period": [],
+      "evidence": {
+        "source_sha256": "e3907c99191d7ab51cc57aa24e9f5139a337222bd609ec916ee7b3392ae2fab2",
+        "row_ids": [
+          2
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "North",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f2",
+      "value": 20.0,
+      "exact": "20",
+      "unit": "units",
+      "period": [],
+      "evidence": {
+        "source_sha256": "e3907c99191d7ab51cc57aa24e9f5139a337222bd609ec916ee7b3392ae2fab2",
+        "row_ids": [
+          3
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "South",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f3",
+      "value": 30.0,
+      "exact": "30",
+      "unit": "units",
+      "period": [],
+      "evidence": {
+        "source_sha256": "e3907c99191d7ab51cc57aa24e9f5139a337222bd609ec916ee7b3392ae2fab2",
+        "row_ids": [
+          4
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "West",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    }
+  ],
+  "presentation": {
+    "title": "West leads in sales: 30.0",
+    "x_label": "region",
+    "y_label": "sales",
+    "x_unit": "",
+    "y_unit": "units",
+    "unit": "units",
+    "period": [],
+    "source_label": "categories.csv / 1",
+    "conclusion_fact_ids": [
+      "f3"
+    ]
+  },
+  "status": "ok",
+  "warnings": [],
+  "refusal": null
+}

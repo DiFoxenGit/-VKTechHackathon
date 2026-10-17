@@ -44,9 +44,11 @@ from .workflow import workflow
 from .sources import sources_for
 from .inference import llm_settings
 from .layout import compose
-from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit
+from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit, PackAnalysisRequest
 from .parsing import PARSER_VERSION, parse_content, parse_template
 from .storage import Store
+from .analytics_bridge import extract_pack, analyse_sources, verify_outline
+from .brandbook import parse_brandbook, apply_style
 
 LOGGER = logging.getLogger(__name__)
 MAX_UPLOAD = 50 * 1024 * 1024
@@ -229,7 +231,8 @@ def create_app(data_dir=None, seed_dir=None):
             "status": "ok",
             "llm_configured": llm_settings().configured,
             "pdf_available": bool(
-                shutil.which("libreoffice")
+                os.getenv("DESIGNER_SOFFICE")
+                or shutil.which("libreoffice")
                 or shutil.which("soffice")
                 or Path("/Applications/LibreOffice.app/Contents/MacOS/soffice").exists()
             ),
@@ -269,11 +272,17 @@ def create_app(data_dir=None, seed_dir=None):
     def template(template_id: str):
         return store.get("templates", template_id)
 
-    def read_pack(data, name):
+    def read_pack(data, name, file_report=None):
         """Текст и картинки контент-пакета: zip, одиночная картинка или документ."""
         suffix = Path(name).suffix.lower()
         if suffix == ".zip":
-            return parse_pack_zip(data, parse_content)
+            def pack_text(payload, member):
+                if Path(member).suffix.lower() in (".csv", ".xlsx", ".json"):
+                    from .analytics_bridge import extract
+                    tables = extract(payload, member)
+                    return "\n\n".join(t["source_file"] + " / " + t["sheet"] + "\n" + "\n".join(" | ".join(str(v) if v is not None else "" for v in row) for row in [t["columns"], *t["rows"][:20]]) for t in tables)
+                return parse_content(payload, member)
+            return parse_pack_zip(data, pack_text, file_report)
         if suffix in (".svg", ".png", ".jpg", ".jpeg"):
             # Одна картинка — пакет из одного ассета, теги из имени файла.
             import io
@@ -283,7 +292,12 @@ def create_app(data_dir=None, seed_dir=None):
             with zipfile.ZipFile(buffer, "w") as archive:
                 archive.writestr(Path(name).name, data)
             return parse_pack_zip(buffer.getvalue(), parse_content)
-        text = parse_content(data, name)
+        if suffix in (".csv", ".xlsx", ".json"):
+            from .analytics_bridge import extract
+            tables = extract(data, name)
+            text = "\n\n".join(t["source_file"] + " / " + t["sheet"] + "\n" + "\n".join(" | ".join(str(v) if v is not None else "" for v in row) for row in [t["columns"], *t["rows"][:20]]) for t in tables)
+        else:
+            text = parse_content(data, name)
         assets = harvest_pptx(data) if suffix == ".pptx" else []
         return text, assets
 
@@ -292,15 +306,15 @@ def create_app(data_dir=None, seed_dir=None):
         data = await upload_bytes(file)
         name = file.filename or ""
         try:
-            text, assets = await run_in_threadpool(read_pack, data, name)
+            datasets, file_report = await run_in_threadpool(extract_pack, data, name)
+            text, assets = await run_in_threadpool(read_pack, data, name, file_report)
         except ValueError as exc:
             # Отказ по размеру или устройству архива — пользователю нужна причина.
             if str(exc).startswith(("Archive", "Encrypted", "Content pack holds")):
                 raise HTTPException(413, str(exc)) from exc
             raise HTTPException(
                 422,
-                "Cannot extract content; use UTF-8 text, CSV, JSON, DOCX, PPTX, a text PDF, "
-                "images (SVG, PNG, JPEG) or a ZIP of them",
+                str(exc),
             ) from exc
         except Exception as exc:
             raise HTTPException(
@@ -311,6 +325,7 @@ def create_app(data_dir=None, seed_dir=None):
         if not text.strip() and not assets:
             raise HTTPException(422, "Content pack has neither text nor pictures")
         identifier = store.new_id()
+        (store.directory("content_packs", identifier) / "source.bin").write_bytes(data)
         metas = await run_in_threadpool(
             save_assets, store.directory("content_packs", identifier) / "assets", assets
         )
@@ -323,8 +338,43 @@ def create_app(data_dir=None, seed_dir=None):
                 "assets": metas,
                 "asset_counts": asset_counts(metas),
                 "sha256": hashlib.sha256(data).hexdigest(),
+                "datasets": datasets,
+                "file_report": file_report,
             },
         )
+
+    @api.post("/brandbooks", status_code=201, tags=["Content"])
+    async def upload_brandbook(file: Annotated[UploadFile, File()]):
+        data = await upload_bytes(file)
+        try:
+            tokens, warnings = await run_in_threadpool(parse_brandbook, data, file.filename or "")
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return store.put("brandbooks", {"id": store.new_id(), "name": Path(file.filename or "").name, "tokens": tokens, "warnings": warnings})
+
+    @api.get("/content-packs/{pack_id}/analysis", tags=["Content"])
+    def analyse_pack(pack_id: str, goal: str = Query("", max_length=1000)):
+        pack = store.get("content_packs", pack_id)
+        try:
+            items = analyse_sources([pack], goal)
+        except ValueError as exc:
+            raise HTTPException(422,str(exc)) from exc
+        return {"items": items, "analysis_results": [r["contract"] for r in items], "file_report": pack.get("file_report", [])}
+
+    @api.post("/content-packs/{pack_id}/analysis", tags=["Content"])
+    def analyse_pack_explicit(pack_id: str, selection: PackAnalysisRequest):
+        pack = store.get("content_packs",pack_id)
+        try:
+            goal = selection.goal
+            requests = selection.requests
+            known = {t["dataset_id"] for t in pack.get("datasets",[])}
+            if set(requests)-known:
+                raise ValueError("Неизвестная таблица в запросе анализа")
+            pack["analysis_requests"] = {k:v.model_dump(mode="json") for k,v in requests.items()}
+            items = analyse_sources([pack],goal)
+        except (ValueError,TypeError) as exc:
+            raise HTTPException(422,str(exc)) from exc
+        return {"items":items,"analysis_results":[r["contract"] for r in items],"file_report":pack.get("file_report",[])}
 
     @api.get("/content-packs", tags=["Content"])
     def content_packs():
@@ -492,6 +542,8 @@ def create_app(data_dir=None, seed_dir=None):
             variant,
             deck_library(template, request.content_pack_ids, illustrations[1] if illustrations else None),
         )
+        if sources[0].get("_analysis_results"):
+            verify_outline({"slides": [s["content"] for s in deck["slides"]]}, sources[0]["_analysis_results"], sources)
         report = audit(deck, template, sources, request.language)
         if contextual_findings is not None:
             report["issues"].extend(copy.deepcopy(contextual_findings))
@@ -509,7 +561,7 @@ def create_app(data_dir=None, seed_dir=None):
             "sources": sources,
             "workflow": workflow(),
             "generation": {
-                "mode": "provided_outline" if request.outline else "llm",
+                "mode": "deterministic_analytics" if sources[0].get("_analysis_results") else "provided_outline" if request.outline else "llm",
                 "model": llm_settings().model or None,
                 "provider": llm_settings().profile,
                 "purpose": request.purpose,
@@ -518,6 +570,9 @@ def create_app(data_dir=None, seed_dir=None):
             "created_at": time.time(),
             # Пакеты с картинками нужны снова при правке слайда и исправлениях.
             "content_pack_ids": list(request.content_pack_ids),
+            "analysis": sources[0].get("_analysis_results", []),
+            "analysis_results": [r["contract"] for r in sources[0].get("_analysis_results", [])],
+            "style": template.get("brandbook"),
             # То же для нарисованных моделью иллюстраций.
             "illustrations_id": illustrations[0] if illustrations else None,
         }
@@ -573,6 +628,7 @@ def create_app(data_dir=None, seed_dir=None):
                 stage="failed",
                 error=exc.detail
                 if isinstance(exc, HTTPException)
+                else str(exc) if isinstance(exc, ValueError)
                 else "Generation failed or exceeded 300 seconds",
             )
         finally:
@@ -583,7 +639,13 @@ def create_app(data_dir=None, seed_dir=None):
     async def generate(request: GenerateRequest):
         template = store.get("templates", request.template_id)
         sources = sources_for(store, request)
-        if request.outline is None or request.contextual_audit:
+        structured = any(s.get("datasets") for s in sources)
+        if request.brandbook_id:
+            brandbook = store.get("brandbooks", request.brandbook_id)
+            template = apply_style(template, brandbook["tokens"], request.style_overrides)
+        elif request.style_overrides:
+            template = apply_style(template, overrides=request.style_overrides)
+        if (request.outline is None and not structured) or request.contextual_audit:
             provider()
         if len(tasks) >= 20:
             raise HTTPException(429, "Generation queue is full")
@@ -705,7 +767,12 @@ def create_app(data_dir=None, seed_dir=None):
         return {"revision": record["revision"], **report}
 
     def save_revision(record):
-        template = store.get("templates", record["template_id"])
+        template = apply_style(store.get("templates", record["template_id"]), record.get("style"))
+        if record.get("analysis"):
+            try:
+                verify_outline({"slides": [s["content"] for s in record["deck"]["slides"]]}, record["analysis"], record["sources"])
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from exc
         record["revision"] += 1
         record["audit"] = audit(
             record["deck"],
@@ -759,7 +826,7 @@ def create_app(data_dir=None, seed_dir=None):
                 raise HTTPException(404, "Slide not found")
             outline = {"slides": [s["content"] for s in record["deck"]["slides"]]}
             outline["slides"][index] = request.content.model_dump()
-            template = store.get("templates", record["template_id"])
+            template = apply_style(store.get("templates", record["template_id"]), record.get("style"))
             rebuilt = compose(
                 outline,
                 template,

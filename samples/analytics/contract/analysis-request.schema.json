@@ -1,0 +1,177 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "goal": {
+      "default": "",
+      "title": "Goal",
+      "type": "string"
+    },
+    "task": {
+      "anyOf": [
+        {
+          "enum": [
+            "dynamics",
+            "comparison",
+            "shares",
+            "distribution",
+            "relationship",
+            "reference",
+            "summary"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Task"
+    },
+    "dimension": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dimension"
+    },
+    "series_dimension": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Series Dimension"
+    },
+    "series_additive": {
+      "default": false,
+      "title": "Series Additive",
+      "type": "boolean"
+    },
+    "metrics": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "aggregation": {
+      "default": "sum",
+      "enum": [
+        "sum",
+        "mean",
+        "median",
+        "count"
+      ],
+      "title": "Aggregation",
+      "type": "string"
+    },
+    "unit": {
+      "default": "",
+      "title": "Unit",
+      "type": "string"
+    },
+    "locale": {
+      "default": "ru",
+      "enum": [
+        "ru",
+        "en"
+      ],
+      "title": "Locale",
+      "type": "string"
+    },
+    "bins": {
+      "anyOf": [
+        {
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Bins"
+    },
+    "page_size": {
+      "default": 10,
+      "maximum": 20,
+      "minimum": 1,
+      "title": "Page Size",
+      "type": "integer"
+    },
+    "slide_budget": {
+      "default": 30,
+      "maximum": 30,
+      "minimum": 1,
+      "title": "Slide Budget",
+      "type": "integer"
+    },
+    "column_types": {
+      "additionalProperties": {
+        "enum": [
+          "number",
+          "date",
+          "category",
+          "text"
+        ],
+        "type": "string"
+      },
+      "title": "Column Types",
+      "type": "object"
+    },
+    "number_locale": {
+      "anyOf": [
+        {
+          "enum": [
+            "decimal_comma",
+            "decimal_point"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Number Locale"
+    },
+    "filters": {
+      "additionalProperties": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Filters",
+      "type": "object"
+    }
+  },
+  "title": "AnalysisRequest",
+  "type": "object"
+}

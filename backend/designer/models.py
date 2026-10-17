@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from .analytics.models import AnalysisRequest
 
 
 class StrictModel(BaseModel):
@@ -9,7 +10,7 @@ class StrictModel(BaseModel):
 
 class Series(StrictModel):
     name: str = Field(min_length=1, max_length=100)
-    values: list[float] = Field(min_length=1, max_length=20)
+    values: list[float | None] = Field(min_length=1, max_length=2000)
 
 
 class Visual(StrictModel):
@@ -25,6 +26,12 @@ class Visual(StrictModel):
         "table",
         "bar",
         "line",
+        "pie",
+        "scatter",
+        "histogram",
+        "grouped_bar",
+        "stacked_bar",
+        "kpi",
         "process",
         "icon",
         "cycle",
@@ -32,22 +39,32 @@ class Visual(StrictModel):
         "timeline",
         "comparison",
     ] = "none"
-    categories: list[str] = Field(default_factory=list, max_length=20)
+    categories: list[str] = Field(default_factory=list, max_length=2000)
     series: list[Series] = Field(default_factory=list, max_length=8)
     columns: list[str] = Field(default_factory=list, max_length=8)
     rows: list[list[str]] = Field(default_factory=list, max_length=12)
     steps: list[str] = Field(default_factory=list, max_length=6)
     unit: str = Field(default="", max_length=80)
+    source: str = Field(default="", max_length=500)
+    x_label: str = Field(default="", max_length=120)
+    y_label: str = Field(default="", max_length=120)
+    x_values: list[float] = Field(default_factory=list, max_length=2000)
 
     @model_validator(mode="after")
     def coherent(self):
-        if self.kind in ("bar", "line"):
+        if self.kind in ("bar", "line", "pie", "scatter", "histogram", "grouped_bar", "stacked_bar", "kpi"):
             if not self.categories or not self.series:
                 raise ValueError("Charts require categories and series")
             if any(len(s.values) != len(self.categories) for s in self.series):
                 raise ValueError("Each series must match categories")
-            if any(not (-1e15 < v < 1e15) for s in self.series for v in s.values):
+            if any(v is not None and not (-1e15 < v < 1e15) for s in self.series for v in s.values):
                 raise ValueError("Chart values must be finite")
+            if self.kind != "scatter" and len(self.categories) > 20:
+                raise ValueError("More than 20 categories require explicit aggregation or pagination")
+            if self.kind == "scatter" and (len(self.x_values) != len(self.categories) or any(not (-1e15 < v < 1e15) for v in self.x_values)):
+                raise ValueError("Scatter requires finite X values matching Y values")
+            if self.kind == "pie" and (len(self.series) != 1 or any(v is None or v < 0 for v in self.series[0].values) or sum(self.series[0].values) <= 0):
+                raise ValueError("Pie requires one nonnegative complete series with positive total")
         if self.kind == "table" and (
             not self.columns
             or not self.rows
@@ -69,6 +86,7 @@ class SlideContent(StrictModel):
     notes: str = Field(default="", max_length=4000)
     source_refs: list[str] = Field(default_factory=list)
     visual: Visual = Field(default_factory=Visual)
+    analysis_id: str = ""
 
 
 class Outline(StrictModel):
@@ -84,10 +102,20 @@ class Brief(StrictModel):
     content_pack_ids: list[str] = Field(default_factory=list, max_length=10)
 
 
+class PackAnalysisRequest(StrictModel):
+    goal: str = Field(default="", max_length=1000)
+    requests: dict[str, AnalysisRequest] = Field(default_factory=dict, max_length=256)
+
+
 class GenerateRequest(Brief):
     contextual_audit: bool = False
     template_id: str
     outline: Outline | None = None
+    analysis_goal: str = Field(default="", max_length=1000)
+    analysis_goals: dict[str, str] = Field(default_factory=dict, max_length=10)
+    analysis_requests: dict[str, AnalysisRequest] = Field(default_factory=dict, max_length=256)
+    brandbook_id: str | None = None
+    style_overrides: dict = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def count_matches(self):

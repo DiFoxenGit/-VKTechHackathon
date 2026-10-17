@@ -9,7 +9,7 @@ export function auditDeck(deck: Deck): AuditIssue[] {
     const add = (rule: string, severity: AuditIssue['severity'], title: string, description: string, fixable = false) => issues.push({ id: `${slide.id}-${rule}`, slideId: slide.id, severity, title, description, fixable, rule });
     if (!slide.title.trim()) add('empty-title', 'error', 'Добавьте заголовок', 'Заголовок поможет читателю понять тему слайда.');
     else if (slide.title.trim().length > 100) add('long-title', 'warning', 'Длинный заголовок', `В заголовке ${slide.title.trim().length} символов. Сформулируйте основную мысль короче или перенесите детали в текст.`);
-    if (slide.kind !== 'cover' && !slide.body.trim()) add('empty-body', 'error', 'Слайду не хватает содержания', 'Исходного материала оказалось недостаточно. Добавьте текст или удалите этот слайд.');
+    if (slide.kind !== 'cover' && !slide.body.trim() && !slide.visual) add('empty-body', 'error', 'Слайду не хватает содержания', 'Исходного материала оказалось недостаточно. Добавьте текст или удалите этот слайд.');
     if (slide.body.trim().length > 400) add('long-body', 'warning', 'На слайде много текста', `${slide.body.trim().length} символов. Разделите материал между слайдами или сократите его вручную.`);
     const titleKey = normalKey(slide.title);
     if (titleKey && titles.has(titleKey)) add('duplicate-title', 'warning', 'Заголовок повторяется', `Такой заголовок уже есть на слайде ${titles.get(titleKey)}. Проверьте, нужен ли повтор.`);

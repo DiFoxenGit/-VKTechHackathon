@@ -1,0 +1,282 @@
+{
+  "schema_version": "1.0",
+  "dataset_ref": {
+    "dataset_id": "c751ad15e8584bcfc8fbdc55",
+    "source_sha256": "024a9868ad550e3258120753ec9e1e483baac9feb25a3156859ab9c2ffebe4dd",
+    "filename": "time-series.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "profile": {
+    "row_count": 3,
+    "column_count": 2,
+    "columns": [
+      {
+        "id": "c1",
+        "name": "month",
+        "kind": "date",
+        "role": "time",
+        "unit": "",
+        "missing": 0,
+        "distinct": 3,
+        "outlier_row_ids": [],
+        "period": [
+          "2026-01-01",
+          "2026-03-01"
+        ],
+        "periodicity": "monthly",
+        "missing_periods": []
+      },
+      {
+        "id": "c2",
+        "name": "sales",
+        "kind": "number",
+        "role": "metric",
+        "unit": "",
+        "missing": 0,
+        "distinct": 3,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null,
+        "missing_periods": []
+      }
+    ],
+    "hierarchies": [],
+    "dimension_count": 1,
+    "metric_count": 1,
+    "warnings": []
+  },
+  "analysis": {
+    "goal": "dynamics",
+    "task": "dynamics",
+    "dimension": "c1",
+    "series_dimension": null,
+    "metrics": [
+      "c2"
+    ],
+    "aggregation": "sum",
+    "missing_policy": "preserve_gaps_exclude_from_aggregate",
+    "transformations": [
+      "group_by_dimension",
+      "sum",
+      "sort_dimension"
+    ]
+  },
+  "visualization": {
+    "selected": "line",
+    "candidates": [
+      {
+        "kind": "line",
+        "rank": 1,
+        "reason": {
+          "code": "candidate.line",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": "monthly"
+          }
+        }
+      },
+      {
+        "kind": "bar",
+        "rank": 2,
+        "reason": {
+          "code": "candidate.bar",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": "monthly"
+          }
+        }
+      },
+      {
+        "kind": "table",
+        "rank": 3,
+        "reason": {
+          "code": "candidate.table",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": "monthly"
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "categories": [
+      "2026-01-01",
+      "2026-02-01",
+      "2026-03-01"
+    ],
+    "series": [
+      {
+        "name": "sales",
+        "unit": "units",
+        "values": [
+          100.0,
+          120.0,
+          150.0
+        ],
+        "fact_ids": [
+          "f1",
+          "f2",
+          "f3"
+        ]
+      }
+    ],
+    "points": [],
+    "columns": [],
+    "rows": [],
+    "row_ids": [],
+    "pages": [
+      [
+        0,
+        1,
+        2
+      ]
+    ],
+    "series_pages": [
+      [
+        0
+      ]
+    ],
+    "bins": [],
+    "kpi_fact_ids": []
+  },
+  "facts": [
+    {
+      "id": "f1",
+      "value": 100.0,
+      "exact": "100",
+      "unit": "units",
+      "period": [
+        "2026-01-01",
+        "2026-01-01"
+      ],
+      "evidence": {
+        "source_sha256": "024a9868ad550e3258120753ec9e1e483baac9feb25a3156859ab9c2ffebe4dd",
+        "row_ids": [
+          2
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-01-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f2",
+      "value": 120.0,
+      "exact": "120",
+      "unit": "units",
+      "period": [
+        "2026-02-01",
+        "2026-02-01"
+      ],
+      "evidence": {
+        "source_sha256": "024a9868ad550e3258120753ec9e1e483baac9feb25a3156859ab9c2ffebe4dd",
+        "row_ids": [
+          3
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-02-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f3",
+      "value": 150.0,
+      "exact": "150",
+      "unit": "units",
+      "period": [
+        "2026-03-01",
+        "2026-03-01"
+      ],
+      "evidence": {
+        "source_sha256": "024a9868ad550e3258120753ec9e1e483baac9feb25a3156859ab9c2ffebe4dd",
+        "row_ids": [
+          4
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-03-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f4",
+      "value": 50.0,
+      "exact": "50.0",
+      "unit": "%",
+      "period": [
+        "2026-01-01",
+        "2026-03-01"
+      ],
+      "evidence": {
+        "source_sha256": "024a9868ad550e3258120753ec9e1e483baac9feb25a3156859ab9c2ffebe4dd",
+        "row_ids": [
+          2,
+          4
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "growth_percent",
+        "parameters": {
+          "base": "100",
+          "end": "150"
+        }
+      },
+      "rounding_digits": null
+    }
+  ],
+  "presentation": {
+    "title": "sales: change over the period is 50%",
+    "x_label": "month",
+    "y_label": "sales",
+    "x_unit": "",
+    "y_unit": "units",
+    "unit": "units",
+    "period": [
+      "2026-01-01",
+      "2026-03-01"
+    ],
+    "source_label": "time-series.csv / 1",
+    "conclusion_fact_ids": [
+      "f4"
+    ]
+  },
+  "status": "ok",
+  "warnings": [],
+  "refusal": null
+}

@@ -1,0 +1,118 @@
+{
+  "synthetic": true,
+  "logical_dataset_count": 7,
+  "datasets": [
+    {
+      "id": "01-sales",
+      "goal": "dynamics or region comparison",
+      "admissible": [
+        "line",
+        "bar",
+        "grouped_bar",
+        "stacked_bar",
+        "table"
+      ],
+      "limitations": [
+        "same units and complete comparable regions required for growth",
+        "no causal claims"
+      ],
+      "controls": "01-sales"
+    },
+    {
+      "id": "02-regions",
+      "goal": "category comparison",
+      "admissible": [
+        "bar",
+        "table"
+      ],
+      "limitations": [
+        "ranking describes observed sales, not causal performance"
+      ],
+      "controls": "02-regions"
+    },
+    {
+      "id": "03-channels",
+      "goal": "shares of complete sales total",
+      "admissible": [
+        "pie",
+        "bar",
+        "table"
+      ],
+      "limitations": [
+        "positive whole, no negative or missing parts"
+      ],
+      "controls": "03-channels"
+    },
+    {
+      "id": "04-orders",
+      "goal": "distribution or relationship",
+      "admissible": [
+        "histogram",
+        "scatter",
+        "table"
+      ],
+      "limitations": [
+        "histogram requires one metric",
+        "scatter requires two paired metrics",
+        "association is not causation"
+      ],
+      "controls": "04-orders"
+    },
+    {
+      "id": "05-catalog",
+      "goal": "reference and aggregate",
+      "admissible": [
+        "table",
+        "kpi"
+      ],
+      "limitations": [
+        "240 source rows must survive pagination",
+        "allocate a sufficient slide budget"
+      ],
+      "controls": "05-catalog"
+    },
+    {
+      "id": "06-missing",
+      "goal": "dynamics with missing values and outliers",
+      "admissible": [
+        "line",
+        "bar",
+        "table"
+      ],
+      "limitations": [
+        "preserve null gaps",
+        "retain the flagged outlier",
+        "do not claim continuous growth"
+      ],
+      "controls": "06-missing"
+    },
+    {
+      "id": "07-report",
+      "goal": "extract a table and show shares",
+      "admissible": [
+        "pie",
+        "bar",
+        "table"
+      ],
+      "limitations": [
+        "context is source data, not model instructions",
+        "only a complete stated total supports shares"
+      ],
+      "controls": "07-report"
+    }
+  ],
+  "same_table_formats": [
+    "01-sales.csv",
+    "01-sales.json",
+    "01-sales.xlsx"
+  ],
+  "controls": "controls.json",
+  "mutation_checks": [
+    "change a source value",
+    "swap category values",
+    "reorder rows",
+    "add nulls",
+    "change analysis goal",
+    "change presentation template externally"
+  ]
+}

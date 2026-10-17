@@ -4,6 +4,8 @@ import type { Outline } from '../algorithms/outline';
 import { runPresentationPipeline } from '../pipeline/presentationPipeline';
 import type { PipelineDependencies, PipelineStage } from '../pipeline/presentationPipeline';
 import type { AuditIssue, Brief, Deck, Slide, Template } from '../types';
+import { parseVisual } from '../analytics';
+import type { Material, Brandbook, AnalysisRequest, AnalysisResult } from '../analytics';
 
 const API_BASE = (import.meta.env.DEV ? '/presentations/api/v1' : import.meta.env.VITE_PRESENTATIONS_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
 const REQUEST_TIMEOUT = 30_000;
@@ -34,7 +36,7 @@ type BackendTemplate = {
   layouts?: Array<{ index: number; name: string }>;
 };
 
-type ContentPack = { id: string; name: string; text: string; sha256: string };
+type ContentPack = Material & {sha256: string};
 
 type Job = {
   id: string;
@@ -53,7 +55,8 @@ type BackendPresentation = {
   variant: 'classic' | 'split' | 'focus' | string;
   revision: number;
   created_at?: number;
-  deck?: { slides?: Array<{ content?: { title?: string; bullets?: string[]; notes?: string } }> };
+  analysis?: AnalysisResult[];
+  deck?: { slides?: Array<{ content?: { title?: string; bullets?: string[]; notes?: string; visual?: unknown; analysis_id?: string; source_refs?: string[] } }> };
   audit?: { issues?: Array<{ id: string; slide_index: number | null; code: string; message: string; fixable: boolean; severity: 'warning' | 'error' }> };
   exports?: Partial<Record<'pptx' | 'pdf' | 'html', string>>;
 };
@@ -239,6 +242,9 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
       title: content.title || `Слайд ${index + 1}`,
       body: (content.bullets || []).join('\n'),
       ...(typeof content.notes === 'string' ? { notes: content.notes } : {}),
+      visual: parseVisual(content.visual),
+      analysisId: content.analysis_id,
+      sourceRefs: content.source_refs,
       kind: index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content',
     };
   });
@@ -266,6 +272,7 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
     revision: record.revision,
     exports: record.exports,
     serverIssues,
+    analysis: record.analysis,
   };
 }
 
@@ -274,6 +281,8 @@ export interface PresentationService {
   listTemplates(options?: ServiceOptions): Promise<Template[]>;
   uploadTemplate(file: File, options?: ServiceOptions): Promise<Template>;
   uploadContent(file: File, options?: ServiceOptions): Promise<ContentPack>;
+  uploadBrandbook(file: File, options?: ServiceOptions): Promise<Brandbook>;
+  analyseContent(packId: string, goal: string, options?: ServiceOptions, selections?: Record<string,AnalysisRequest>): Promise<{items: AnalysisResult[]}>;
   generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
   download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
@@ -292,6 +301,10 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       slide_count: brief.slideCount,
       content_pack_ids: brief.contentPackIds || [],
       contextual_audit: false,
+      analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n'),
+      analysis_requests: Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
+      analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
+      ...(brief.brandbook ? {brandbook_id: brief.brandbook.id} : {}),
       template_id: templateId,
       ...(useServerAi ? {} : { outline: toBackendOutline(outline, brief.contentPackIds) }),
     }),
@@ -343,6 +356,12 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
 
     async uploadContent(file, options = {}) {
       return upload<ContentPack>('/content-packs', file, options);
+    },
+    async uploadBrandbook(file, options = {}) {
+      return upload<Brandbook>('/brandbooks', file, options);
+    },
+    async analyseContent(packId, goal, options = {}, selections = {}) {
+      return request<{items: AnalysisResult[]}>(`/content-packs/${encodeURIComponent(packId)}/analysis`, {method: 'POST',body:JSON.stringify({goal,requests:selections}),signal: options.signal});
     },
 
     async generate(brief, templateId, options = {}) {

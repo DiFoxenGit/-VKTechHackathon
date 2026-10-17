@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "ref": {
+    "dataset_id": "c751ad15e8584bcfc8fbdc55",
+    "source_sha256": "024a9868ad550e3258120753ec9e1e483baac9feb25a3156859ab9c2ffebe4dd",
+    "filename": "time-series.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "columns": [
+    {
+      "id": "c1",
+      "name": "month",
+      "unit": "",
+      "normalization": "identity"
+    },
+    {
+      "id": "c2",
+      "name": "sales",
+      "unit": "",
+      "normalization": "identity"
+    }
+  ],
+  "rows": [
+    [
+      "2026-01",
+      "100"
+    ],
+    [
+      "2026-02",
+      "120"
+    ],
+    [
+      "2026-03",
+      "150"
+    ]
+  ],
+  "row_ids": [
+    2,
+    3,
+    4
+  ],
+  "context": "",
+  "warnings": []
+}

@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import ts from 'typescript';
-
-const original = await fs.readFile('src/storage.ts', 'utf8');
-const compiled = ts.transpileModule(original, {
-  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
-}).outputText;
-const { readSaved, STORAGE_KEY, DEFAULT_BRIEF } = await import('data:text/javascript;base64,' + Buffer.from(compiled).toString('base64'));
+import {loadModule} from './load-module.mjs';
+const { readSaved, STORAGE_KEY, DEFAULT_BRIEF } = await loadModule('src/storage.ts');
 let stored = null;
 globalThis.localStorage = { getItem(key) { assert.equal(key, STORAGE_KEY); return stored; } };
 const load = value => { stored = JSON.stringify(value); return readSaved(); };

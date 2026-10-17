@@ -1008,6 +1008,9 @@ def picture_box(asset, box):
 
 def compose(outline, template, variant, assets=None):
     """assets — библиотека картинок колоды (шаблон, пакеты, встроенный набор)."""
+    if outline.get("slides") and all(s.get("analysis_id") for s in outline["slides"]):
+        from .analytics_layout import compose_analytics
+        return compose_analytics(outline, template, variant)
     if assets is None:
         assets = library(template)
     used = {"icons": set(), "pictures": set()}
@@ -1106,7 +1109,7 @@ def compose(outline, template, variant, assets=None):
         has_visual = content["visual"]["kind"] != "none"
         # Столбцы и линии живут по своим правилам: ось и короткий столбец
         # требуют высоты, которой схемам из фигур не нужно.
-        is_chart = content["visual"]["kind"] in ("bar", "line")
+        is_chart = content["visual"]["kind"] in ("bar", "line", "pie", "scatter", "histogram", "grouped_bar", "stacked_bar", "kpi")
         # Карточки шаблона стоят на своих местах: заголовок обязан закончиться
         # выше первой из них, иначе длинный заголовок ложится прямо на карточку.
         cards = (
@@ -1620,7 +1623,8 @@ def compose(outline, template, variant, assets=None):
                 element["text"] = printable(element["text"], slide_font, coverage)
             elif element.get("data"):
                 # Подписи внутри диаграмм и схем — тот же текст на слайде.
-                printable_visual(element["data"], slide_font, coverage)
+                if not content.get("analysis_id"):
+                    printable_visual(element["data"], slide_font, coverage)
             element.setdefault("bold", element.get("role") == "title")
             element.setdefault("align", "left")
         slides.append(

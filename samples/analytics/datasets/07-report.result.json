@@ -1,0 +1,342 @@
+{
+  "schema_version": "1.0",
+  "dataset_ref": {
+    "dataset_id": "c57725545648cc77fea685c2",
+    "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+    "filename": "07-report.md",
+    "archive_path": null,
+    "table": "1"
+  },
+  "profile": {
+    "row_count": 3,
+    "column_count": 2,
+    "columns": [
+      {
+        "id": "c1",
+        "name": "channel",
+        "kind": "category",
+        "role": "dimension",
+        "unit": "",
+        "missing": 0,
+        "distinct": 3,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null,
+        "missing_periods": []
+      },
+      {
+        "id": "c2",
+        "name": "sales",
+        "kind": "number",
+        "role": "metric",
+        "unit": "",
+        "missing": 0,
+        "distinct": 3,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null,
+        "missing_periods": []
+      }
+    ],
+    "hierarchies": [],
+    "dimension_count": 1,
+    "metric_count": 1,
+    "warnings": []
+  },
+  "analysis": {
+    "goal": "доли",
+    "task": "shares",
+    "dimension": "c1",
+    "series_dimension": null,
+    "metrics": [
+      "c2"
+    ],
+    "aggregation": "sum",
+    "missing_policy": "preserve_gaps_exclude_from_aggregate",
+    "transformations": [
+      "group_by_dimension",
+      "sum",
+      "sort_dimension"
+    ]
+  },
+  "visualization": {
+    "selected": "pie",
+    "candidates": [
+      {
+        "kind": "pie",
+        "rank": 1,
+        "reason": {
+          "code": "candidate.pie",
+          "params": {
+            "task": "shares",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": null
+          }
+        }
+      },
+      {
+        "kind": "bar",
+        "rank": 2,
+        "reason": {
+          "code": "candidate.bar",
+          "params": {
+            "task": "shares",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": null
+          }
+        }
+      },
+      {
+        "kind": "table",
+        "rank": 3,
+        "reason": {
+          "code": "candidate.table",
+          "params": {
+            "task": "shares",
+            "source_rows": 3,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": null
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "categories": [
+      "Online",
+      "Partners",
+      "Retail"
+    ],
+    "series": [
+      {
+        "name": "sales",
+        "unit": "RUB",
+        "values": [
+          60.0,
+          10.0,
+          30.0
+        ],
+        "fact_ids": [
+          "f1",
+          "f2",
+          "f3"
+        ]
+      }
+    ],
+    "points": [],
+    "columns": [],
+    "rows": [],
+    "row_ids": [],
+    "pages": [
+      [
+        0,
+        1,
+        2
+      ]
+    ],
+    "series_pages": [
+      [
+        0
+      ]
+    ],
+    "bins": [],
+    "kpi_fact_ids": []
+  },
+  "facts": [
+    {
+      "id": "f1",
+      "value": 60.0,
+      "exact": "60",
+      "unit": "RUB",
+      "period": [],
+      "evidence": {
+        "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+        "row_ids": [
+          6
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "Online",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f2",
+      "value": 10.0,
+      "exact": "10",
+      "unit": "RUB",
+      "period": [],
+      "evidence": {
+        "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+        "row_ids": [
+          8
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "Partners",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f3",
+      "value": 30.0,
+      "exact": "30",
+      "unit": "RUB",
+      "period": [],
+      "evidence": {
+        "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+        "row_ids": [
+          7
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "Retail",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f4",
+      "value": 100.0,
+      "exact": "100",
+      "unit": "RUB",
+      "period": [],
+      "evidence": {
+        "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+        "row_ids": [
+          6,
+          7,
+          8
+        ],
+        "column_ids": [
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "scope": "whole"
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f5",
+      "value": 60.0,
+      "exact": "60.0",
+      "unit": "%",
+      "period": [],
+      "evidence": {
+        "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+        "row_ids": [
+          6
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "share_percent",
+        "parameters": {
+          "category": "Online",
+          "numerator": "60",
+          "denominator": "100",
+          "numerator_fact_id": "f1",
+          "denominator_fact_id": "f4"
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f6",
+      "value": 10.0,
+      "exact": "10.0",
+      "unit": "%",
+      "period": [],
+      "evidence": {
+        "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+        "row_ids": [
+          8
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "share_percent",
+        "parameters": {
+          "category": "Partners",
+          "numerator": "10",
+          "denominator": "100",
+          "numerator_fact_id": "f2",
+          "denominator_fact_id": "f4"
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f7",
+      "value": 30.0,
+      "exact": "30.0",
+      "unit": "%",
+      "period": [],
+      "evidence": {
+        "source_sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+        "row_ids": [
+          7
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "share_percent",
+        "parameters": {
+          "category": "Retail",
+          "numerator": "30",
+          "denominator": "100",
+          "numerator_fact_id": "f3",
+          "denominator_fact_id": "f4"
+        }
+      },
+      "rounding_digits": null
+    }
+  ],
+  "presentation": {
+    "title": "Доля «Online» составляет 60%",
+    "x_label": "channel",
+    "y_label": "sales",
+    "x_unit": "",
+    "y_unit": "RUB",
+    "unit": "RUB",
+    "period": [],
+    "source_label": "07-report.md / 1",
+    "conclusion_fact_ids": [
+      "f5",
+      "f4"
+    ]
+  },
+  "status": "ok",
+  "warnings": [],
+  "refusal": null
+}

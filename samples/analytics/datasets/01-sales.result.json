@@ -1,0 +1,393 @@
+{
+  "schema_version": "1.0",
+  "dataset_ref": {
+    "dataset_id": "4c692aaddd40ba92e73b4994",
+    "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+    "filename": "01-sales.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "profile": {
+    "row_count": 12,
+    "column_count": 3,
+    "columns": [
+      {
+        "id": "c1",
+        "name": "month",
+        "kind": "date",
+        "role": "time",
+        "unit": "",
+        "missing": 0,
+        "distinct": 6,
+        "outlier_row_ids": [],
+        "period": [
+          "2026-01-01",
+          "2026-06-01"
+        ],
+        "periodicity": "monthly",
+        "missing_periods": []
+      },
+      {
+        "id": "c2",
+        "name": "region",
+        "kind": "category",
+        "role": "dimension",
+        "unit": "",
+        "missing": 0,
+        "distinct": 2,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null,
+        "missing_periods": []
+      },
+      {
+        "id": "c3",
+        "name": "sales",
+        "kind": "number",
+        "role": "metric",
+        "unit": "",
+        "missing": 0,
+        "distinct": 9,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null,
+        "missing_periods": []
+      }
+    ],
+    "hierarchies": [],
+    "dimension_count": 2,
+    "metric_count": 1,
+    "warnings": []
+  },
+  "analysis": {
+    "goal": "показать рост",
+    "task": "dynamics",
+    "dimension": "c1",
+    "series_dimension": null,
+    "metrics": [
+      "c3"
+    ],
+    "aggregation": "sum",
+    "missing_policy": "preserve_gaps_exclude_from_aggregate",
+    "transformations": [
+      "group_by_dimension",
+      "sum",
+      "sort_dimension"
+    ]
+  },
+  "visualization": {
+    "selected": "line",
+    "candidates": [
+      {
+        "kind": "line",
+        "rank": 1,
+        "reason": {
+          "code": "candidate.line",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 12,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 6,
+            "periodicity": "monthly"
+          }
+        }
+      },
+      {
+        "kind": "bar",
+        "rank": 2,
+        "reason": {
+          "code": "candidate.bar",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 12,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 6,
+            "periodicity": "monthly"
+          }
+        }
+      },
+      {
+        "kind": "table",
+        "rank": 3,
+        "reason": {
+          "code": "candidate.table",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 12,
+            "metric_count": 1,
+            "dimension": "c1",
+            "distinct_categories": 6,
+            "periodicity": "monthly"
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "categories": [
+      "2026-01-01",
+      "2026-02-01",
+      "2026-03-01",
+      "2026-04-01",
+      "2026-05-01",
+      "2026-06-01"
+    ],
+    "series": [
+      {
+        "name": "sales",
+        "unit": "RUB",
+        "values": [
+          300.0,
+          600.0,
+          900.0,
+          1200.0,
+          1500.0,
+          1800.0
+        ],
+        "fact_ids": [
+          "f1",
+          "f2",
+          "f3",
+          "f4",
+          "f5",
+          "f6"
+        ]
+      }
+    ],
+    "points": [],
+    "columns": [],
+    "rows": [],
+    "row_ids": [],
+    "pages": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    ],
+    "series_pages": [
+      [
+        0
+      ]
+    ],
+    "bins": [],
+    "kpi_fact_ids": []
+  },
+  "facts": [
+    {
+      "id": "f1",
+      "value": 300.0,
+      "exact": "300",
+      "unit": "RUB",
+      "period": [
+        "2026-01-01",
+        "2026-01-01"
+      ],
+      "evidence": {
+        "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+        "row_ids": [
+          2,
+          3
+        ],
+        "column_ids": [
+          "c1",
+          "c3"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-01-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f2",
+      "value": 600.0,
+      "exact": "600",
+      "unit": "RUB",
+      "period": [
+        "2026-02-01",
+        "2026-02-01"
+      ],
+      "evidence": {
+        "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+        "row_ids": [
+          4,
+          5
+        ],
+        "column_ids": [
+          "c1",
+          "c3"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-02-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f3",
+      "value": 900.0,
+      "exact": "900",
+      "unit": "RUB",
+      "period": [
+        "2026-03-01",
+        "2026-03-01"
+      ],
+      "evidence": {
+        "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+        "row_ids": [
+          6,
+          7
+        ],
+        "column_ids": [
+          "c1",
+          "c3"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-03-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f4",
+      "value": 1200.0,
+      "exact": "1200",
+      "unit": "RUB",
+      "period": [
+        "2026-04-01",
+        "2026-04-01"
+      ],
+      "evidence": {
+        "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+        "row_ids": [
+          8,
+          9
+        ],
+        "column_ids": [
+          "c1",
+          "c3"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-04-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f5",
+      "value": 1500.0,
+      "exact": "1500",
+      "unit": "RUB",
+      "period": [
+        "2026-05-01",
+        "2026-05-01"
+      ],
+      "evidence": {
+        "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+        "row_ids": [
+          10,
+          11
+        ],
+        "column_ids": [
+          "c1",
+          "c3"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-05-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f6",
+      "value": 1800.0,
+      "exact": "1800",
+      "unit": "RUB",
+      "period": [
+        "2026-06-01",
+        "2026-06-01"
+      ],
+      "evidence": {
+        "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+        "row_ids": [
+          12,
+          13
+        ],
+        "column_ids": [
+          "c1",
+          "c3"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-06-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f7",
+      "value": 500.0,
+      "exact": "500",
+      "unit": "%",
+      "period": [
+        "2026-01-01",
+        "2026-06-01"
+      ],
+      "evidence": {
+        "source_sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+        "row_ids": [
+          2,
+          3,
+          12,
+          13
+        ],
+        "column_ids": [
+          "c1",
+          "c3"
+        ],
+        "operation": "growth_percent",
+        "parameters": {
+          "base": "300",
+          "end": "1800"
+        }
+      },
+      "rounding_digits": null
+    }
+  ],
+  "presentation": {
+    "title": "sales: изменение за период составляет 500%",
+    "x_label": "month",
+    "y_label": "sales",
+    "x_unit": "",
+    "y_unit": "RUB",
+    "unit": "RUB",
+    "period": [
+      "2026-01-01",
+      "2026-06-01"
+    ],
+    "source_label": "01-sales.csv / 1",
+    "conclusion_fact_ids": [
+      "f7"
+    ]
+  },
+  "status": "ok",
+  "warnings": [],
+  "refusal": null
+}

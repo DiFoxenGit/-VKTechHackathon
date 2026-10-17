@@ -1,0 +1,749 @@
+{
+  "scope": "available team files; technical documentation is not business data",
+  "external_business_values_verified": false,
+  "csv_xlsx_outside_generated_samples": [],
+  "files": [
+    {
+      "path": "samples/source/материал-инициатива.md",
+      "size_bytes": 4416,
+      "source_sha256": "be1beef567dd9401f1ed4252a889171fc0c645a7710254754232fc0648c3c5ea",
+      "check": "import_and_reference_analysis",
+      "datasets": [],
+      "rejected": [
+        {
+          "code": "import.no_table",
+          "params": {}
+        }
+      ]
+    },
+    {
+      "path": "samples/source/материал-продукт.md",
+      "size_bytes": 3709,
+      "source_sha256": "24649f22b469d0787173b54a330a451d47b946a0f09b079a9587416c211226c7",
+      "check": "import_and_reference_analysis",
+      "datasets": [],
+      "rejected": [
+        {
+          "code": "import.no_table",
+          "params": {}
+        }
+      ]
+    },
+    {
+      "path": "docs/API.md",
+      "size_bytes": 12087,
+      "source_sha256": "4ff97c36c9a12e03a9f8d5bf87f3771023a244ed04f3f9640e6720fead578a9c",
+      "check": "import_and_reference_analysis",
+      "datasets": [
+        {
+          "table": "1",
+          "rows": 23,
+          "columns": 3,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "path": "docs/test-run.md",
+      "size_bytes": 18290,
+      "source_sha256": "5d5aa535baa6aa7aee7c8b39c93b15995f7a72e94dbd9f4a9c0919a8bb8125c5",
+      "check": "import_and_reference_analysis",
+      "datasets": [
+        {
+          "table": "1",
+          "rows": 6,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "2",
+          "rows": 5,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "3",
+          "rows": 6,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "4",
+          "rows": 6,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "path": "samples/content-pack/visual-pack.zip",
+      "size_bytes": 29305,
+      "source_sha256": "600e633fb4aa2ef406ea9decabf412609d0422e26ef96b5f4cdd763a188390f0",
+      "check": "import_and_reference_analysis",
+      "datasets": [],
+      "rejected": [
+        {
+          "code": "import.ambiguous_json",
+          "params": {
+            "file": "manifest.json"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/growth.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/decline.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/clock.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/calendar.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/team.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/user.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/target.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/idea.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/document.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/presentation.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/layout.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/database.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/cloud.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/server.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/shield.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/lock.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/check.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/gears.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/alert.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/star.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/rocket.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/money.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/chart.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/pie.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/search.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/chat.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/mail.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/mobile.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/monitor.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/code.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/sparkles.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/cpu.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/plug.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/network.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/education.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/book.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/flag.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/question.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/checklist.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/next.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/refresh.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/zap.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/globe.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/building.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/layers.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/palette.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/image.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/video.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/bell.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/support.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/download.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/upload.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/expand.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/funnel.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/key.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/compass.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/award.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/edit.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/eye.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/cross.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/pin.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/hourglass.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "icons/dot.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/growth.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/team.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/security.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/launch.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/presentation.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/automation.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/data.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/target.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/idea.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/plan.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/discussion.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/money.svg"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "illustrations/risk.svg"
+          }
+        }
+      ]
+    },
+    {
+      "path": "../final-tasks.md",
+      "size_bytes": 49508,
+      "source_sha256": "d0c81d85ad8ecb4c744735ee7835f6f4e6965dca060e845a1b5d80d31a8fd5cd",
+      "check": "import_and_reference_analysis",
+      "datasets": [
+        {
+          "table": "1",
+          "rows": 3,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "2",
+          "rows": 12,
+          "columns": 3,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "3",
+          "rows": 10,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "4",
+          "rows": 7,
+          "columns": 4,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "5",
+          "rows": 6,
+          "columns": 4,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "6",
+          "rows": 5,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        },
+        {
+          "table": "7",
+          "rows": 23,
+          "columns": 2,
+          "context_preserved": true,
+          "reference_status": "warning",
+          "reference_rows_equal": true,
+          "verified": true,
+          "warnings": []
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "path": "../Презентации сервиса 27.09.zip",
+      "size_bytes": 23352677,
+      "source_sha256": "00791e1b7f051ba274c4d74f5b78196c13c6aebf292174e0a0d479b94323b945",
+      "check": "size_preflight_only",
+      "rejected": [
+        {
+          "code": "import.file_limit"
+        }
+      ],
+      "datasets": []
+    },
+    {
+      "path": "../Переделка чужой презентации 27.09.zip",
+      "size_bytes": 5611957,
+      "source_sha256": "8ee6142a2188a2d5966d4d3c04350b4b1a680ca0a40fbc8c4c8c5f7f94c6a06f",
+      "check": "import_and_reference_analysis",
+      "datasets": [],
+      "rejected": [
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/0_оригинал.pdf"
+          }
+        },
+        {
+          "code": "import.no_table",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/README.md"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/обзор_classic.png"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/обзор_focus.png"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/обзор_split.png"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/обзор_оригинал.png"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/переделка__classic.pdf"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/переделка__classic.pptx"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/переделка__focus.pdf"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/переделка__focus.pptx"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/переделка__split.pdf"
+          }
+        },
+        {
+          "code": "import.unsupported",
+          "params": {
+            "file": "Переделка чужой презентации 27.09/переделка__split.pptx"
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "No real business totals can be certified without source data and expected answers.",
+    "Synthetic XLSX edge cases are tested separately.",
+    "This does not exercise HTTP, model, layout or export."
+  ]
+}

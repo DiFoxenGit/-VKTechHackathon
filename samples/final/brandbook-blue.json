@@ -1,0 +1,13 @@
+{
+  "name": "Синий демонстрационный стиль",
+  "colors": [
+    "0077FF",
+    "24A880",
+    "E66A42",
+    "9B67DA"
+  ],
+  "font": "Arial",
+  "background": "FFFFFF",
+  "title_size": 28,
+  "body_size": 18
+}
