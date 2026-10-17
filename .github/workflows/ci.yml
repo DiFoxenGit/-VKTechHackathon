@@ -49,4 +49,4 @@ jobs:
       - name: Check public health
         env:
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "http://$DEPLOY_HOST/health"
+        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "https://auto-sell.site/presentations/health"
