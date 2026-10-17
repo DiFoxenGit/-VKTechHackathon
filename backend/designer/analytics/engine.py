@@ -1,15 +1,70 @@
 """Data selects the visual; arithmetic and source coordinates prove every value."""
 import math
+import re
 from collections import defaultdict
+from datetime import date, datetime, timedelta
 from decimal import Decimal, localcontext
 from statistics import median
 
-from .models import (Analysis, AnalysisRequest, AnalysisResult, Candidate, Evidence, Fact,
+from .models import (MAX_SAFE_INTEGER, Analysis, AnalysisRequest, AnalysisResult, Candidate, Evidence, Fact,
                      Notice, Point, Presentation, Series, VisualData, Visualization)
-from .profiling import normalized_values, profile_dataset
+from .profiling import missing, normalized_values, profile_dataset
 from .messages import message
 
 CALCULATION_PRECISION = 350
+
+
+def canonical_unit(unit):
+    return {"руб": "RUB", "руб.": "RUB", "₽": "RUB", "rur": "RUB", "rub": "RUB",
+            "$": "USD", "usd": "USD", "eur": "EUR", "€": "EUR"}.get(unit.lower(), unit)
+
+
+def content_goal(context):
+    fence = False
+    for raw in context.splitlines():
+        if raw.lstrip().startswith(("```", "~~~")):
+            fence = not fence
+            continue
+        if fence or any(separator in raw for separator in ("|", ",", ";", "\t")):
+            continue
+        line = re.sub(r"^[#>\s]+", "", raw).replace("**", "")
+        explicit = re.match(r"^(?:goal|цель(?: анализа)?)\s*:\s*(.+)", line, re.I)
+        if explicit:
+            return explicit[1].strip()
+        if re.match(r"^(?:показать|покажи|покажите|сравнить|сравни|сравните|show|compare)\b", line, re.I):
+            return line.strip()
+    return ""
+
+
+class NumericPrecisionError(ValueError):
+    """The plotting representation would merge distinct integer values."""
+
+
+def check_collisions(pairs):
+    seen = {}
+    for plotted, exact in pairs:
+        if plotted in seen and seen[plotted] != exact:
+            raise NumericPrecisionError
+        seen[plotted] = exact
+
+
+def calendar_categories(categories, frequency, limit):
+    first, last = categories[0], categories[-1]
+    if frequency == "monthly" and all(c.endswith("-01") for c in categories):
+        start, end = (int(v[:4])*12+int(v[5:7]) for v in (first, last))
+        if end-start+1 > limit:
+            return None
+        return [f"{(v-1)//12:04}-{(v-1)%12+1:02}-01" for v in range(start, end+1)]
+    if frequency == "yearly" and all(c.endswith("-01-01") for c in categories):
+        start, end = int(first[:4]), int(last[:4])
+        return None if end-start+1 > limit else [f"{v:04}-01-01" for v in range(start, end+1)]
+    if frequency in {"daily", "hourly"}:
+        parse = datetime.fromisoformat if "T" in first else date.fromisoformat
+        start, end = parse(first), parse(last)
+        step = timedelta(hours=1) if frequency == "hourly" else timedelta(days=1)
+        count = int((end-start)/step)+1
+        return None if count > limit else [(start+step*i).isoformat().replace("+00:00", "Z") for i in range(count)]
+    return categories
 
 def _aggregate(values, operation):
     values = [v for v in values if v is not None]
@@ -27,6 +82,8 @@ def _aggregate(values, operation):
 
 
 def _float(value):
+    if abs(value) > MAX_SAFE_INTEGER:
+        raise NumericPrecisionError
     return float(value)
 
 
@@ -35,12 +92,12 @@ def _task(request, profile):
         return request.task
     goal = request.goal.lower()
     for task, words in [
-        ("reference", ("справоч", "таблиц", "reference", "table")),
-        ("shares", ("дол", "структур", "share", "composition")),
         ("distribution", ("распредел", "гистограмм", "distribution", "histogram")),
         ("relationship", ("взаимосвяз", "корреляц", "relationship", "scatter")),
-        ("comparison", ("сравн", "регион", "compare", "comparison")),
         ("dynamics", ("рост", "динамик", "тренд", "growth", "trend", "dynamics")),
+        ("comparison", ("сравн", "compare", "comparison")),
+        ("shares", ("дол", "структур", "share", "composition")),
+        ("reference", ("справоч", "reference", "table", "таблиц")),
         ("summary", ("итог", "kpi", "summary")),
     ]:
         if any(w in goal for w in words):
@@ -51,12 +108,13 @@ def _task(request, profile):
 class _Calculation:
     def __init__(self, dataset, request):
         self.dataset, self.request = dataset, request
-        self.profile = profile_dataset(dataset, request.column_types)
-        self.task = _task(request, self.profile)
+        self.profile = profile_dataset(dataset, request.column_types, request.number_locale)
+        effective_request = request.model_copy(update={"goal": request.goal or content_goal(dataset.context)})
+        self.task = _task(effective_request, self.profile)
         self.warnings = list(self.profile.warnings)
         self.facts = []
         self.columns = {c.id: c for c in self.profile.columns}
-        self.values = {c.id: normalized_values(dataset, c.id, c.kind) for c in self.profile.columns}
+        self.values = {c.id: normalized_values(dataset, c.id, c.kind, request.number_locale) for c in self.profile.columns}
         self.indices = list(range(len(dataset.rows)))
         for col, accepted in request.filters.items():
             if col not in self.columns:
@@ -66,8 +124,8 @@ class _Calculation:
         self.metrics = request.metrics or [c.id for c in self.profile.columns if c.role == "metric"]
         dimensions = [c.id for c in self.profile.columns if c.role == ("time" if self.task == "dynamics" else "dimension")]
         self.dimension = request.dimension or (dimensions[0] if len(dimensions) == 1 else None)
-        self.unit = request.unit
-        self.analysis = Analysis(goal=request.goal, task=self.task, dimension=self.dimension,
+        self.unit = canonical_unit(request.unit)
+        self.analysis = Analysis(goal=effective_request.goal, task=self.task, dimension=self.dimension,
                                  series_dimension=request.series_dimension,
                                  metrics=self.metrics, aggregation=request.aggregation,
                                  transformations=["filters"] if request.filters else [])
@@ -98,9 +156,14 @@ class _Calculation:
         return Visualization(selected=kinds[0], candidates=[Candidate(kind=k, rank=i+1,
                              reason=Notice(code="candidate."+k, params={"task": self.task,
                                  "source_rows": len(self.indices), "metric_count": len(self.metrics),
-                                 "dimension": self.dimension})) for i, k in enumerate(kinds)])
+                                 "dimension": self.dimension,
+                                 "distinct_categories": self.columns[self.dimension].distinct if self.dimension else None,
+                                 "periodicity": self.columns[self.dimension].periodicity if self.dimension else None})) for i, k in enumerate(kinds)])
 
     def finish(self, data, kinds, title_key, title_params, conclusion_ids=(), period=()):
+        facts = {f.id: f for f in self.facts}
+        check_collisions((v, Decimal(facts[f].exact)) for s in data.series for v, f in zip(s.values, s.fact_ids) if f)
+        check_collisions((facts[f].value, Decimal(facts[f].exact)) for f in data.kpi_fact_ids)
         if len(kinds) < 2:
             self.warnings.append(Notice(code="analysis.only_one_candidate"))
         if not self.unit and self.task != "reference":
@@ -136,8 +199,13 @@ class _Calculation:
             return self.refuse("analysis.no_metric")
         if self.task != "reference" and any(self.columns[m].kind != "number" for m in self.metrics):
             return self.refuse("analysis.metric_not_numeric")
-        units = {self.columns[m].unit for m in self.metrics if self.columns[m].unit}
-        if self.request.aggregation != "count" and self.request.unit and units and self.task != "relationship" and units != {self.request.unit}:
+        if self.task != "reference" and any(w.code == "profile.ambiguous_number" and w.params.get("column") in self.metrics for w in self.warnings):
+            return self.refuse("analysis.ambiguous_number")
+        unit_issue = self.validate_units()
+        if unit_issue is not None:
+            return unit_issue
+        units = {canonical_unit(self.columns[m].unit) for m in self.metrics if self.columns[m].unit}
+        if self.request.aggregation != "count" and self.request.unit and units and self.task != "relationship" and units != {canonical_unit(self.request.unit)}:
             return self.refuse("analysis.incompatible_units")
         if self.task != "relationship" and len(units) > 1:
             return self.refuse("analysis.incompatible_units")
@@ -171,6 +239,44 @@ class _Calculation:
             self.warnings.append(Notice(code="analysis.missing_preserved"))
         return None
 
+    def validate_units(self):
+        if self.task == "reference" or self.request.aggregation == "count" and self.task in {"summary", "dynamics", "comparison"}:
+            return None
+        units = {canonical_unit(self.columns[m].unit) for m in self.metrics if self.columns[m].unit}
+        if len(self.metrics) > 1 and units and any(not self.columns[m].unit for m in self.metrics) and not self.request.unit:
+            return self.refuse("analysis.incompatible_units")
+        source_units = set()
+        for index, col in enumerate(self.dataset.columns):
+            if re.fullmatch(r"unit|units|currency|валюта|единица(?: измерения)?|ед\.?\s*изм\.?", col.name.strip(), re.I):
+                if any(missing(self.dataset.rows[i][index]) for i in self.indices):
+                    return self.refuse("analysis.incompatible_units")
+                source_units.update(str(self.dataset.rows[i][index]).strip() for i in self.indices
+                                    if not missing(self.dataset.rows[i][index]))
+        canonical = {canonical_unit(u) for u in source_units}
+        if len(canonical) > 1:
+            return self.refuse("analysis.incompatible_units")
+        if canonical:
+            source_unit = next(iter(canonical))
+            stated = units | ({self.unit} if self.unit else set())
+            if stated and stated != {source_unit}:
+                return self.refuse("analysis.incompatible_units")
+            if len(self.metrics) == 1:
+                self.unit = source_unit
+        for index, col in enumerate(self.dataset.columns):
+            if re.fullmatch(r"period|период|exposure|период сравнения", col.name.strip(), re.I):
+                durations = set()
+                for i in self.indices:
+                    label = str(self.dataset.rows[i][index]).strip().lower()
+                    match = re.fullmatch(r"(?:за\s+)?(\d+)\s*(day[s]?|week[s]?|month[s]?|year[s]?|день|дня|дней|недел\w*|месяц\w*|год\w*|лет)", label)
+                    if match:
+                        word = match[2]
+                        scale = ("day" if word.startswith(("day", "д")) else "week" if word.startswith(("week", "нед"))
+                                 else "month" if word.startswith(("month", "мес")) else "year")
+                        durations.add((int(match[1]), scale))
+                if len(durations) > 1:
+                    return self.refuse("analysis.incomparable_periods")
+        return None
+
     def reference(self):
         self.analysis.aggregation = "identity"
         size = self.request.page_size
@@ -200,6 +306,8 @@ class _Calculation:
         complete = [i for i in self.indices if self.values[a][i] is not None and self.values[b][i] is not None]
         if len(complete) < 2:
             return self.refuse("analysis.insufficient_pairs")
+        for metric in self.metrics:
+            check_collisions((_float(self.values[metric][i]), self.values[metric][i]) for i in complete)
         points = [Point(x=_float(self.values[a][i]), y=_float(self.values[b][i]), row_id=self.dataset.row_ids[i]) for i in complete]
         self.warnings.append(Notice(code="analysis.no_causality"))
         self.analysis.transformations.append("complete_pairs_only")
@@ -250,19 +358,39 @@ class _Calculation:
         if not groups:
             return self.refuse("analysis.no_observations")
         categories = sorted(groups)
+        if self.task == "dynamics":
+            time = self.columns[self.dimension]
+            expanded = calendar_categories(categories, time.periodicity, self.request.slide_budget*20)
+            if expanded is None:
+                return self.refuse("analysis.slide_limit")
+            if expanded != categories:
+                categories = expanded
+                self.warnings.append(Notice(code="analysis.time_gaps"))
         series = []
         sd = self.request.series_dimension
         levels = sorted({str(self.values[sd][i]) for i in self.indices if self.values[sd][i] is not None}) if sd else [None]
+        category_pages = [list(range(i, min(i+20, len(categories)))) for i in range(0, len(categories), 20)]
+        series_count = len(levels)*len(self.metrics)
+        series_pages = [list(range(i, min(i+5, series_count))) for i in range(0, series_count, 5)]
+        required_slides = len(category_pages)*len(series_pages)
+        if required_slides > self.request.slide_budget:
+            return self.refuse("analysis.slide_limit", pages=required_slides)
         if len(levels) * len(categories) * len(self.metrics) > 100_000:
             return self.refuse("analysis.result_limit")
         if sd and any(self.values[sd][i] is None for i in self.indices):
             self.warnings.append(Notice(code="analysis.missing_dimension_excluded"))
+        partition = defaultdict(list)
+        if sd:
+            for category, rows in groups.items():
+                for i in rows:
+                    if self.values[sd][i] is not None:
+                        partition[(category, str(self.values[sd][i]))].append(i)
         for metric in self.metrics:
             for level in levels:
                 values, ids = [], []
                 for category in categories:
-                    rows = groups[category] if sd is None else [i for i in groups[category] if str(self.values[sd][i]) == level]
-                    value = _aggregate([self.values[metric][i] for i in rows], self.request.aggregation)
+                    rows = groups[category] if sd is None else partition[(category, level)]
+                    value = _aggregate([self.values[metric][i] for i in rows], self.request.aggregation) if rows else None
                     values.append(_float(value) if value is not None else None)
                     ids.append(self.fact(value, rows, [self.dimension, metric]+([sd] if sd else []), self.request.aggregation,
                                          category=category, series=level))
@@ -270,12 +398,11 @@ class _Calculation:
         if not any(v is not None for s in series for v in s.values):
             return self.refuse("analysis.no_observations")
         self.analysis.transformations.extend(["group_by_dimension", self.request.aggregation, "sort_dimension"])
-        data = VisualData(categories=categories, series=series,
-                          pages=[list(range(i, min(i+20, len(categories)))) for i in range(0, len(categories), 20)])
+        data = VisualData(categories=categories, series=series, pages=category_pages, series_pages=series_pages)
         if len(data.pages) > self.request.slide_budget:
             return self.refuse("analysis.slide_limit", pages=len(data.pages))
-        if len(categories) > 20:
-            self.warnings.append(Notice(code="analysis.paginated", params={"pages": len(data.pages)}))
+        if len(category_pages) > 1 or len(series_pages) > 1:
+            self.warnings.append(Notice(code="analysis.paginated", params={"pages": required_slides}))
         if self.task != "shares" and len(categories) == 1 and len(series) == 1:
             identifier = series[0].fact_ids[0]
             data.kpi_fact_ids = [identifier]
@@ -325,13 +452,14 @@ class _Calculation:
             metric = self.metrics[0]
             start = _aggregate([self.values[metric][i] for i in groups[categories[0]]], self.request.aggregation)
             end = _aggregate([self.values[metric][i] for i in groups[categories[-1]]], self.request.aggregation)
-            if self.unit == "%":
+            comparable = self.comparable_endpoints(groups[categories[0]], groups[categories[-1]])
+            if comparable and self.unit == "%":
                 delta = end-start
                 fact = self.fact(delta, groups[categories[0]]+groups[categories[-1]], [self.dimension, metric],
                                  "percentage_points", unit="pp", period=period, base=str(start), end=str(end))
                 return self.finish(data, ["line", "bar", "table"], "title.percentage_points",
                                    {"metric": series[0].name, "value": _float(delta)}, [fact], period)
-            if start > 0 and self.columns[self.dimension].periodicity in {"daily", "monthly", "yearly"}:
+            if comparable and start > 0 and self.columns[self.dimension].periodicity in {"hourly", "daily", "monthly", "yearly"}:
                 with localcontext() as ctx:
                     ctx.prec = CALCULATION_PRECISION
                     growth = (end-start)/start*100
@@ -347,11 +475,23 @@ class _Calculation:
                            "title.last_observation", {"metric": series[winner].name, "period": categories[position], "value": value},
                            [series[winner].fact_ids[position]], period=period)
 
+    def comparable_endpoints(self, first, last):
+        if any(self.values[m][i] is None for m in self.metrics for i in first+last):
+            return False
+        dimensions = [c.id for c in self.profile.columns if c.role == "dimension"
+                      and c.id != self.dimension]
+        if dimensions:
+            cohort = lambda rows: {tuple(self.values[d][i] for d in dimensions) for i in rows}
+            return cohort(first) == cohort(last)
+        return True
+
     def comparison(self, data):
         categories, series = data.categories, data.series
+        primary = next(s for s in series if any(v is not None for v in s.values))
         # Sort categories and every series together; never sort labels independently of values.
-        order = sorted(range(len(categories)), key=lambda i: (series[0].values[i] is None,
-                       -(series[0].values[i] or 0), categories[i]))
+        exact = {f.id: Decimal(f.exact) for f in self.facts}
+        order = sorted(range(len(categories)), key=lambda i: (primary.values[i] is None,
+                       -exact.get(primary.fact_ids[i], Decimal(0)), categories[i]))
         data.categories = [categories[i] for i in order]
         for s in series:
             s.values = [s.values[i] for i in order]
@@ -361,7 +501,7 @@ class _Calculation:
                 and all(v is not None and v >= 0 for s in series for v in s.values)):
             kinds.insert(1, "stacked_bar")
         return self.finish(data, kinds, "title.comparison", {"category": data.categories[0],
-                           "value": series[0].values[0], "metric": series[0].name}, [series[0].fact_ids[0]])
+                           "value": primary.values[0], "metric": primary.name}, [primary.fact_ids[0]])
 
 
 def analyze(dataset, request=None):
@@ -378,7 +518,10 @@ def analyze(dataset, request=None):
         return invalid
     handler = {"reference": calculation.reference, "summary": calculation.summary,
                "relationship": calculation.relationship, "distribution": calculation.distribution}
-    return handler.get(calculation.task, calculation.grouped)()
+    try:
+        return handler.get(calculation.task, calculation.grouped)()
+    except NumericPrecisionError:
+        return calculation.refuse("analysis.numeric_precision")
 
 
 def verify_result(dataset, request, result):

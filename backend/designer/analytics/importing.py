@@ -5,10 +5,11 @@ import io
 import json
 import re
 import zipfile
+from decimal import DecimalException
 from pathlib import PurePosixPath
 from xml.etree import ElementTree as ET
 
-from .models import Column, Dataset, DatasetRef, ImportResult, Notice
+from .models import MAX_SAFE_INTEGER, Column, Dataset, DatasetRef, ImportResult, Notice
 from .xlsx import read_workbook
 
 MAX_BYTES = 20 * 1024 * 1024
@@ -76,6 +77,9 @@ def table_dataset(data, filename, table, header, rows, row_ids, *, archive_path=
     identity = hashlib.sha256(f"{digest}:{archive_path or ''}:{table}".encode()).hexdigest()[:24]
     names = [str(v).strip() if v is not None else "" for v in header]
     notes = list(warnings)
+    if any(type(v) is int and abs(v) > MAX_SAFE_INTEGER for row in rows for v in row):
+        rows = [[str(v) if type(v) is int and abs(v) > MAX_SAFE_INTEGER else v for v in row] for row in rows]
+        notes.append(Notice(code="import.large_integer_as_text"))
     if len(set(names)) != len(names) or "" in names:
         notes.append(Notice(code="import.ambiguous_headers"))
     return Dataset(ref=DatasetRef(dataset_id=identity, source_sha256=digest,
@@ -86,20 +90,30 @@ def table_dataset(data, filename, table, header, rows, row_ids, *, archive_path=
 
 def csv_table(data, filename, archive_path):
     text = data.decode("utf-8-sig")
+    offset, declared_separator = 0, None
+    first, _, remaining = text.partition("\n")
+    if re.fullmatch(r"sep=[,;\t|]\r?", first, re.I):
+        declared_separator, text, offset = first[4], remaining, 1
     try:
         dialect = csv.Sniffer().sniff(text[:8192], delimiters=",;\t|")
     except csv.Error:
         dialect = csv.excel
-    reader = csv.reader(io.StringIO(text, newline=""), dialect=dialect, strict=True)
+    options = {"delimiter": declared_separator} if declared_separator else {}
+    reader = csv.reader(io.StringIO(text, newline=""), dialect=dialect, strict=True, **options)
     records, ids = [], []
-    for row in reader:
+    while True:
+        start = reader.line_num+1+offset
+        try:
+            row = next(reader)
+        except StopIteration:
+            break
         if not any(v.strip() for v in row):
             continue
         records.append(row)
-        ids.append(reader.line_num)
+        ids.append(start)
         if len(records) > MAX_ROWS + 1 or len(row) > MAX_COLUMNS:
             raise ImportFailure("import.table_limit")
-        if len(records) * len(row) > MAX_CELLS:
+        if max(0, len(records)-1) * len(row) > MAX_CELLS:
             raise ImportFailure("import.table_limit")
     if len(records) < 2:
         raise ImportFailure("import.no_table")
@@ -132,43 +146,68 @@ def json_tables(data, filename, archive_path):
                           archive_path=archive_path, warnings=notes)]
 
 
+def _text_cells(line, delimiter):
+    content = line.strip()
+    if delimiter == "|":
+        content = content[1:] if content.startswith("|") else content
+        content = content[:-1] if content.endswith("|") else content
+        return [v.strip().replace(r"\|", "|") for v in re.split(r"(?<!\\)\|", content)]
+    return [v.strip() for v in next(csv.reader([content], delimiter=delimiter))]
+
+
+def _header_like(cells):
+    # A comma in a prose sentence is not evidence of a table header.
+    return len(cells) >= 2 and all(c and len(c) <= 64 and len(c.split()) <= 4
+                                  and re.search(r"[A-Za-zА-Яа-яЁё]", c)
+                                  and not re.search(r"[.:`{}]", c) for c in cells)
+
+
 def text_tables(data, filename, archive_path):
     text = data.decode("utf-8-sig")
     lines = text.splitlines()
-    blocks, block = [], []
-    for i, line in enumerate(lines + [""]):
-        # Deliberately conservative: a delimited block must have >=2 columns.
-        delimiter = next((d for d in ("|", "\t", ";", ",") if d in line), None)
-        if delimiter:
-            content = line.strip()
-            if delimiter == "|":
-                content = content[1:] if content.startswith("|") else content
-                content = content[:-1] if content.endswith("|") else content
-            cells = next(csv.reader([content], delimiter=delimiter))
-            cells = [v.strip() for v in cells]
-            if block and delimiter == block[0][2] and len(cells) != len(block[0][1]):
-                raise ImportFailure("import.ragged_rows")
-            if block and delimiter != block[0][2]:
-                blocks.append(block)
-                block = []
-            block.append((i+1, cells, delimiter))
-        elif block:
-            blocks.append(block)
-            block = []
-    result = []
-    for b in blocks:
-        content = [(i, r) for i, r, _ in b if not all(re.fullmatch(r":?-{3,}:?", c) for c in r)]
-        if len(content) < 2 or len(content[0][1]) < 2:
+    result, i, fence = [], 0, None
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith(("```", "~~~")):
+            if fence is None:
+                fence = line[3:].strip().lower()
+            else:
+                fence = None
+            i += 1
             continue
-        result.append(table_dataset(data, filename, str(len(result)+1), content[0][1],
-                                    [r for _, r in content[1:]], [i for i, _ in content[1:]],
-                                    archive_path=archive_path, context=text))
+        if fence is not None and fence not in {"csv", "tsv", "text", "txt", "markdown", "md"}:
+            i += 1
+            continue
+        delimiter = next((d for d in ("|", "\t", ";", ",") if d in line), None)
+        if delimiter is None or i+1 >= len(lines):
+            i += 1
+            continue
+        header = _text_cells(line, delimiter)
+        following = _text_cells(lines[i+1], delimiter)
+        markdown = delimiter == "|" and len(header) == len(following) and all(re.fullmatch(r":?-{3,}:?", c) for c in following)
+        if not markdown and (delimiter == "|" or not _header_like(header) or len(following) != len(header)):
+            i += 1
+            continue
+        start, rows, ids = i, [], []
+        i += 2 if markdown else 1
+        while i < len(lines) and delimiter in lines[i] and lines[i].strip() and not lines[i].lstrip().startswith(("#", "```", "~~~")):
+            row = _text_cells(lines[i], delimiter)
+            if len(row) != len(header):
+                raise ImportFailure("import.ragged_rows", line=i+1)
+            rows.append(row)
+            ids.append(i+1)
+            i += 1
+        if rows:
+            result.append(table_dataset(data, filename, str(len(result)+1), header, rows, ids,
+                                        archive_path=archive_path, context=text))
+        if i == start:
+            i += 1
     if not result:
         raise ImportFailure("import.no_table")
     return result
 
 
-def _single(data, filename, archive_path=None):
+def _single(data, filename, archive_path=None, rejected=None):
     if len(data) > MAX_BYTES:
         raise ImportFailure("import.file_limit")
     suffix = PurePosixPath(filename).suffix.lower()
@@ -177,7 +216,7 @@ def _single(data, filename, archive_path=None):
     if suffix == ".json":
         return json_tables(data, filename, archive_path)
     if suffix == ".xlsx":
-        return read_workbook(data, filename, archive_path)
+        return read_workbook(data, filename, archive_path, rejected)
     if suffix in {".txt", ".md"}:
         return text_tables(data, filename, archive_path)
     raise ImportFailure("import.unsupported", file=filename)
@@ -188,20 +227,23 @@ def import_datasets(data: bytes, filename: str) -> ImportResult:
     result = ImportResult()
     try:
         if PurePosixPath(filename).suffix.lower() != ".zip":
-            result.datasets = _single(data, filename)
+            result.datasets = _single(data, filename, rejected=result.rejected)
         else:
             with safe_archive(data) as archive:
                 for member in archive.infolist():
                     if member.is_dir():
                         continue
                     try:
-                        result.datasets.extend(_single(archive.read(member), member.filename, member.filename))
+                        tables = _single(archive.read(member), member.filename, member.filename, result.rejected)
+                        if sum(len(d.rows)*len(d.columns) for d in result.datasets+tables) > MAX_CELLS:
+                            raise ImportFailure("import.table_limit")
+                        result.datasets.extend(tables)
                     except (ImportFailure, ValueError, UnicodeError, csv.Error, KeyError, IndexError,
-                            TypeError, OverflowError, zipfile.BadZipFile, NotImplementedError) as exc:
+                            TypeError, OverflowError, zipfile.BadZipFile, NotImplementedError, DecimalException, RecursionError) as exc:
                         notice = exc.notice if isinstance(exc, ImportFailure) else Notice(code="import.invalid_data")
                         result.rejected.append(notice.model_copy(update={"params": {**notice.params, "file": member.filename}}))
     except (ImportFailure, ValueError, UnicodeError, csv.Error, KeyError, IndexError,
-            TypeError, OverflowError, zipfile.BadZipFile, NotImplementedError) as exc:
+            TypeError, OverflowError, zipfile.BadZipFile, NotImplementedError, DecimalException, RecursionError) as exc:
         result.rejected.append(exc.notice if isinstance(exc, ImportFailure) else Notice(code="import.invalid_data"))
     if sum(len(d.rows)*len(d.columns) for d in result.datasets) > MAX_CELLS:
         result.datasets.clear()

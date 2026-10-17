@@ -38,6 +38,10 @@ python -m pytest -q tests/test_analytics.py
 от версии zlib. Тест сравнивает сгенерированные артефакты и проверяет независимые контрольные значения.
 Готовый экспорт презентации и скринкаст этими файлами не подтверждаются: это задачи интеграции.
 
+Проверка доступных файлов команды и критериев D1–D6: [матрица готовности](../../docs/analytics-acceptance.md),
+[машинный отчёт входов](acceptance-inputs.json). Технические таблицы документации не считаются реальными
+бизнес-датасетами; рабочих CSV/XLSX вне этих примеров при проверке не найдено.
+
 English: all seven datasets are synthetic. Contract examples include raw CSV, full Dataset,
 AnalysisRequest and computed AnalysisResult. The generator is deterministic and separate controls
 record expected arithmetic. These fixtures do not claim end-to-end presentation/export verification.

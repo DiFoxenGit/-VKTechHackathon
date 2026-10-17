@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
 
+MAX_SAFE_INTEGER = 2**53-1
 
 class Contract(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
@@ -30,6 +31,8 @@ class DatasetRef(Contract):
 class Column(Contract):
     id: str
     name: str
+    unit: str = ""
+    normalization: Literal["identity", "excel_percentage_points", "excel_day_fraction"] = "identity"
 
 
 class Dataset(Contract):
@@ -71,6 +74,7 @@ class ColumnProfile(Contract):
     outlier_row_ids: list[int] = Field(default_factory=list)
     period: list[str] = Field(default_factory=list)
     periodicity: str | None = None
+    missing_periods: list[str] = Field(default_factory=list)
 
 
 class Profile(Contract):
@@ -98,6 +102,7 @@ class AnalysisRequest(Contract):
     slide_budget: int = Field(default=30, ge=1, le=30)
     # Explicit column types resolve ambiguous dates/identifiers; never inferred from a template.
     column_types: dict[str, Literal["number", "date", "category", "text"]] = Field(default_factory=dict)
+    number_locale: Literal["decimal_comma", "decimal_point"] | None = None
     filters: dict[str, list[Scalar]] = Field(default_factory=dict)
 
 
@@ -164,6 +169,7 @@ class VisualData(Contract):
     rows: list[list[Scalar]] = Field(default_factory=list)
     row_ids: list[int] = Field(default_factory=list)
     pages: list[list[int]] = Field(default_factory=list)
+    series_pages: list[list[int]] = Field(default_factory=list)
     bins: list[list[FiniteFloat]] = Field(default_factory=list)
     kpi_fact_ids: list[str] = Field(default_factory=list)
 
@@ -221,4 +227,11 @@ class AnalysisResult(Contract):
             raise ValueError("KPI references require existing facts")
         if self.presentation and any(i not in facts for i in self.presentation.conclusion_fact_ids):
             raise ValueError("conclusions require existing facts")
+        if self.data.series_pages:
+            if [i for page in self.data.series_pages for i in page] != list(range(len(self.data.series))):
+                raise ValueError("series pages must include every series exactly once")
+        if self.data.pages:
+            size = len(self.data.rows) if self.data.columns else len(self.data.categories)
+            if [i for page in self.data.pages for i in page] != list(range(size)):
+                raise ValueError("pages must include every row or category exactly once")
         return self

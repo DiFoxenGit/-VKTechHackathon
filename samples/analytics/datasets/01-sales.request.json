@@ -14,5 +14,6 @@
   "page_size": 10,
   "slide_budget": 30,
   "column_types": {},
+  "number_locale": null,
   "filters": {}
 }

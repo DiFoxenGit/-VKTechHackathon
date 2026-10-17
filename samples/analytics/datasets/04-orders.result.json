@@ -21,7 +21,8 @@
         "distinct": 60,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       },
       {
         "id": "c2",
@@ -33,7 +34,8 @@
         "distinct": 58,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       },
       {
         "id": "c3",
@@ -45,7 +47,8 @@
         "distinct": 26,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       }
     ],
     "hierarchies": [],
@@ -79,7 +82,9 @@
             "task": "distribution",
             "source_rows": 60,
             "metric_count": 1,
-            "dimension": null
+            "dimension": null,
+            "distinct_categories": null,
+            "periodicity": null
           }
         }
       },
@@ -92,7 +97,9 @@
             "task": "distribution",
             "source_rows": 60,
             "metric_count": 1,
-            "dimension": null
+            "dimension": null,
+            "distinct_categories": null,
+            "periodicity": null
           }
         }
       }
@@ -134,6 +141,7 @@
     "rows": [],
     "row_ids": [],
     "pages": [],
+    "series_pages": [],
     "bins": [
       [
         139.0,

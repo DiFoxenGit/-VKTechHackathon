@@ -10,6 +10,21 @@
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "normalization": {
+          "default": "identity",
+          "enum": [
+            "identity",
+            "excel_percentage_points",
+            "excel_day_fraction"
+          ],
+          "title": "Normalization",
+          "type": "string"
         }
       },
       "required": [

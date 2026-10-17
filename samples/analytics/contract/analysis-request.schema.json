@@ -129,6 +129,22 @@
       "title": "Column Types",
       "type": "object"
     },
+    "number_locale": {
+      "anyOf": [
+        {
+          "enum": [
+            "decimal_comma",
+            "decimal_point"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Number Locale"
+    },
     "filters": {
       "additionalProperties": {
         "items": {

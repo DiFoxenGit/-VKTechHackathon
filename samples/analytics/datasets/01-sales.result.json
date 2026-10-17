@@ -24,7 +24,8 @@
           "2026-01-01",
           "2026-06-01"
         ],
-        "periodicity": "monthly"
+        "periodicity": "monthly",
+        "missing_periods": []
       },
       {
         "id": "c2",
@@ -36,7 +37,8 @@
         "distinct": 2,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       },
       {
         "id": "c3",
@@ -48,7 +50,8 @@
         "distinct": 9,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       }
     ],
     "hierarchies": [],
@@ -84,7 +87,9 @@
             "task": "dynamics",
             "source_rows": 12,
             "metric_count": 1,
-            "dimension": "c1"
+            "dimension": "c1",
+            "distinct_categories": 6,
+            "periodicity": "monthly"
           }
         }
       },
@@ -97,7 +102,9 @@
             "task": "dynamics",
             "source_rows": 12,
             "metric_count": 1,
-            "dimension": "c1"
+            "dimension": "c1",
+            "distinct_categories": 6,
+            "periodicity": "monthly"
           }
         }
       },
@@ -110,7 +117,9 @@
             "task": "dynamics",
             "source_rows": 12,
             "metric_count": 1,
-            "dimension": "c1"
+            "dimension": "c1",
+            "distinct_categories": 6,
+            "periodicity": "monthly"
           }
         }
       }
@@ -159,6 +168,11 @@
         3,
         4,
         5
+      ]
+    ],
+    "series_pages": [
+      [
+        0
       ]
     ],
     "bins": [],
