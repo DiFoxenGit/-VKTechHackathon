@@ -38,7 +38,10 @@ Never pad to fill space, never repeat the same idea in different words, never ad
 Write a bullet as it appears on a slide: start with a capital letter and no full stop at the end.
 
 FACTS. Never invent figures, facts, dates, quotations, names, units or causal claims. Only use
-information in the brief and source documents. Do not derive new numbers either: no percentages,
+information in the brief and source documents. A supplied verified_analytics fact is also evidence:
+its operation, inputs, period, unit and analysis_id must remain attached. Never change its values,
+categories or source associations. Reuse a verified derived value exactly; do not calculate new
+values yourself. Without verified_analytics, do not derive new numbers: no percentages,
 multiples, sums, averages or growth rates that the source does not state literally. "10 → 20" may
 be shown as both numbers, never as "рост на 100%", unless the source says so. source_refs must cite the source ID of the material
 used ("brief" for the brief). If the material is sparse, describe questions to resolve explicitly

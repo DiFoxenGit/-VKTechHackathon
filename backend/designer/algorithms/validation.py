@@ -9,6 +9,11 @@ LOGGER = logging.getLogger("designer.algorithms.validation")
 
 
 def validate_outline(result, request, sources, *, last_chance=False, warnings=None):
+    if sources and sources[0].get("_analysis_results"):
+        from ..analytics import verify_outline
+        verified = Outline.model_validate(result)
+        verify_outline(verified, sources[0]["_analysis_results"], sources)
+        return verified
     allowed = {source["id"] for source in sources}
     known = known_numbers(sources)
     if last_chance:

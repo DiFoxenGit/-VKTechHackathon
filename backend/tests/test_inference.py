@@ -21,6 +21,7 @@ def clean_env(monkeypatch):
     monkeypatch.setenv("DESIGNER_VK_BASE_URL", "https://vk.invalid/v1/")
     monkeypatch.setenv("DESIGNER_VK_MODEL", "issued-model-id")
     monkeypatch.setenv("DESIGNER_VK_API_KEY", "vk-test-key")
+    monkeypatch.setenv("DESIGNER_VK_PROJECT_ID", "test-project")
 
 
 @pytest.mark.parametrize("profile", ["openai", "vk"])
@@ -39,6 +40,7 @@ def test_request_uses_whole_selected_profile(monkeypatch, profile):
     request = captured[0]
     assert str(request.url) == ("https://vk.invalid/v1/chat/completions" if profile == "vk" else "https://old.invalid/v1/chat/completions")
     assert request.headers["Authorization"] == ("Bearer vk-test-key" if profile == "vk" else "Bearer old-key")
+    assert request.headers.get("Project-ID") == ("test-project" if profile == "vk" else None)
     payload = json.loads(request.content)
     assert payload["model"] == ("issued-model-id" if profile == "vk" else "old-model")
     assert payload["response_format"] == {"type": "json_object"}
@@ -60,7 +62,7 @@ def test_vk_options_and_vision_override(monkeypatch):
     assert generation.vision_provider() == ("https://vision.invalid/v1", "vision-model")
 
 
-@pytest.mark.parametrize("field", ["BASE_URL", "MODEL", "API_KEY"])
+@pytest.mark.parametrize("field", ["BASE_URL", "MODEL", "API_KEY", "PROJECT_ID"])
 def test_incomplete_vk_never_falls_back_to_old_provider(monkeypatch, field):
     monkeypatch.setenv("DESIGNER_LLM_PROVIDER", "vk")
     monkeypatch.delenv("DESIGNER_VK_" + field)

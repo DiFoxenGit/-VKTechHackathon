@@ -21,6 +21,8 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
 from .assets import color_roles, draw_asset
+from .analytics import CHARTS
+from .analytic_export import add_chart, add_source, numeric_cell
 from .fonts import printable
 from .layout import STAT_BAR, STAT_INSET, estimated_text_height
 from .visuals import DIAGRAMS, MIN_LABEL_SIZE
@@ -429,8 +431,11 @@ def draw_stat(slide, element, font, accent, background, text_color, coverage=Non
 
 def export_pptx(template_path: Path, template, deck_data, output: Path, asset_root=None):
     """asset_root — корень хранилища, где лежат картинки шаблонов и пакетов."""
-    deck = Presentation(template_path)
-    originals = list(deck.slides)
+    source_deck = Presentation(template_path)
+    deck = Presentation() if template.get("brandbook") else source_deck
+    if template.get("brandbook"):
+        deck.slide_width, deck.slide_height = source_deck.slide_width, source_deck.slide_height
+    originals = list(source_deck.slides)
     original_ids = list(deck.slides._sldIdLst)
     palette = template["tokens"]["colors"]
     # Покрытие гарнитур из разбора шаблона: по нему видно, какой символ
@@ -458,7 +463,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             orphans = orphans | frozenset(slide_data["drop_shapes"])
         if slide_data.get("clear_stage"):
             orphans = orphans | _stage_clutter(source, deck.slide_width, deck.slide_height, branding)
-        slide = _clone_slide(
+        slide = deck.slides.add_slide(deck.slide_layouts[6]) if template.get("brandbook") else _clone_slide(
             deck,
             source,
             branding,
@@ -466,6 +471,13 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             orphans,
             slide_data.get("shape_fixes"),
         )
+        if template.get("brandbook"):
+            # Explicit brandbook wins over inherited template artwork and master.
+            for shape in list(slide.shapes):
+                shape._element.getparent().remove(shape._element)
+            slide._element.set("showMasterSp", "0")
+            slide.background.fill.solid()
+            slide.background.fill.fore_color.rgb = RGBColor.from_string(template["brandbook"].get("background", "FFFFFF"))
         background = slide_data.get("background") or background_color(
             slide, template["tokens"]["theme"]
         )
@@ -523,6 +535,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                     _font(p.font, font, size, text_color, line_bold)
                     for run in p.runs:
                         _font(run.font, font, size, text_color, line_bold)
+            elif kind in CHARTS and (kind not in ("bar", "line") or slide_data["content"].get("analysis_id")):
+                add_chart(slide, element["data"], (x, y, w, max(Pt(60), h - Pt(24))), font, template["tokens"].get("accents") or palette, text_color)
+                add_source(slide, element["data"], (x, y, w, h), font, text_color)
             elif kind in ("bar", "line"):
                 visual = element["data"]
 
@@ -594,7 +609,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                 visual = element["data"]
                 rows = [visual["columns"], *visual["rows"]]
                 table = slide.shapes.add_table(
-                    len(rows), len(rows[0]), x, y, w, h
+                    len(rows), len(rows[0]), x, y, w, h - (Pt(24) if visual.get("source") else 0)
                 ).table
                 for r, values in enumerate(rows):
                     for c, value in enumerate(values):
@@ -612,9 +627,11 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                             best_text_color(accent, palette) if r == 0 else text_color
                         )
                         for p in cell.text_frame.paragraphs:
+                            p.alignment = PP_ALIGN.RIGHT if r > 0 and numeric_cell(value) else PP_ALIGN.LEFT
                             p.space_before = p.space_after = Pt(0)
                             p.line_spacing = 1.0
                             _font(p.font, font, 13, color, r == 0)
+                add_source(slide, visual, (x, y, w, h), font, text_color)
             elif kind == "image":
                 icon = element.get("role") == "icon"
                 draw_asset(
@@ -750,7 +767,7 @@ def _chart_labels(chart, slide_index):
     """
     try:
         series = len(chart.plots[0].series)
-        labels = bool(chart.plots[0].data_labels.show_value)
+        labels = bool(chart.plots[0].data_labels.show_value or chart.plots[0].data_labels.show_percentage)
     except (IndexError, ValueError, AttributeError):
         series, labels = 0, False
     axes = []
@@ -765,6 +782,7 @@ def _chart_labels(chart, slide_index):
         "legend": bool(chart.has_legend),
         "axis_title": any(axes),
         "value_labels": labels,
+        "type": int(chart.chart_type),
     }
 
 
@@ -864,7 +882,10 @@ def verify_pptx(path: Path, expected_slides: int):
 
 
 def convert_pdf(pptx_path: Path, destination: Path):
-    executable = shutil.which("libreoffice") or shutil.which("soffice")
+    executable = os.getenv("DESIGNER_SOFFICE") or shutil.which("libreoffice") or shutil.which("soffice")
+    windows = Path(os.getenv("PROGRAMFILES", "C:/Program Files")) / "LibreOffice/program/soffice.exe"
+    if not executable and windows.exists():
+        executable = str(windows)
     mac = Path("/Applications/LibreOffice.app/Contents/MacOS/soffice")
     if not executable and mac.exists():
         executable = str(mac)

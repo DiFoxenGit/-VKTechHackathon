@@ -1,0 +1,5 @@
+import type { AnalysisResult } from '../analytics';
+import { visualNames } from '../analytics';
+export function AnalysisPanel({items}: {items: AnalysisResult[]}) {
+  return <section className="analysis-panel" aria-label="Анализ данных"><h3>Данные и выбор визуализации</h3>{items.map(result=><article key={result.analysis_id}><strong>{result.source_file} · {result.sheet}</strong><p>{result.profile.row_count} строк · {result.profile.columns.length} колонок · {result.status === 'refused' ? result.reason : visualNames[result.selected] || result.selected}</p><ol>{result.candidates.map((candidate,index)=><li key={`${candidate.kind}-${index}`}><b>{visualNames[candidate.kind] || candidate.kind}</b>: {candidate.reason}</li>)}</ol>{result.warnings.map((warning,index)=><p className="analysis-warning" key={index}>{warning}</p>)}<details><summary>Происхождение и расчёты</summary><p>Источник: {result.source_file} / {result.sheet}</p><p>Хеш: {result.source_hash}</p><pre>{JSON.stringify({facts:result.facts,provenance:result.provenance},null,2)}</pre></details></article>)}</section>;
+}

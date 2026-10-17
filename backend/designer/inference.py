@@ -16,10 +16,11 @@ class Inference:
     max_tokens: int = 14000
     timeout: float = 150
     json_mode: bool = True
+    project_id: str = ""
 
     @property
     def configured(self):
-        return bool(self.url and self.model and (self.key or self.profile != "vk"))
+        return bool(self.url and self.model and (self.key and self.project_id or self.profile != "vk"))
 
 
 def llm_settings():
@@ -43,6 +44,7 @@ def llm_settings():
         max_tokens=tokens,
         timeout=timeout,
         json_mode=mode == "1",
+        project_id=os.getenv("DESIGNER_VK_PROJECT_ID", "").strip() if profile == "vk" else "",
     )
 
 
@@ -50,5 +52,5 @@ def require_llm():
     settings = llm_settings()
     if not settings.configured:
         prefix = "DESIGNER_VK" if settings.profile == "vk" else "DESIGNER_LLM"
-        raise HTTPException(503, f"Configure {prefix}_BASE_URL, {prefix}_MODEL and {prefix}_API_KEY, or supply an explicit outline")
+        raise HTTPException(503, f"Configure {prefix}_BASE_URL, {prefix}_MODEL, {prefix}_API_KEY and VK PROJECT_ID when applicable, or supply an explicit outline")
     return settings

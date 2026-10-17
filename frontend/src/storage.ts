@@ -1,4 +1,6 @@
 import type { AuditIssue, Brief, Deck, Layout, Slide, Template } from './types';
+import { parseVisual } from './analytics';
+import type { AnalysisResult } from './analytics';
 
 export type Saved = { brief: Brief; decks: Deck[]; customTemplates: Template[] };
 export const STORAGE_KEY = 'slide-studio:v1';
@@ -23,6 +25,8 @@ function normalizeBrief(value: unknown, fallback: Brief = DEFAULT_BRIEF): Brief 
     materials: text(source.materials, fallback.materials),
     ...(typeof source.materialName === 'string' ? { materialName: source.materialName } : {}),
     contentPackIds: Array.isArray(source.contentPackIds) ? [...new Set(source.contentPackIds.filter(identifier))] : [...(fallback.contentPackIds || [])],
+    ...(Array.isArray(source.materialFiles) ? {materialFiles: source.materialFiles.filter(isRecord).filter(m => identifier(m.id) && typeof m.name === 'string' && typeof m.text === 'string').map(m => ({id:String(m.id),name:String(m.name),text:String(m.text),...(typeof m.goal==='string'?{goal:m.goal}:{}),file_report:Array.isArray(m.file_report) ? m.file_report.filter(isRecord).map(f => ({name:text(f.name),status:text(f.status),reason:text(f.reason)})) : undefined})) } : {}),
+    ...(isRecord(source.brandbook) && identifier(source.brandbook.id) && isRecord(source.brandbook.tokens) ? {brandbook:{id:source.brandbook.id,name:text(source.brandbook.name),tokens:{colors:Array.isArray(source.brandbook.tokens.colors)?source.brandbook.tokens.colors.filter((v):v is string=>typeof v==='string'&&/^#?[0-9a-f]{6}$/i.test(v)):[],font:text(source.brandbook.tokens.font)},warnings:Array.isArray(source.brandbook.warnings)?source.brandbook.warnings.filter((v):v is string=>typeof v==='string'):[]}} : {}),
   };
 }
 
@@ -78,7 +82,7 @@ function normalizeDeck(value: unknown): Deck | null {
     usedIds.add(id);
     const kind: Slide['kind'] = item.kind === 'cover' || item.kind === 'content' || item.kind === 'closing'
       ? item.kind : index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content';
-    return { id, title: item.title, body: item.body, kind, ...(typeof item.notes === 'string' ? { notes: item.notes } : {}) };
+    return { id, title: item.title, body: item.body, kind, ...(typeof item.notes === 'string' ? { notes: item.notes } : {}), ...(parseVisual(item.visual)?{visual:parseVisual(item.visual)}:{}),...(identifier(item.analysisId)?{analysisId:item.analysisId}:{}),...(Array.isArray(item.sourceRefs)?{sourceRefs:item.sourceRefs.filter(identifier)}:{}) };
   });
   const templateId = identifier(value.templateId) ? value.templateId : DEFAULT_BRIEF.templateId;
   const layout: Layout = value.layout === 'story' || value.layout === 'focus' ? value.layout : 'classic';
@@ -98,6 +102,7 @@ function normalizeDeck(value: unknown): Deck | null {
     ...(integer(value.revision, 1) ? { revision: value.revision } : {}),
     ...(exports ? { exports } : {}),
     ...(serverIssues ? { serverIssues } : {}),
+    ...(Array.isArray(value.analysis)?{analysis:value.analysis.filter(isRecord).filter(a=>identifier(a.analysis_id)&&isRecord(a.profile)&&Array.isArray(a.profile.columns)&&Array.isArray(a.candidates)&&Array.isArray(a.warnings)) as unknown as AnalysisResult[]} : {}),
   };
 }
 

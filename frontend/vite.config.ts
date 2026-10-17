@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
     base: env.VITE_APP_BASE_PATH || '/',
     plugins: [react()],
     server: {
+      watch: {ignored:['**/output/**','**/.playwright-cli/**','**/tmp/**']},
       proxy: {
         '/presentations/api/v1': {
           target: upstream.origin,

@@ -68,11 +68,13 @@ async def ask(messages):
     async with httpx.AsyncClient(timeout=httpx.Timeout(settings.timeout, connect=15)) as client:
         response = await client.post(
             settings.url + "/chat/completions",
-            headers={"Authorization": "Bearer " + settings.key},
+            headers={"Authorization": "Bearer " + settings.key, **({"Project-ID": settings.project_id} if settings.profile == "vk" else {})},
             json=payload,
         )
         response.raise_for_status()
         try:
+            if response.json()["choices"][0].get("finish_reason") == "length":
+                raise InvalidCompletion("Ответ модели обрезан по лимиту токенов")
             return message_text(response.json()["choices"][0]["message"])
         except (ValueError, KeyError, IndexError, AttributeError) as exc:
             raise InvalidCompletion(f"Ответ провайдера без содержимого: {exc}") from exc
