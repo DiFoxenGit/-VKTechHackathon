@@ -75,27 +75,15 @@ DESIGNER_LLM_API_KEY=<API-ключ сервисного аккаунта>
 
 ## Автодеплой
 
-Код живёт в SourceCraft (`lct-hackaton-2026/case-14-ai-presentation-designer-team-7`,
-ветка `main`), а проверки и доставка — в GitHub Actions на публичном зеркале
-`DiFoxenGit/-VKTechHackathon`. Так вышло не от хорошей жизни: у организации в SourceCraft
-исчерпана месячная квота CI, любой запуск падает за секунду с «total time quota is
-exhausted». Готовый конфиг для SourceCraft лежит в
-[`deploy/sourcecraft-ci.yaml`](../deploy/sourcecraft-ci.yaml) и включается обратно
-переносом в `.sourcecraft/ci.yaml`, когда квота появится.
+Основной репозиторий — [DiFoxenGit/-VKTechHackathon](https://github.com/DiFoxenGit/-VKTechHackathon), ветка `main`. SourceCraft больше не используется; файл `deploy/sourcecraft-ci.yaml` оставлен как историческая конфигурация и не участвует в поставке.
 
-Как это работает сейчас:
-
-1. Коммит уходит в SourceCraft (`origin`), затем та же ветка пушится в GitHub (`github`).
-2. Push в `main` на GitHub запускает [`ci.yml`](../.github/workflows/ci.yml): этап **Tests**
-   из трёх джоб (`pytest`, `frontend`, `Integration`; см. [regression.md](regression.md)),
-   и только после зелёных — job `deploy`.
-3. `deploy` передаёт серверу по SSH одну команду `deploy <sha>`. Код сервер забирает сам —
-   из **SourceCraft**, а не из GitHub, поэтому источник правды один.
+1. Изменения проходят pull request в GitHub и проверки из [`tests.yml`](../.github/workflows/tests.yml): pytest, frontend и интеграционный регресс с LibreOffice.
+2. После слияния push в `main` запускает [`ci.yml`](../.github/workflows/ci.yml). Деплой начинается только после успешных проверок.
+3. CI передаёт серверу `deploy <sha>`. Сервер забирает коммит из `origin/main`; remote `origin` серверного клона должен указывать на GitHub-репозиторий выше.
 
 На сервере:
 
-1. `~/vk-designer` — git-клон приватного репозитория SourceCraft по HTTPS. Токен лежит в
-   `~/.git-credentials` с правами `600`, в remote URL его нет.
+1. `~/vk-designer` — git-клон GitHub-репозитория. Проверка: `git -C ~/vk-designer remote get-url origin`. Для старого клона SourceCraft смените адрес командой `git -C ~/vk-designer remote set-url origin https://github.com/DiFoxenGit/-VKTechHackathon.git`; рабочие данные и `.env` от этого не меняются.
 2. Ключ CI привязан в `authorized_keys` к приёмнику
    [`deploy/ci-receive.sh`](../deploy/ci-receive.sh) через `restrict,command=...`: по этому
    ключу нельзя получить shell, можно только попросить выкатить коммит.
@@ -105,9 +93,7 @@ exhausted». Готовый конфиг для SourceCraft лежит в
 4. Если сборка или `/health` не прошли, приёмник возвращает прошлый коммит и образы `:prev`.
    Job падает, в логе видно почему.
 
-Отсюда следует важное: **сначала push в SourceCraft, потом в GitHub**. Если сделать
-наоборот, деплой начнётся раньше, чем коммит появится в `origin/main`, и приёмник его
-отвергнет.
+Приёмник проверяет принадлежность SHA основной ветке. Ветки PR до слияния не разворачиваются. Отдельный push в SourceCraft не требуется.
 
 Параллельные деплои исключены: `concurrency: production` в Actions и `flock` на сервере.
 
@@ -117,10 +103,7 @@ exhausted». Готовый конфиг для SourceCraft лежит в
 | Secrets GitHub | `DEPLOY_KNOWN_HOSTS` | `ssh-keyscan -t ed25519 <хост>`, чтобы не доверять хосту вслепую |
 | Variables GitHub | `DEPLOY_HOST`, `DEPLOY_USER` | адрес сервера и пользователь |
 
-Токен для чтения репозитория сервером выпускается в SourceCraft: **Домой → Доступ →
-Персональные токены доступа**, область — только этот репозиторий, роль — просмотр, срок
-ограничен датой. Когда срок подойдёт к концу, токен нужно перевыпустить и переписать
-`~/.git-credentials`, иначе деплой встанет на `git fetch`.
+Для публичного GitHub-репозитория токен на чтение не нужен. Если доступ станет приватным, настройте на сервере отдельный credential с доступом только на чтение; секрет не должен находиться в remote URL или логах CI.
 
 Приёмник на сервере лежит вне каталога проекта (`~/vk-designer-ci/receive.sh`), поэтому
 коммит не может его подменить. После правки `deploy/ci-receive.sh` его переустанавливают

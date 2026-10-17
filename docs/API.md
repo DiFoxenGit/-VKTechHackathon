@@ -9,7 +9,7 @@ Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратны
 |---|---|---|
 | GET | `/health` | Статус сервера, доступность LLM и PDF |
 | GET | `/api/v1/workflow` | Версия агентов, файлы промптов и SHA-256 |
-| GET | `/api/v1/templates` | `{items: [...]}` — шаблоны, без подробного списка объектов |
+| GET | `/api/v1/templates` | `{items: [...], llm_configured: boolean}` — шаблоны и доступность серверного ИИ, без подробного списка объектов |
 | POST | `/api/v1/templates` | multipart `file` (.pptx), 201, шаблон и токены |
 | GET | `/api/v1/templates/{id}` | Полная декомпозиция: tokens, geometry, patterns, layouts, assets |
 | GET | `/api/v1/templates/{id}/assets` | Картинки шаблона: `{counts, items:[{id,kind,tags,label,url…}]}` — иконки, иллюстрации, фото |

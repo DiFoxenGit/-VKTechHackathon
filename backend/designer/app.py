@@ -17,16 +17,15 @@ from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 from .assets import (
-    drop_lettered,
-    generate_illustrations,
     harvest_pptx,
     library,
     parse_pack_zip,
     resolve,
     save_assets,
-    tag_assets,
 )
-from .audit import apply_fixes, audit, contextual_audit, merge_file_issues, visual_audit
+from .audit import apply_fixes, audit, merge_file_issues
+from .ai_audit import contextual_audit, visual_audit
+from .ai_assets import drop_lettered, generate_illustrations, tag_assets
 from .exporting import (
     HTML_EXPORT_MARKER,
     convert_pdf,
@@ -39,15 +38,10 @@ from .exporting import (
     branding_drift,
     verify_pptx,
 )
-from .generation import (
-    balance_outline,
-    generate_outline,
-    image_available,
-    provider,
-    sources_for,
-    vision_available,
-    workflow,
-)
+from .pipeline import balance_outline, generate_outline, run_generation
+from .ai import image_available, provider, vision_available
+from .workflow import workflow
+from .sources import sources_for
 from .inference import llm_settings
 from .layout import compose
 from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit
@@ -247,7 +241,14 @@ def create_app(data_dir=None, seed_dir=None):
 
     @api.get("/templates", tags=["Templates"])
     def templates():
+        # An invalid optional inference profile must not hide the template
+        # library or prevent the client from supplying its own outline.
+        try:
+            llm_configured = llm_settings().configured
+        except HTTPException:
+            llm_configured = False
         return {
+            "llm_configured": llm_configured,
             "items": [
                 {
                     **{k: v for k, v in t.items() if k not in ("patterns", "assets")},
@@ -539,55 +540,24 @@ def create_app(data_dir=None, seed_dir=None):
                 job.update(status="running", stage="outline", progress=5)
                 store.put("jobs", job)
                 async with asyncio.timeout(300):
-                    outline = request.outline or await generate_outline(
-                        request, sources, job["warnings"]
+                    def progress(stage, percent):
+                        job.update(stage=stage, progress=percent)
+                        store.put("jobs", job)
+
+                    async def render_variant(*args):
+                        return await run_in_threadpool(generate_variant, *args)
+
+                    await run_generation(
+                        request, template, sources,
+                        outline_factory=generate_outline, balance=balance_outline,
+                        render_variant=render_variant, variants=workflow()["variants"],
+                        on_stage=progress, on_outline=lambda value: job.update(outline=value),
+                        on_variant=lambda result: job["presentation_ids"].append(result["id"]),
+                        warnings=job["warnings"],
+                        label_assets=label_assets if vision_available() else None,
+                        draw_illustrations=draw_illustrations if image_available() else None,
+                        contextual_check=contextual_audit,
                     )
-                    # Тексты подгоняются под вместимость шаблона до вёрстки, чтобы
-                    # все три варианта собирались из одного выверенного содержания.
-                    job.update(stage="balance", progress=12)
-                    store.put("jobs", job)
-                    balanced = await balance_outline(outline.model_dump(), template)
-                    outline = Outline.model_validate(balanced)
-                    job["outline"] = outline.model_dump()
-                    if vision_available():
-                        job.update(stage="assets", progress=14)
-                        store.put("jobs", job)
-                        await label_assets(template, request.content_pack_ids)
-                    illustrations = None
-                    if image_available():
-                        job.update(stage="illustrations", progress=15)
-                        store.put("jobs", job)
-                        owner, metas = await draw_illustrations(
-                            {"slides": [{"content": s.model_dump()} for s in outline.slides]},
-                            template,
-                        )
-                        illustrations = (owner, metas) if metas else None
-                    contextual_findings = None
-                    if request.contextual_audit:
-                        job.update(stage="contextual_audit", progress=15)
-                        store.put("jobs", job)
-                        contextual_findings = await contextual_audit(
-                            {
-                                "slides": [
-                                    {"content": s.model_dump()} for s in outline.slides
-                                ]
-                            },
-                            sources,
-                        )
-                    for i, variant in enumerate(workflow()["variants"]):
-                        job.update(stage="layout_and_audit", progress=20 + i * 25)
-                        store.put("jobs", job)
-                        result = await run_in_threadpool(
-                            generate_variant,
-                            request,
-                            outline.model_dump(),
-                            template,
-                            sources,
-                            variant["id"],
-                            contextual_findings,
-                            illustrations,
-                        )
-                        job["presentation_ids"].append(result["id"])
                     job.update(status="completed", stage="completed", progress=100)
         except asyncio.CancelledError:
             job.update(
