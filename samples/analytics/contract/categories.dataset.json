@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "ref": {
+    "dataset_id": "8ecb0bbce60d51449f826362",
+    "source_sha256": "e3907c99191d7ab51cc57aa24e9f5139a337222bd609ec916ee7b3392ae2fab2",
+    "filename": "categories.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "columns": [
+    {
+      "id": "c1",
+      "name": "region"
+    },
+    {
+      "id": "c2",
+      "name": "sales"
+    }
+  ],
+  "rows": [
+    [
+      "North",
+      "10"
+    ],
+    [
+      "South",
+      "20"
+    ],
+    [
+      "West",
+      "30"
+    ]
+  ],
+  "row_ids": [
+    2,
+    3,
+    4
+  ],
+  "context": "",
+  "warnings": []
+}

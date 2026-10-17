@@ -1,0 +1,18 @@
+{
+  "synthetic": true,
+  "logical_dataset_count": 7,
+  "same_table_formats": [
+    "01-sales.csv",
+    "01-sales.json",
+    "01-sales.xlsx"
+  ],
+  "controls": "controls.json",
+  "mutation_checks": [
+    "change a source value",
+    "swap category values",
+    "reorder rows",
+    "add nulls",
+    "change analysis goal",
+    "change presentation template externally"
+  ]
+}

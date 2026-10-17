@@ -1,0 +1,3 @@
+# Source hashes and reproducible fixtures must not depend on Windows autocrlf.
+* text eol=lf
+*.xlsx binary

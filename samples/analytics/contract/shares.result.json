@@ -1,0 +1,275 @@
+{
+  "schema_version": "1.0",
+  "dataset_ref": {
+    "dataset_id": "ca8a4c589917c459ccbe431c",
+    "source_sha256": "b89e0490532ff169839fe8fbde0800fe24cce3da6797560c7f7850f7718c8432",
+    "filename": "shares.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "profile": {
+    "row_count": 2,
+    "column_count": 2,
+    "columns": [
+      {
+        "id": "c1",
+        "name": "channel",
+        "kind": "category",
+        "role": "dimension",
+        "unit": "",
+        "missing": 0,
+        "distinct": 2,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null
+      },
+      {
+        "id": "c2",
+        "name": "sales",
+        "kind": "number",
+        "role": "metric",
+        "unit": "",
+        "missing": 0,
+        "distinct": 2,
+        "outlier_row_ids": [],
+        "period": [],
+        "periodicity": null
+      }
+    ],
+    "hierarchies": [],
+    "dimension_count": 1,
+    "metric_count": 1,
+    "warnings": []
+  },
+  "analysis": {
+    "goal": "shares",
+    "task": "shares",
+    "dimension": "c1",
+    "series_dimension": null,
+    "metrics": [
+      "c2"
+    ],
+    "aggregation": "sum",
+    "missing_policy": "preserve_gaps_exclude_from_aggregate",
+    "transformations": [
+      "group_by_dimension",
+      "sum",
+      "sort_dimension"
+    ]
+  },
+  "visualization": {
+    "selected": "pie",
+    "candidates": [
+      {
+        "kind": "pie",
+        "rank": 1,
+        "reason": {
+          "code": "candidate.pie",
+          "params": {
+            "task": "shares",
+            "source_rows": 2,
+            "metric_count": 1,
+            "dimension": "c1"
+          }
+        }
+      },
+      {
+        "kind": "bar",
+        "rank": 2,
+        "reason": {
+          "code": "candidate.bar",
+          "params": {
+            "task": "shares",
+            "source_rows": 2,
+            "metric_count": 1,
+            "dimension": "c1"
+          }
+        }
+      },
+      {
+        "kind": "table",
+        "rank": 3,
+        "reason": {
+          "code": "candidate.table",
+          "params": {
+            "task": "shares",
+            "source_rows": 2,
+            "metric_count": 1,
+            "dimension": "c1"
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "categories": [
+      "Offline",
+      "Online"
+    ],
+    "series": [
+      {
+        "name": "sales",
+        "unit": "units",
+        "values": [
+          40.0,
+          60.0
+        ],
+        "fact_ids": [
+          "f1",
+          "f2"
+        ]
+      }
+    ],
+    "points": [],
+    "columns": [],
+    "rows": [],
+    "row_ids": [],
+    "pages": [
+      [
+        0,
+        1
+      ]
+    ],
+    "bins": [],
+    "kpi_fact_ids": []
+  },
+  "facts": [
+    {
+      "id": "f1",
+      "value": 40.0,
+      "exact": "40",
+      "unit": "units",
+      "period": [],
+      "evidence": {
+        "source_sha256": "b89e0490532ff169839fe8fbde0800fe24cce3da6797560c7f7850f7718c8432",
+        "row_ids": [
+          3
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "Offline",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f2",
+      "value": 60.0,
+      "exact": "60",
+      "unit": "units",
+      "period": [],
+      "evidence": {
+        "source_sha256": "b89e0490532ff169839fe8fbde0800fe24cce3da6797560c7f7850f7718c8432",
+        "row_ids": [
+          2
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "Online",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f3",
+      "value": 100.0,
+      "exact": "100",
+      "unit": "units",
+      "period": [],
+      "evidence": {
+        "source_sha256": "b89e0490532ff169839fe8fbde0800fe24cce3da6797560c7f7850f7718c8432",
+        "row_ids": [
+          2,
+          3
+        ],
+        "column_ids": [
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "scope": "whole"
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f4",
+      "value": 40.0,
+      "exact": "40.0",
+      "unit": "%",
+      "period": [],
+      "evidence": {
+        "source_sha256": "b89e0490532ff169839fe8fbde0800fe24cce3da6797560c7f7850f7718c8432",
+        "row_ids": [
+          3
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "share_percent",
+        "parameters": {
+          "category": "Offline",
+          "numerator": "40",
+          "denominator": "100",
+          "numerator_fact_id": "f1",
+          "denominator_fact_id": "f3"
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f5",
+      "value": 60.0,
+      "exact": "60.0",
+      "unit": "%",
+      "period": [],
+      "evidence": {
+        "source_sha256": "b89e0490532ff169839fe8fbde0800fe24cce3da6797560c7f7850f7718c8432",
+        "row_ids": [
+          2
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "share_percent",
+        "parameters": {
+          "category": "Online",
+          "numerator": "60",
+          "denominator": "100",
+          "numerator_fact_id": "f2",
+          "denominator_fact_id": "f3"
+        }
+      },
+      "rounding_digits": null
+    }
+  ],
+  "presentation": {
+    "title": "Online accounts for 60%",
+    "x_label": "channel",
+    "y_label": "sales",
+    "x_unit": "",
+    "y_unit": "units",
+    "unit": "units",
+    "period": [],
+    "source_label": "shares.csv / 1",
+    "conclusion_fact_ids": [
+      "f5",
+      "f3"
+    ]
+  },
+  "status": "ok",
+  "warnings": [],
+  "refusal": null
+}

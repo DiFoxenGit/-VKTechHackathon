@@ -1,0 +1,353 @@
+{
+  "schema_version": "1.0",
+  "dataset_ref": {
+    "dataset_id": "a1d974d028971c573a160c38",
+    "source_sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+    "filename": "06-missing.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "profile": {
+    "row_count": 6,
+    "column_count": 2,
+    "columns": [
+      {
+        "id": "c1",
+        "name": "month",
+        "kind": "date",
+        "role": "time",
+        "unit": "",
+        "missing": 0,
+        "distinct": 6,
+        "outlier_row_ids": [],
+        "period": [
+          "2026-01-01",
+          "2026-06-01"
+        ],
+        "periodicity": "monthly"
+      },
+      {
+        "id": "c2",
+        "name": "sales",
+        "kind": "number",
+        "role": "metric",
+        "unit": "",
+        "missing": 1,
+        "distinct": 5,
+        "outlier_row_ids": [
+          7
+        ],
+        "period": [],
+        "periodicity": null
+      }
+    ],
+    "hierarchies": [],
+    "dimension_count": 1,
+    "metric_count": 1,
+    "warnings": [
+      {
+        "code": "profile.outliers_retained",
+        "params": {
+          "column": "c2"
+        }
+      }
+    ]
+  },
+  "analysis": {
+    "goal": "динамика",
+    "task": "dynamics",
+    "dimension": "c1",
+    "series_dimension": null,
+    "metrics": [
+      "c2"
+    ],
+    "aggregation": "sum",
+    "missing_policy": "preserve_gaps_exclude_from_aggregate",
+    "transformations": [
+      "group_by_dimension",
+      "sum",
+      "sort_dimension"
+    ]
+  },
+  "visualization": {
+    "selected": "line",
+    "candidates": [
+      {
+        "kind": "line",
+        "rank": 1,
+        "reason": {
+          "code": "candidate.line",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 6,
+            "metric_count": 1,
+            "dimension": "c1"
+          }
+        }
+      },
+      {
+        "kind": "bar",
+        "rank": 2,
+        "reason": {
+          "code": "candidate.bar",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 6,
+            "metric_count": 1,
+            "dimension": "c1"
+          }
+        }
+      },
+      {
+        "kind": "table",
+        "rank": 3,
+        "reason": {
+          "code": "candidate.table",
+          "params": {
+            "task": "dynamics",
+            "source_rows": 6,
+            "metric_count": 1,
+            "dimension": "c1"
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "categories": [
+      "2026-01-01",
+      "2026-02-01",
+      "2026-03-01",
+      "2026-04-01",
+      "2026-05-01",
+      "2026-06-01"
+    ],
+    "series": [
+      {
+        "name": "sales",
+        "unit": "RUB",
+        "values": [
+          100.0,
+          110.0,
+          null,
+          120.0,
+          130.0,
+          1000.0
+        ],
+        "fact_ids": [
+          "f1",
+          "f2",
+          "",
+          "f3",
+          "f4",
+          "f5"
+        ]
+      }
+    ],
+    "points": [],
+    "columns": [],
+    "rows": [],
+    "row_ids": [],
+    "pages": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    ],
+    "bins": [],
+    "kpi_fact_ids": []
+  },
+  "facts": [
+    {
+      "id": "f1",
+      "value": 100.0,
+      "exact": "100",
+      "unit": "RUB",
+      "period": [
+        "2026-01-01",
+        "2026-01-01"
+      ],
+      "evidence": {
+        "source_sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+        "row_ids": [
+          2
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-01-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f2",
+      "value": 110.0,
+      "exact": "110",
+      "unit": "RUB",
+      "period": [
+        "2026-02-01",
+        "2026-02-01"
+      ],
+      "evidence": {
+        "source_sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+        "row_ids": [
+          3
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-02-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f3",
+      "value": 120.0,
+      "exact": "120",
+      "unit": "RUB",
+      "period": [
+        "2026-04-01",
+        "2026-04-01"
+      ],
+      "evidence": {
+        "source_sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+        "row_ids": [
+          5
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-04-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f4",
+      "value": 130.0,
+      "exact": "130",
+      "unit": "RUB",
+      "period": [
+        "2026-05-01",
+        "2026-05-01"
+      ],
+      "evidence": {
+        "source_sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+        "row_ids": [
+          6
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-05-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f5",
+      "value": 1000.0,
+      "exact": "1000",
+      "unit": "RUB",
+      "period": [
+        "2026-06-01",
+        "2026-06-01"
+      ],
+      "evidence": {
+        "source_sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+        "row_ids": [
+          7
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "sum",
+        "parameters": {
+          "category": "2026-06-01",
+          "series": null
+        }
+      },
+      "rounding_digits": null
+    },
+    {
+      "id": "f6",
+      "value": 900.0,
+      "exact": "900",
+      "unit": "%",
+      "period": [
+        "2026-01-01",
+        "2026-06-01"
+      ],
+      "evidence": {
+        "source_sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+        "row_ids": [
+          2,
+          7
+        ],
+        "column_ids": [
+          "c1",
+          "c2"
+        ],
+        "operation": "growth_percent",
+        "parameters": {
+          "base": "100",
+          "end": "1000"
+        }
+      },
+      "rounding_digits": null
+    }
+  ],
+  "presentation": {
+    "title": "sales: изменение за период составляет 900%",
+    "x_label": "month",
+    "y_label": "sales",
+    "x_unit": "",
+    "y_unit": "RUB",
+    "unit": "RUB",
+    "period": [
+      "2026-01-01",
+      "2026-06-01"
+    ],
+    "source_label": "06-missing.csv / 1",
+    "conclusion_fact_ids": [
+      "f6"
+    ]
+  },
+  "status": "warning",
+  "warnings": [
+    {
+      "code": "profile.outliers_retained",
+      "params": {
+        "column": "c2"
+      }
+    },
+    {
+      "code": "analysis.missing_preserved",
+      "params": {}
+    }
+  ],
+  "refusal": null
+}

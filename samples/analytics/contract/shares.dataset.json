@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "ref": {
+    "dataset_id": "ca8a4c589917c459ccbe431c",
+    "source_sha256": "b89e0490532ff169839fe8fbde0800fe24cce3da6797560c7f7850f7718c8432",
+    "filename": "shares.csv",
+    "archive_path": null,
+    "table": "1"
+  },
+  "columns": [
+    {
+      "id": "c1",
+      "name": "channel"
+    },
+    {
+      "id": "c2",
+      "name": "sales"
+    }
+  ],
+  "rows": [
+    [
+      "Online",
+      "60"
+    ],
+    [
+      "Offline",
+      "40"
+    ]
+  ],
+  "row_ids": [
+    2,
+    3
+  ],
+  "context": "",
+  "warnings": []
+}
