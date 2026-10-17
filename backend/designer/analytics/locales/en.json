@@ -70,5 +70,17 @@
   "title.last_observation": "{metric} at {period}: {value:.6g}",
   "profile.hierarchy_limit": "Only the first 128 candidate hierarchies were checked; refine dimensions",
   "import.duplicate_json_keys": "A JSON object contains duplicate keys",
-  "import.invalid_excel_date": "The nonexistent Excel date 1900-02-29 was preserved as null"
+  "import.invalid_excel_date": "The nonexistent Excel date 1900-02-29 was preserved as null",
+  "profile.ambiguous_number": "Comma may be a decimal or thousands separator; specify number_locale",
+  "profile.time_range_limit": "Time range exceeds presentation capacity",
+  "analysis.ambiguous_number": "Specify numeric locale before calculating",
+  "analysis.numeric_precision": "Value cannot be safely represented in chart numbers; original data is retained",
+  "analysis.time_gaps": "Missing periods are preserved as time-series gaps",
+  "import.empty_sheet": "Sheet is empty or header-only; other sheets were retained",
+  "import.sheet_preamble": "Rows preceding the header were preserved as table context",
+  "import.inconsistent_cell_units": "An XLSX column mixes numeric formats with incompatible units",
+  "import.percent_scaled": "Excel fraction converted to percentage points; column metadata records the transform",
+  "analysis.incomparable_periods": "Totals over unequal-duration periods cannot be directly compared",
+  "import.large_integer_as_text": "Large integers preserved as decimal strings for exact transport",
+  "import.time_fraction": "Excel time is preserved as a day fraction, without an invented calendar date"
 }

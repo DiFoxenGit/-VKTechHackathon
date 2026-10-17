@@ -15,13 +15,14 @@
         "id": "c1",
         "name": "sku",
         "kind": "category",
-        "role": "dimension",
+        "role": "identifier",
         "unit": "",
         "missing": 0,
         "distinct": 240,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       },
       {
         "id": "c2",
@@ -33,7 +34,8 @@
         "distinct": 240,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       },
       {
         "id": "c3",
@@ -45,7 +47,8 @@
         "distinct": 3,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       },
       {
         "id": "c4",
@@ -57,20 +60,17 @@
         "distinct": 240,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       }
     ],
     "hierarchies": [
       [
         "c3",
-        "c1"
-      ],
-      [
-        "c3",
         "c2"
       ]
     ],
-    "dimension_count": 3,
+    "dimension_count": 2,
     "metric_count": 1,
     "warnings": []
   },
@@ -100,7 +100,9 @@
             "task": "reference",
             "source_rows": 240,
             "metric_count": 1,
-            "dimension": null
+            "dimension": null,
+            "distinct_categories": null,
+            "periodicity": null
           }
         }
       }
@@ -2090,6 +2092,7 @@
         239
       ]
     ],
+    "series_pages": [],
     "bins": [],
     "kpi_fact_ids": []
   },

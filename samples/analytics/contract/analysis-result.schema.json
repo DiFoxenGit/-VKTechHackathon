@@ -187,6 +187,13 @@
           ],
           "default": null,
           "title": "Periodicity"
+        },
+        "missing_periods": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Periods",
+          "type": "array"
         }
       },
       "required": [
@@ -637,6 +644,16 @@
             "type": "array"
           },
           "title": "Pages",
+          "type": "array"
+        },
+        "series_pages": {
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Series Pages",
           "type": "array"
         },
         "bins": {

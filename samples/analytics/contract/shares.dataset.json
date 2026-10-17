@@ -10,11 +10,15 @@
   "columns": [
     {
       "id": "c1",
-      "name": "channel"
+      "name": "channel",
+      "unit": "",
+      "normalization": "identity"
     },
     {
       "id": "c2",
-      "name": "sales"
+      "name": "sales",
+      "unit": "",
+      "normalization": "identity"
     }
   ],
   "rows": [

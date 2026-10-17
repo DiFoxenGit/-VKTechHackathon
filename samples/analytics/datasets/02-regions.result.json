@@ -21,7 +21,8 @@
         "distinct": 3,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       },
       {
         "id": "c2",
@@ -33,7 +34,8 @@
         "distinct": 3,
         "outlier_row_ids": [],
         "period": [],
-        "periodicity": null
+        "periodicity": null,
+        "missing_periods": []
       }
     ],
     "hierarchies": [],
@@ -69,7 +71,9 @@
             "task": "comparison",
             "source_rows": 3,
             "metric_count": 1,
-            "dimension": "c1"
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": null
           }
         }
       },
@@ -82,7 +86,9 @@
             "task": "comparison",
             "source_rows": 3,
             "metric_count": 1,
-            "dimension": "c1"
+            "dimension": "c1",
+            "distinct_categories": 3,
+            "periodicity": null
           }
         }
       }
@@ -119,6 +125,11 @@
         0,
         1,
         2
+      ]
+    ],
+    "series_pages": [
+      [
+        0
       ]
     ],
     "bins": [],

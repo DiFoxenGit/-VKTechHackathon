@@ -10,11 +10,15 @@
   "columns": [
     {
       "id": "c1",
-      "name": "region"
+      "name": "region",
+      "unit": "",
+      "normalization": "identity"
     },
     {
       "id": "c2",
-      "name": "sales"
+      "name": "sales",
+      "unit": "",
+      "normalization": "identity"
     }
   ],
   "rows": [
