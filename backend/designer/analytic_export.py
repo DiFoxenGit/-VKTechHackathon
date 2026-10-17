@@ -18,7 +18,7 @@ def add_chart(slide, visual, box, font, palette, text_color):
         for i, series in enumerate(visual["series"]):
             p = frame.paragraphs[0] if i == 0 else frame.add_paragraph()
             value = series["values"][0]
-            p.text = f"{value:,.2f}".rstrip("0").rstrip(".") + " " + visual.get("unit", "") if value is not None else "Нет данных"
+            p.text = ((str(int(value)) if float(value).is_integer() else str(value)) + " " + visual.get("unit", "")) if value is not None else "Нет данных"
             p.font.name, p.font.size, p.font.bold = font, Pt(40), True
             p.font.color.rgb = RGBColor.from_string(text_color)
             p = frame.add_paragraph()
@@ -49,6 +49,7 @@ def add_chart(slide, visual, box, font, palette, text_color):
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
         chart.legend.font.name, chart.legend.font.size = font, Pt(12)
+        chart.legend.font.color.rgb = RGBColor.from_string(text_color)
     plot = chart.plots[0]
     if kind != "scatter":
         plot.has_data_labels = True
@@ -58,6 +59,8 @@ def add_chart(slide, visual, box, font, palette, text_color):
         plot.data_labels.font.color.rgb = RGBColor.from_string(text_color)
         plot.data_labels.position = XL_LABEL_POSITION.CENTER if kind in {"pie", "stacked_bar"} else XL_LABEL_POSITION.ABOVE if kind == "line" else XL_LABEL_POSITION.OUTSIDE_END
         plot.data_labels.number_format = "0.0%" if kind == "pie" else "#,##0.##"
+    if kind == "stacked_bar":
+        plot.overlap = 100
     if kind == "histogram":
         plot.gap_width = 0
     if kind != "pie":
@@ -69,6 +72,7 @@ def add_chart(slide, visual, box, font, palette, text_color):
                 axis.axis_title.text_frame.text = label
                 for p in axis.axis_title.text_frame.paragraphs:
                     p.font.name, p.font.size = font, Pt(11)
+                    p.font.color.rgb = RGBColor.from_string(text_color)
         chart.value_axis.has_major_gridlines = True
     for i, series in enumerate(chart.series):
         color = palette[i % len(palette)] if palette else "0077FF"

@@ -110,3 +110,49 @@ def test_explicit_api_request_resolves_ambiguity_without_changing_contract(tmp_p
         assert result["visualization"]["selected"]=="histogram"
         assert next(f for f in result["facts"] if f["evidence"]["operation"]=="median")["value"]==15
         assert client.post(f"/api/v1/content-packs/{pack['id']}/analysis",json={"requests":None}).status_code==422
+
+
+@pytest.mark.parametrize("field,value", [
+    ("bullets", ["Прибыль 999999 рублей"]),
+    ("source_refs", ["other-pack"]),
+    ("notes", "Подменённые доказательства"),
+])
+def test_verified_slide_rejects_tampered_narrative_and_provenance(field, value):
+    table = extract(b"Category,Value\nA,10\nB,20", "data.csv")[0]
+    source = {"id": "pack", "datasets": [table]}
+    results = analyse_sources([source], "comparison")
+    outline = build_outline(results, [source], 30).model_dump()
+    outline["slides"][0][field] = value
+    with pytest.raises(ValueError):
+        verify_outline(outline, results, [source])
+
+
+def test_reference_keeps_literal_missing_like_category_names():
+    table = extract(json.dumps({"columns": ["Region"], "rows": [["NA"], ["None"], ["-"]]}).encode(), "regions.json")[0]
+    source = {"id": "pack", "datasets": [table], "analysis_requests": {table["dataset_id"]: {"task": "reference"}}}
+    results = analyse_sources([source], "reference")
+    assert build_outline(results, [source], 30).slides[0].visual.rows == [["NA"], ["None"], ["-"]]
+
+
+def test_summary_labels_each_metric_and_histogram_keeps_exact_intervals():
+    table = extract(b"Category,Revenue,Cost\nA,10,2\nB,20,4", "data.csv")[0]
+    source = {"id": "pack", "datasets": [table], "analysis_requests": {table["dataset_id"]: {"task": "summary"}}}
+    results = analyse_sources([source], "summary")
+    outline = build_outline(results, [source], 30)
+    assert [(s.visual.series[0].name, s.visual.series[0].values) for s in outline.slides] == [("Revenue", [30]), ("Cost", [6])]
+    table = extract(b"Value\n1000001\n1000002\n1000003\n1000004", "values.csv")[0]
+    source = {"id": "pack", "datasets": [table], "analysis_requests": {table["dataset_id"]: {"task": "distribution", "bins": 3}}}
+    results = analyse_sources([source], "distribution")
+    visual = build_outline(results, [source], 30).slides[0].visual
+    assert visual.categories == ["[1000001; 1000002)", "[1000002; 1000003)", "[1000003; 1000004]"]
+    assert len(set(visual.categories)) == 3
+
+
+def test_histogram_repeating_decimal_labels_stay_readable():
+    table = extract(b"Value\n1\n2\n3\n5", "values.csv")[0]
+    source = {"id": "pack", "datasets": [table], "analysis_requests": {table["dataset_id"]: {"task": "distribution", "bins": 3}}}
+    result = analyse_sources([source], "distribution")
+    labels = build_outline(result, [source], 30).slides[0].visual.categories
+    assert all(len(label) < 40 for label in labels)
+    assert any("≈" in label for label in labels)
+    assert len(set(labels)) == 3

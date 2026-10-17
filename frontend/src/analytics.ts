@@ -37,7 +37,7 @@ export function parseVisual(input: unknown): Visual | undefined {
   return {kind:v.kind, categories, series, columns, rows, x_values, unit:typeof v.unit === 'string' ? v.unit : '',source:typeof v.source === 'string' ? v.source : '',x_label:typeof v.x_label === 'string' ? v.x_label : '',y_label:typeof v.y_label === 'string' ? v.y_label : ''};
 }
 export const escapeMarkup = (text: string) => text.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]!);
-const fmt = (n: number | null) => n === null ? '—' : n.toLocaleString('ru-RU',{maximumFractionDigits:2});
+const fmt = (n: number | null) => n === null ? '—' : n.toLocaleString('ru-RU',{maximumSignificantDigits:15});
 const palette = ['#0077FF','#E66A42','#24A880','#9B67DA','#D4A40E','#47B4CE','#CF5B99','#536981'];
 export function visualMarkup(v: Visual, primary = '#0077FF'): string {
   const e = escapeMarkup, colors = [/^#[0-9a-f]{6}$/i.test(primary) ? primary : palette[0], ...palette.slice(1)];

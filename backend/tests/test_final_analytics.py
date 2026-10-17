@@ -181,3 +181,22 @@ def test_zip_api_reports_unreadable_documents(tmp_path,monkeypatch):
         assert report["data.csv"]["status"]=="accepted"
         assert report["scan.pdf"]["status"]=="rejected"
         assert report["scan.pdf"]["reason"]
+
+
+def test_native_kpi_keeps_small_nonzero_values_and_chart_dark_labels():
+    from designer.analytic_export import add_chart
+    from pptx.util import Inches
+    from pptx.dml.color import RGBColor
+    deck = Presentation()
+    slide = deck.slides.add_slide(deck.slide_layouts[6])
+    box = [Inches(.5), Inches(.5), Inches(8), Inches(4)]
+    visual = Visual(kind="kpi", categories=["value"], series=[{"name": "Rate", "values": [.00001234]}])
+    add_chart(slide, visual.model_dump(), box, "Arial", ["0077FF"], "FFFFFF")
+    assert "1.234e-05" in slide.shapes[0].text
+    visual = Visual(kind="stacked_bar", categories=["A"], series=[{"name": "One", "values": [1]}, {"name": "Two", "values": [2]}], x_label="Category", y_label="Count")
+    add_chart(slide, visual.model_dump(), box, "Arial", ["0077FF"], "FFFFFF")
+    chart = slide.shapes[-1].chart
+    assert chart.plots[0].overlap == 100
+    assert chart.legend.font.color.rgb == RGBColor.from_string("FFFFFF")
+    for axis in (chart.value_axis, chart.category_axis):
+        assert axis.axis_title.text_frame.paragraphs[0].font.color.rgb == RGBColor.from_string("FFFFFF")

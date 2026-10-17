@@ -6,14 +6,14 @@ import zipfile
 from pathlib import PurePosixPath
 from .analytics import AnalysisRequest, AnalysisResult, Dataset, analyze, import_datasets, verify_result
 from .analytics.messages import explain
-from .analytics.profiling import missing, number, profile_dataset
+from .analytics.profiling import profile_dataset
 
 FORMATS = {".csv", ".xlsx", ".json", ".md", ".txt"}
 CHARTS = {"bar", "line", "pie", "scatter", "histogram", "grouped_bar", "stacked_bar", "kpi"}
 
 
 def fmt(value):
-    return "—" if missing(value) else str(value)
+    return "—" if value is None else str(value)
 
 
 def _table(dataset):
@@ -118,10 +118,18 @@ def _visuals(result):
     if kind == "kpi":
         facts = {f.id:f for f in result.facts}
         return [dict(**{**common, "unit":facts[f].unit}, categories=[f],
-                     series=[dict(name=presentation.y_label or f, values=[facts[f].value])]) for f in data.kpi_fact_ids]
+                     series=[dict(name=", ".join(c.name for c in result.profile.columns if c.id in facts[f].evidence.column_ids) or presentation.y_label or f, values=[facts[f].value])]) for f in data.kpi_fact_ids]
     categories = data.categories
     if kind == "histogram":
-        categories = [f"{a:.6g} – {b:.6g}" for a,b in data.bins]
+        # Compact labels must still distinguish every boundary. Exact Decimal
+        # intervals remain in the contract; mark display rounding explicitly.
+        edges = sorted({edge for pair in data.bins for edge in pair})
+        precision = next((n for n in range(6, 18) if len({format(v, f".{n}g") for v in edges}) == len(edges)), 17)
+        def boundary(value):
+            label = format(value, f".{precision}g")
+            return ("≈" if float(label) != value else "") + label
+        categories = [f"[{boundary(a)}; {boundary(b)}{']' if i == len(data.bins)-1 else ')'}"
+                      for i, (a, b) in enumerate(data.bins)]
     pages = data.pages or [list(range(i,min(i+20,len(categories)))) for i in range(0,len(categories),20)]
     series_pages = data.series_pages or [list(range(i,min(i+5,len(data.series)))) for i in range(0,len(data.series),5)]
     return [dict(**common,categories=[categories[i] for i in page],
@@ -199,6 +207,13 @@ def build_outline(results, sources, limit):
     return Outline.model_validate(dict(title="Аналитика по исходным данным", slides=slides))
 
 
+def matches_verified_slide(slide, reference):
+    """Only canonical content may inherit the verified analytical status."""
+    expected = reference.model_dump()
+    return all(slide.get(key) == expected[key] for key in
+               ("analysis_id", "visual", "title", "bullets", "source_refs", "notes"))
+
+
 def verify_outline(outline, results, sources, limit=30):
     _verify_results(results,sources)
     expected = build_outline(results, sources, limit)
@@ -206,6 +221,6 @@ def verify_outline(outline, results, sources, limit=30):
     if len(actual["slides"]) != len(expected.slides):
         raise ValueError("Проверка аналитики: потеряны слайды или страницы таблицы")
     for slide, reference in zip(actual["slides"], expected.slides):
-        if slide.get("analysis_id") != reference.analysis_id or slide.get("visual") != reference.visual.model_dump() or slide.get("title") != reference.title:
+        if not matches_verified_slide(slide, reference):
             raise ValueError("Проверка аналитики: изменены категория, значение, источник или проверенный вывод")
     return True

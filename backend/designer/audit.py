@@ -198,7 +198,7 @@ def audit(deck, template, sources, language=None):
         )
     verified_analytics = []
     if sources and sources[0].get("_analysis_results"):
-        from .analytics_bridge import build_outline, _verify_results
+        from .analytics_bridge import build_outline, _verify_results, matches_verified_slide
         try:
             _verify_results(sources[0]["_analysis_results"], sources)
             verified_analytics = build_outline(sources[0]["_analysis_results"],sources,30).slides
@@ -209,7 +209,7 @@ def audit(deck, template, sources, language=None):
         content = slide["content"]
         analytical_verified = False
         if content.get("analysis_id"):
-            analytical_verified = any(s.analysis_id == content["analysis_id"] and s.visual.model_dump() == content["visual"] and s.title == content["title"] for s in verified_analytics)
+            analytical_verified = any(matches_verified_slide(content, s) for s in verified_analytics)
             if not analytical_verified:
                 issues.append(issue(index, None, "analysis_mismatch", "Аналитические данные или вывод не совпадают с проверенным расчётом", severity="error"))
         elements = slide["elements"]
