@@ -241,8 +241,14 @@ def create_app(data_dir=None, seed_dir=None):
 
     @api.get("/templates", tags=["Templates"])
     def templates():
+        # An invalid optional inference profile must not hide the template
+        # library or prevent the client from supplying its own outline.
+        try:
+            llm_configured = llm_settings().configured
+        except HTTPException:
+            llm_configured = False
         return {
-            "llm_configured": llm_settings().configured,
+            "llm_configured": llm_configured,
             "items": [
                 {
                     **{k: v for k, v in t.items() if k not in ("patterns", "assets")},

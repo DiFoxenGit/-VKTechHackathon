@@ -102,6 +102,20 @@ def test_condensation_reapplies_typography_rules_after_the_model():
     assert result['slides'][0]['bullets'] == ['Дизайн-система для 20 команд']
 
 
+def test_invalid_optional_model_profile_keeps_deterministic_fallback(client, monkeypatch):
+    from designer.pipeline import balance_outline
+    monkeypatch.setenv('DESIGNER_LLM_PROVIDER', 'openai')
+    monkeypatch.setenv('DESIGNER_LLM_TIMEOUT', 'invalid')
+    response = client.get('/api/v1/templates')
+    assert response.status_code == 200
+    assert response.json()['llm_configured'] is False
+    warnings = []
+    original = plan()
+    balanced = asyncio.run(balance_outline(original, {}, capacity=200, warnings=warnings))
+    assert original['slides'][0]['bullets'][0] in balanced['slides'][0]['notes']
+    assert any('ИИ не сократил' in warning for warning in warnings)
+
+
 def test_pipeline_combines_ai_and_rules_for_each_renderer():
     events, rendered, published = [], [], []
     request = GenerateRequest(brief='Пилот для 20 команд', template_id='template', slide_count=1, contextual_audit=True)

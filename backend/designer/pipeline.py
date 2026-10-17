@@ -36,15 +36,15 @@ async def balance_outline(outline, template, capacity=None, warnings=None):
     if not payload["slides"]:
         return Outline.model_validate(outline).model_dump()
     candidate = outline
-    if ai.llm_settings().configured:
-        try:
+    try:
+        if ai.llm_settings().configured:
             candidate = await ai.completion(
                 "condense", payload,
                 validate=lambda result: apply_condensation(outline, result, payload))
-        except HTTPException as exc:
-            LOGGER.warning("Condense agent unavailable: %s", exc.detail)
-            if warnings is not None:
-                warnings.append("ИИ не сократил текст: применена алгоритмическая подгонка с сохранением исходника.")
+    except HTTPException as exc:
+        LOGGER.warning("Condense agent unavailable: %s", exc.detail)
+        if warnings is not None:
+            warnings.append("ИИ не сократил текст: применена алгоритмическая подгонка с сохранением исходника.")
     return finish_balance(outline, candidate, payload, warnings)
 
 
