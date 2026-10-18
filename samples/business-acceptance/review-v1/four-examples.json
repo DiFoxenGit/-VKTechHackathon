@@ -9708,8 +9708,8 @@
         "dataset": {
           "schema_version": "1.0",
           "ref": {
-            "dataset_id": "c1b13e9efc6b2ee3bff12b01",
-            "source_sha256": "f21c80a69d37985f35add2af1456e2f3602ab64bd5de8021ce9bf6bc7399550e",
+            "dataset_id": "4c86df1dd95b49f271d5b3f6",
+            "source_sha256": "213d3407aa71af8c1eb22fc453b154952342b0e1215049c65f8b74d6b1d9accd",
             "filename": "action-priorities.json",
             "archive_path": null,
             "table": "1"
@@ -9771,7 +9771,7 @@
             ],
             [
               "Проверить региональные предпосылки плана",
-              "Наибольшее отрицательное отклонение региона: -4 210 700,00 ₽",
+              "Наименьшее отклонение региона от плана: -4 210 700,00 ₽",
               "Региональные директора",
               "2026-12-31",
               500000,
@@ -9806,8 +9806,8 @@
         "result": {
           "schema_version": "1.0",
           "dataset_ref": {
-            "dataset_id": "c1b13e9efc6b2ee3bff12b01",
-            "source_sha256": "f21c80a69d37985f35add2af1456e2f3602ab64bd5de8021ce9bf6bc7399550e",
+            "dataset_id": "4c86df1dd95b49f271d5b3f6",
+            "source_sha256": "213d3407aa71af8c1eb22fc453b154952342b0e1215049c65f8b74d6b1d9accd",
             "filename": "action-priorities.json",
             "archive_path": null,
             "table": "1"
@@ -9968,7 +9968,7 @@
               ],
               [
                 "Проверить региональные предпосылки плана",
-                "Наибольшее отрицательное отклонение региона: -4 210 700,00 ₽",
+                "Наименьшее отклонение региона от плана: -4 210 700,00 ₽",
                 "Региональные директора",
                 "2026-12-31",
                 500000,

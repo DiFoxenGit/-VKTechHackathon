@@ -106,7 +106,7 @@
       "statement_kind": "observation",
       "suggested_asset_role": "none",
       "action_index": 2,
-      "next_step": "Проверить предпосылки региона с наибольшим отрицательным отклонением."
+      "next_step": "Проверить предпосылки региона с наименьшим отклонением факта от плана; знак показывает недовыполнение или превышение."
     },
     {
       "id": "channels",
@@ -205,7 +205,7 @@
         "q3_net_plan_attainment"
       ],
       "view_id": null,
-      "interpretation": "Лимит 3 млн RUB; предлагаемые потолки 0,6/0,9/0,5 млн, резерв 1 млн. Это не прогноз эффекта.",
+      "interpretation": "Лимит {total} ₽; предлагаемые потолки: партнёрская экономика — {partners} ₽, внедрение — {implementation} ₽, регионы — {regions} ₽; резерв — {reserve} ₽. Это не прогноз эффекта.",
       "context_refs": [
         "business-context.txt#4"
       ],
@@ -261,7 +261,7 @@
     "q3_profit_plan_attainment": "Выполнение плана прибыли",
     "best_product_contribution": "Наибольший вклад продукта",
     "worst_product_contribution": "Наименьший вклад продукта",
-    "worst_region_plan_gap": "Наибольшее отрицательное отклонение региона",
+    "worst_region_plan_gap": "Наименьшее отклонение региона от плана",
     "top_product_revenue_share": "Доля ведущего продукта",
     "partners_net_growth": "Рост выручки партнёров",
     "partners_margin_change": "Изменение маржи партнёров",

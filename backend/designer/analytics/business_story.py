@@ -59,6 +59,9 @@ def build_business_story(analysis,context_text):
     context_hash=sha256(context_text.encode('utf-8')).hexdigest()
     for template in config['slides']:
         slide=copy.deepcopy(template)
+        if slide['id']=='actions':
+            slide['interpretation']=slide['interpretation'].format(
+                **{key:f'{value:,}'.replace(',', ' ') for key,value in budget.items()})
         fact_ids=slide['fact_ids']
         metric_lines=[]
         for identifier in fact_ids:

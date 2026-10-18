@@ -141,3 +141,26 @@ def test_every_view_has_specific_bilingual_explanation(analysis):
     assert set(analysis['explanations']['ru'])==set(analysis['views'])==set(analysis['explanations']['en'])
     assert 'план' in analysis['explanations']['ru']['plan_actual']
     assert 'gross' in analysis['explanations']['ru']['refunds']
+
+
+def test_story_budget_text_updates_with_valid_changed_context(analysis,context):
+    changed=context.replace('не более 3 000 000 рублей','не более 4 000 000 рублей').replace(
+        'резерв — 1 000 000 рублей','резерв — 2 000 000 рублей')
+    story=build_business_story(analysis,changed)
+    text=next(s for s in story['slides'] if s['id']=='actions')['interpretation']
+    assert story['budget']['total']==4000000 and story['budget']['reserve']==2000000
+    assert '4 000 000 ₽' in text and 'резерв — 2 000 000 ₽' in text
+    assert 'Лимит 3 млн' not in text
+
+
+def test_region_text_does_not_invent_underperformance(inputs,context):
+    rows=copy.deepcopy(inputs)
+    for row in rows[1]:
+        if '2026-07'<=row['month']<='2026-09':row['net_revenue_plan_rub']='1'
+    analysis=build_business_analysis(*rows)
+    assert Decimal(analysis['facts']['worst_region_plan_gap']['exact'])>0
+    story=build_business_story(analysis,context)
+    slide=next(s for s in story['slides'] if s['id']=='regions')
+    assert 'отрицательным отклонением' not in slide['next_step']
+    assert 'отрицательное отклонение' not in slide['answer']
+    assert 'Наименьшее отклонение региона от плана' in slide['answer']
