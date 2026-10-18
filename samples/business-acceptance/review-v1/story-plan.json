@@ -1,0 +1,228 @@
+{
+  "status": "draft_for_agreement",
+  "slides": [
+    {
+      "id": "decision",
+      "position": 1,
+      "purpose": "Как распределить усилия в IV квартале?",
+      "answer": "Рост выручки к II кварталу: 24.24 %; Изменение общей маржи: -5.36 pp",
+      "fact_ids": [
+        "qoq_net_growth",
+        "qoq_margin_change"
+      ],
+      "view_id": "quarter_kpi",
+      "interpretation": "Разделить расширение продаж и проверку экономики; причинность не установлена.",
+      "context_refs": [
+        "business-context.txt#2"
+      ],
+      "statement_kind": "proposal",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "kpi",
+      "position": 2,
+      "purpose": "Каковы результаты III квартала?",
+      "answer": "Чистая выручка: 116241720.00 RUB; Валовая прибыль: 31763784.00 RUB; Валовая маржа: 27.33 %",
+      "fact_ids": [
+        "q3_net",
+        "q3_profit",
+        "q3_margin"
+      ],
+      "view_id": "quarter_kpi",
+      "interpretation": "Маржа — отношение сумм, а не среднее строковых процентов.",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "trend",
+      "position": 3,
+      "purpose": "Сохраняется ли рост?",
+      "answer": "Рост выручки к II кварталу: 24.24 %; Рост выручки к III кварталу 2025: 30.48 %",
+      "fact_ids": [
+        "qoq_net_growth",
+        "yoy_net_growth"
+      ],
+      "view_id": "monthly_trend",
+      "interpretation": "Кварталы закрыты полностью; прошлогодняя сезонность не является прогнозом.",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "plan",
+      "position": 4,
+      "purpose": "Выполнены ли утверждённые цели?",
+      "answer": "Выполнение плана выручки: 101.37 %; Выполнение плана прибыли: 102.16 %",
+      "fact_ids": [
+        "q3_net_plan_attainment",
+        "q3_profit_plan_attainment"
+      ],
+      "view_id": "plan_actual",
+      "interpretation": "План посчитан один раз по месяцу, региону и продукту; плана по каналам нет.",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "products",
+      "position": 5,
+      "purpose": "Какие продукты изменили выручку?",
+      "answer": "Наибольший вклад продукта: 8702482.00 RUB; Наименьший вклад продукта: 3117084.00 RUB",
+      "fact_ids": [
+        "best_product_contribution",
+        "worst_product_contribution"
+      ],
+      "view_id": "product_contribution",
+      "interpretation": "Вклад — абсолютная разница к II кварталу, а не темп роста.",
+      "context_refs": [
+        "business-context.txt#1"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "product_image",
+      "action": null
+    },
+    {
+      "id": "regions",
+      "position": 6,
+      "purpose": "Где проверить региональные предпосылки?",
+      "answer": "Наибольшее отрицательное отклонение региона: -4210700.00 RUB",
+      "fact_ids": [
+        "worst_region_plan_gap"
+      ],
+      "view_id": "region_plan_gap",
+      "interpretation": "Показано абсолютное отклонение от плана, а не вклад региона в квартальный рост.",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "channels",
+      "position": 7,
+      "purpose": "Где рост требует проверки экономики?",
+      "answer": "Рост выручки партнёров: 57.74 %; Изменение маржи партнёров: -12.59 pp",
+      "fact_ids": [
+        "partners_net_growth",
+        "partners_margin_change"
+      ],
+      "view_id": "channel_profitability",
+      "interpretation": "Изменение условий программы — событие контекста; его причинный эффект не доказан.",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "process",
+      "action": null
+    },
+    {
+      "id": "concentration",
+      "position": 8,
+      "purpose": "Насколько результат зависит от ведущего продукта?",
+      "answer": "Доля ведущего продукта: 32.86 %",
+      "fact_ids": [
+        "top_product_revenue_share"
+      ],
+      "view_id": "product_structure",
+      "interpretation": "Доля рассчитана по net-выручке; концентрация не доказывает риск оттока.",
+      "context_refs": [
+        "business-context.txt#5"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "returns",
+      "position": 9,
+      "purpose": "Какова нагрузка возвратов?",
+      "answer": "Доля возвратов от gross-выручки: 2.49 %",
+      "fact_ids": [
+        "q3_refund_share"
+      ],
+      "view_id": "refunds",
+      "interpretation": "Знаменатель — выручка до скидок и возвратов, не net.",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "priorities",
+      "position": 10,
+      "purpose": "Какие направления обсудить первыми?",
+      "answer": "Валовая прибыль: 31763784.00 RUB; Наибольший вклад продукта: 8702482.00 RUB",
+      "fact_ids": [
+        "q3_profit",
+        "best_product_contribution"
+      ],
+      "view_id": "priorities",
+      "interpretation": "Приоритеты — предложение; эффект инвестиций не рассчитан.",
+      "context_refs": [
+        "business-context.txt#7"
+      ],
+      "statement_kind": "proposal",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "risks",
+      "position": 11,
+      "purpose": "Какие ограничения меняют решение?",
+      "answer": "Изменение маржи партнёров: -12.59 pp; Наибольшее отрицательное отклонение региона: -4210700.00 RUB",
+      "fact_ids": [
+        "partners_margin_change",
+        "worst_region_plan_gap"
+      ],
+      "view_id": null,
+      "interpretation": "Нет данных для CAC, удержания и причинной оценки рекламы. Не более двух параллельных внедрений.",
+      "context_refs": [
+        "business-context.txt#7"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action": null
+    },
+    {
+      "id": "actions",
+      "position": 12,
+      "purpose": "Что проверить за 90 дней?",
+      "answer": "Валовая маржа: 27.33 %; Выполнение плана выручки: 101.37 %",
+      "fact_ids": [
+        "q3_margin",
+        "q3_net_plan_attainment"
+      ],
+      "view_id": null,
+      "interpretation": "Лимит 3 млн RUB; предлагаемые потолки 0,6/0,9/0,5 млн, резерв 1 млн. Это не прогноз эффекта.",
+      "context_refs": [
+        "business-context.txt#4"
+      ],
+      "statement_kind": "proposal",
+      "suggested_asset_role": "generated_illustration",
+      "action": {
+        "owner_role": "Коммерческий директор",
+        "deadline": "2026-12-31",
+        "criterion": "Сверены фактические маржа и план по согласованным определениям; соблюдён бюджет"
+      }
+    }
+  ],
+  "appendix": {
+    "full_data": "../data-v1/sales.csv",
+    "catalog": "../data-v1/catalog.csv",
+    "do_not_append_all_raw_rows": true
+  }
+}

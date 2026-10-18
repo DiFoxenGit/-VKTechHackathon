@@ -1,0 +1,62 @@
+[
+  {
+    "id": "q3_net",
+    "exact_match": true
+  },
+  {
+    "id": "q3_profit",
+    "exact_match": true
+  },
+  {
+    "id": "q3_margin",
+    "exact_match": true
+  },
+  {
+    "id": "qoq_net_growth",
+    "exact_match": true
+  },
+  {
+    "id": "yoy_net_growth",
+    "exact_match": true
+  },
+  {
+    "id": "q3_net_plan_attainment",
+    "exact_match": true
+  },
+  {
+    "id": "q3_profit_plan_attainment",
+    "exact_match": true
+  },
+  {
+    "id": "best_product_contribution",
+    "exact_match": true
+  },
+  {
+    "id": "worst_product_contribution",
+    "exact_match": true
+  },
+  {
+    "id": "worst_region_plan_gap",
+    "exact_match": true
+  },
+  {
+    "id": "top_product_revenue_share",
+    "exact_match": true
+  },
+  {
+    "id": "partners_net_growth",
+    "exact_match": true
+  },
+  {
+    "id": "partners_margin_change",
+    "exact_match": true
+  },
+  {
+    "id": "q3_refund_share",
+    "exact_match": true
+  },
+  {
+    "id": "qoq_margin_change",
+    "exact_match": true
+  }
+]

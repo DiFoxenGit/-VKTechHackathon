@@ -1,0 +1,26 @@
+{
+  "missing_value": {
+    "code": "business.missing_value",
+    "behaviour": "refuse"
+  },
+  "duplicate_key": {
+    "code": "business.duplicate_key",
+    "behaviour": "refuse"
+  },
+  "mixed_currency": {
+    "code": "business.currency",
+    "behaviour": "refuse"
+  },
+  "negative_adjustment": {
+    "code": "business.negative_component",
+    "behaviour": "refuse"
+  },
+  "ambiguous_number": {
+    "code": "business.invalid_number",
+    "behaviour": "refuse"
+  },
+  "zero_denominator": {
+    "code": "business.zero_denominator",
+    "behaviour": "null ratios with warning; keep absolute totals"
+  }
+}
