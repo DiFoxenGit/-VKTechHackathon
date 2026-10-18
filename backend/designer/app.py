@@ -307,7 +307,15 @@ def create_app(data_dir=None, seed_dir=None):
         name = file.filename or ""
         try:
             datasets, file_report = await run_in_threadpool(extract_pack, data, name)
-            text, assets = await run_in_threadpool(read_pack, data, name, file_report)
+            if datasets and Path(name).suffix.lower() in {'.csv', '.json', '.xlsx'}:
+                # Full cells stay in datasets; the text context is a labelled preview,
+                # so a complete multi-table package does not exhaust the LLM text budget.
+                text = '\n\n'.join(t['sheet'] + f" — {len(t['rows'])} строк (предпросмотр)\n" +
+                    '\n'.join(' | '.join(str(v) if v is not None else '' for v in row)
+                        for row in [t['columns'], *t['rows'][:8]]) for t in datasets)
+                assets = []
+            else:
+                text, assets = await run_in_threadpool(read_pack, data, name, file_report)
         except ValueError as exc:
             # Отказ по размеру или устройству архива — пользователю нужна причина.
             if str(exc).startswith(("Archive", "Encrypted", "Content pack holds")):
@@ -520,13 +528,39 @@ def create_app(data_dir=None, seed_dir=None):
         tagged = await label_assets(template, [])
         return {"tagged": tagged, "counts": asset_counts(store.get("templates", template_id).get("assets"))}
 
+    @api.get('/content-packs/{pack_id}/source', tags=['Content'])
+    def content_source(pack_id: str):
+        pack=store.get('content_packs', pack_id)
+        return FileResponse(store.directory('content_packs',pack_id)/'source.bin', filename=pack['name'], media_type='application/octet-stream')
+
     @api.get("/content-packs/{pack_id}", tags=["Content"])
     def content_pack(pack_id: str):
         return store.get("content_packs", pack_id)
 
+    @api.post('/analysis', tags=['Content'])
+    async def analyse_materials(request: GenerateRequest):
+        from .business_bridge import prepare_business
+        sources = sources_for(store, request)
+        try:
+            items = await run_in_threadpool(prepare_business, sources, request.brief)
+            if items is None:
+                items = await run_in_threadpool(analyse_sources, sources, request.analysis_goal or request.brief)
+                items = [{**r, 'packId': r.get('source_id')} for r in items]
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return {'items': items, 'business': bool(sources[0].get('_business'))}
+
     @api.post("/outlines", tags=["Generation"])
     async def outline(request: Brief):
-        return await generate_outline(request, sources_for(store, request))
+        from .business_bridge import prepare_business
+        from .analytics_bridge import build_outline
+        sources=sources_for(store,request)
+        try:
+            results=await run_in_threadpool(prepare_business,sources,request.brief)
+            if results is not None:return build_outline(results,sources,request.slide_count)
+        except ValueError as exc:
+            raise HTTPException(422,str(exc)) from exc
+        return await generate_outline(request, sources)
 
     def generate_variant(
         request,

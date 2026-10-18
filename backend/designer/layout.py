@@ -1052,9 +1052,11 @@ def compose(outline, template, variant, assets=None):
     recent: list[int] = []
     usage: dict[int, int] = {}
     for i, content in enumerate(outline["slides"]):
-        mode = slide_mode(content, variant, i, len(outline["slides"]), assets, used)
+        position = i + 1 if outline.get('content_pages') else i
+        total = len(outline['slides']) + (2 if outline.get('content_pages') else 0)
+        mode = slide_mode(content, variant, position, total, assets, used)
         pattern, pattern_score = choose_pattern(
-            candidates, content, recent, usage, i, len(outline["slides"]), mode
+            candidates, content, recent, usage, position, total, mode
         )
         if mode and mode["kind"] == "icons":
             # Карточная страница с местом под значок над каждой карточкой — это
@@ -1603,7 +1605,7 @@ def compose(outline, template, variant, assets=None):
             # Фон не измерен: о его светлоте ничего не известно, поэтому под
             # текст кладётся светлая подложка — самый безопасный вариант.
             background = tokens["theme"].get("lt1", "FFFFFF")
-        native_cover = i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1
+        native_cover = not outline.get('content_pages') and i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1
         if native_cover:
             sampled = pattern.get('title_background')
             if sampled:

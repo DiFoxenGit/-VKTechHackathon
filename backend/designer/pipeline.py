@@ -61,8 +61,11 @@ async def run_generation(request, template, sources, *, outline_factory, balance
     testable without FastAPI, a real model, filesystem exports or a job queue.
     """
     on_stage("outline", 5)
-    validate_business_scope(sources, request.brief)
-    analysis_results = await run_in_threadpool(analyse_sources,sources,getattr(request, "analysis_goal", "") or request.brief)
+    from .business_bridge import prepare_business
+    analysis_results = await run_in_threadpool(prepare_business, sources, request.brief)
+    if analysis_results is None:
+        validate_business_scope(sources, request.brief)
+        analysis_results = await run_in_threadpool(analyse_sources,sources,getattr(request, "analysis_goal", "") or request.brief)
     if analysis_results:
         on_stage("analytics", 8)
         sources[0]["_analysis_results"] = analysis_results

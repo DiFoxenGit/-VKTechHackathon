@@ -36,7 +36,9 @@ type BackendTemplate = {
   layouts?: Array<{ index: number; name: string }>;
 };
 
-type ContentPack = Material & {sha256: string};
+export const materialSourceUrl = (id: string) => `${API_BASE}/content-packs/${encodeURIComponent(id)}/source`;
+
+type ContentPack = Material & {sha256: string; datasets?: {rows: unknown[]; sheet: string}[]};
 
 type Job = {
   id: string;
@@ -287,6 +289,7 @@ export interface PresentationService {
   uploadContent(file: File, options?: ServiceOptions): Promise<ContentPack>;
   uploadBrandbook(file: File, options?: ServiceOptions): Promise<Brandbook>;
   analyseContent(packId: string, goal: string, options?: ServiceOptions, selections?: Record<string,AnalysisRequest>): Promise<{items: AnalysisResult[]}>;
+  analyseMaterials(brief: Brief, options?: ServiceOptions): Promise<{items: AnalysisResult[]}>;
   generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
   save(deck: Deck, options?: ServiceOptions): Promise<Deck>;
   retryIllustration(deck: Deck, options?: ServiceOptions): Promise<Deck>;
@@ -309,7 +312,7 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       contextual_audit: false,
       narrative: brief.narrative !== false,
       ...(brief.generateImages !== undefined ? {generate_images:brief.generateImages} : {}),
-      analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n'),
+      analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n').slice(0,1000),
       analysis_requests: Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
       analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
       ...(brief.brandbook ? {brandbook_id: brief.brandbook.id} : {}),
@@ -374,6 +377,15 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
     },
     async analyseContent(packId, goal, options = {}, selections = {}) {
       return request<{items: AnalysisResult[]}>(`/content-packs/${encodeURIComponent(packId)}/analysis`, {method: 'POST',body:JSON.stringify({goal,requests:selections}),signal: options.signal});
+    },
+
+    async analyseMaterials(brief, options = {}) {
+      return request<{items: AnalysisResult[]}>('/analysis', {method:'POST',signal:options.signal,body:JSON.stringify({
+        brief:brief.text, template_id:brief.templateId || 'analysis', slide_count:brief.slideCount,
+        content_pack_ids:brief.contentPackIds || [], analysis_goal:brief.text.slice(0,1000),
+        analysis_requests:Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
+        analysis_goals:Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
+      })});
     },
 
     async generate(brief, templateId, options = {}) {

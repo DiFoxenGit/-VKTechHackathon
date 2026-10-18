@@ -1,7 +1,7 @@
 """Native editable charts and KPI objects for the extended data contract."""
 import re
 from pptx.chart.data import CategoryChartData, XyChartData
-from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION, XL_LEGEND_POSITION, XL_MARKER_STYLE
+from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION, XL_LEGEND_POSITION, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from pptx.util import Pt
@@ -31,6 +31,20 @@ def number_format(visual):
 
 def add_chart(slide, visual, box, font, palette, text_color):
     x, y, w, h = box
+    distinct = []
+    def distance(a,b):return sum((int(a[i:i+2],16)-int(b[i:i+2],16))**2 for i in (0,2,4))**.5
+    for color in palette:
+        if all(distance(color,other)>75 for other in distinct):distinct.append(color)
+    if len(distinct)<2 and distinct:
+        first=distinct[0]
+        distinct.append(''.join(f'{round(int(first[i:i+2],16)*.4+int(text_color[i:i+2],16)*.6):02X}' for i in (0,2,4)))
+    needed=len(visual.get('categories',[])) if visual['kind']=='pie' else len(visual.get('series',[]))
+    if distinct and len(distinct)<needed:
+        first=distinct[0]
+        for target,weight in [('FFFFFF',.35),('000000',.25),('FFFFFF',.6),('000000',.7)]:
+            color=''.join(f'{round(int(first[i:i+2],16)*(1-weight)+int(target[i:i+2],16)*weight):02X}' for i in (0,2,4))
+            if all(distance(color,other)>40 for other in distinct):distinct.append(color)
+    palette=distinct or palette
     kind = visual["kind"]
     if kind == "kpi":
         shape = slide.shapes.add_textbox(x, y, w, h)
@@ -40,6 +54,8 @@ def add_chart(slide, visual, box, font, palette, text_color):
             p = frame.paragraphs[0] if i == 0 else frame.add_paragraph()
             value = series["values"][0]
             rendered = str(int(value)) if value is not None and float(value).is_integer() else str(value)
+            if value is not None and abs(value)>=.01 and not float(value).is_integer():
+                rendered=f'{value:.2f}'.rstrip('0').rstrip('.')
             if value is not None and 'e' not in rendered.lower():
                 rendered = display_number(rendered)
             unit = {'RUB':'₽','rub':'₽'}.get(visual.get('unit'),visual.get('unit',''))
@@ -86,7 +102,7 @@ def add_chart(slide, visual, box, font, palette, text_color):
         plot.data_labels.show_percentage = kind == "pie"
         plot.data_labels.font.name, plot.data_labels.font.size = font, Pt(12)
         plot.data_labels.font.color.rgb = RGBColor.from_string(text_color)
-        plot.data_labels.position = XL_LABEL_POSITION.CENTER if kind in {"pie", "stacked_bar"} else XL_LABEL_POSITION.ABOVE if kind == "line" else XL_LABEL_POSITION.OUTSIDE_END
+        plot.data_labels.position = XL_LABEL_POSITION.OUTSIDE_END if kind == 'pie' else XL_LABEL_POSITION.CENTER if kind == 'stacked_bar' else XL_LABEL_POSITION.ABOVE if kind == "line" else XL_LABEL_POSITION.OUTSIDE_END
         plot.data_labels.number_format = "0.0%" if kind == "pie" else number_format(visual)
     if kind == "stacked_bar":
         plot.overlap = 100
@@ -104,6 +120,8 @@ def add_chart(slide, visual, box, font, palette, text_color):
                 for p in axis.axis_title.text_frame.paragraphs:
                     p.font.name, p.font.size = font, Pt(11)
                     p.font.color.rgb = RGBColor.from_string(text_color)
+        if horizontal:
+            chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
         chart.value_axis.has_major_gridlines = True
         chart.value_axis.tick_labels.number_format = number_format(visual)
         grid = chart.value_axis.major_gridlines.format.line
@@ -111,7 +129,11 @@ def add_chart(slide, visual, box, font, palette, text_color):
         grid.width = Pt(.5)
         for axis in (chart.category_axis, chart.value_axis):
             axis.format.line.fill.background()
+    # LibreOffice imports absent invertIfNegative as absolute-valued bars.
+    # Explicit false preserves the sign in PDF as well as the editable workbook.
     for i, series in enumerate(chart.series):
+        if kind in {'bar', 'grouped_bar', 'stacked_bar', 'histogram'}:
+            series.invert_if_negative = False
         color = palette[i % len(palette)] if palette else "0077FF"
         series.format.fill.solid()
         series.format.fill.fore_color.rgb = RGBColor.from_string(color)

@@ -190,6 +190,9 @@ def validate_business_scope(sources, brief):
 
 
 def _verify_results(results, sources):
+    if sources[0].get('_business'):
+        from .business_bridge import verify_business
+        return verify_business(sources, results)
     for result in results:
         if "contract" not in result:
             raise ValueError("Презентация создана временной аналитикой. Пересоздайте её из сохранённых исходных файлов для проверки AnalysisResult 1.0")
@@ -207,6 +210,9 @@ def _verify_results(results, sources):
 
 
 def build_outline(results, sources, limit):
+    if sources[0].get('_business'):
+        from .business_bridge import business_outline
+        return business_outline(sources, limit)
     from .models import Outline
     slides = []
     for result in results:

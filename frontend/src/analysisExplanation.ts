@@ -6,6 +6,7 @@ const words: Record<string, string> = {
   median: 'Медиана: центральное значение упорядоченного ряда', count: 'Количество наблюдений',
 };
 export function analysisExplanation(result: AnalysisResult) {
+  if (result.business_explanation) return result.business_explanation;
   const analysis = object(result.contract?.analysis), presentation = object(result.contract?.presentation);
   const columns = new Map(result.profile.columns.map(c => [c.id, c.name]));
   const metrics = Array.isArray(analysis.metrics) ? analysis.metrics.filter((m): m is string => typeof m === 'string').map(m => columns.get(m) || m) : [];

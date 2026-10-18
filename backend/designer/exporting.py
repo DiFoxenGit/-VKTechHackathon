@@ -616,12 +616,19 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             elif kind == "table":
                 visual = element["data"]
                 rows = [visual["columns"], *visual["rows"]]
-                table = slide.shapes.add_table(
-                    len(rows), len(rows[0]), x, y, w, h - (Pt(24) if visual.get("source") else 0)
-                ).table
-                weights = [max(8, min(50, max(len(str(row[c])) for row in rows))) for c in range(len(rows[0]))]
+                table_height=min(h - (Pt(24) if visual.get('source') else 0), Pt(38*len(rows))) if len(rows)<=3 else h - (Pt(24) if visual.get('source') else 0)
+                table = slide.shapes.add_table(len(rows), len(rows[0]), x, y, w, table_height).table
+                def column_weight(c):
+                    values=[str(row[c]) for row in rows]
+                    # Minimum width for unbroken numbers/dates plus cell padding.
+                    longest=max((len(word) for value in values for word in value.split()),default=1)
+                    return max(12, min(42, max(map(len,values))), min(30,longest)+5)
+                weights = [column_weight(c) for c in range(len(rows[0]))]
                 for c, weight in enumerate(weights):
                     table.columns[c].width = int(w * weight / sum(weights))
+                table.rows[0].height=min(table.rows[0].height,Pt(32))
+                remaining=table_height-table.rows[0].height
+                for r in range(1,len(rows)):table.rows[r].height=int(remaining/(len(rows)-1))
                 for r, values in enumerate(rows):
                     for c, value in enumerate(values):
                         cell = table.cell(r, c)
