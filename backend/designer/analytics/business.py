@@ -132,6 +132,13 @@ def _build(raw_sales,raw_plan,products,regions,locale):
     if any(c!=cohorts[0] for c in cohorts):raise BusinessInputError('business.incomplete_cohort')
     expected_cohort={(r,p,c) for r in names['region_id'] for p in names['product_id'] for c in ('direct','online','partners')}
     if cohorts[0]!=expected_cohort:raise BusinessInputError('business.incomplete_cohort')
+    expected_months={f'{year}-{month:02}' for year in (2025,2026) for month in range(1,13) if year==2025 or month<=9}
+    monthly_cohorts=defaultdict(set)
+    for row in sales:monthly_cohorts[row['month']].add((row['region_id'],row['product_id'],row['channel']))
+    if set(monthly_cohorts)!=expected_months or any(c!=expected_cohort for c in monthly_cohorts.values()):
+        raise BusinessInputError('business.incomplete_history')
+    expected_plan={(f'2026-{month:02}',region,product) for month in range(1,13) for region in names['region_id'] for product in names['product_id']}
+    if set(plan_by_key)!=expected_plan:raise BusinessInputError('business.incomplete_plan')
     warnings=[];facts={};lineage={};views={}
     fingerprints={n:_fingerprint(rows) for n,rows in [('sales',raw_sales),('plan',raw_plan),('products',products),('regions',regions)]}
 
@@ -141,7 +148,7 @@ def _build(raw_sales,raw_plan,products,regions,locale):
     def fact(identifier,value,unit,formula,inputs,period='q3'):
         facts[identifier]=dict(id=identifier,exact=None if value is None else str(value),
             value=None if value is None else float(value),unit=unit,period=list(PERIODS[period]),
-            formula=formula,evidence=inputs,rounding='unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp')
+            formula=formula,evidence=inputs,rounding='unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp',category=None)
         return value
 
     def view(identifier,columns,rows,task,metric_columns,unit,cell_evidence,dimension='c1'):
@@ -221,6 +228,7 @@ def _build(raw_sales,raw_plan,products,regions,locale):
             selected=[r for r in now if r[key]==category]
             fact('top_product_revenue_share',_ratio(_sum(selected,'net'),net,warnings,'concentration'),'%','100*net_top/net_all',
                  [evidence(selected,list(SALES_MONEY)),evidence(now,list(SALES_MONEY),role='denominator')])
+            facts['top_product_revenue_share']['category']=category
     gaps={}
     for region in sorted(names['region_id']):
         actual=[r for r in now if r['region_id']==region];target=[r for r in matched if r['region_id']==region]
@@ -250,8 +258,9 @@ def _build(raw_sales,raw_plan,products,regions,locale):
          [dict(derived_row=i+2,evidence=[evidence([r for r in now if r['product_id']==p],list(SALES_MONEY))]) for i,p in enumerate(sorted(names['product_id']))])
     view('quarter_kpi',['period','net_revenue_rub','gross_profit_rub'],[['Q3 2026',float(net),float(profit)]],
          'summary',['c2','c3'],'RUB',[dict(derived_row=2,evidence=[evidence(now,list(SALES_MONEY))])])
-    return dict(schema_version='business-draft-1',status='draft_for_contract_review',
-        fingerprints=fingerprints,facts=facts,views=views,lineage=lineage,warnings=warnings,
+    explanations={language:json.loads((Path(__file__).parent/'locales'/f'business-views.{language}.json').read_text(encoding='utf8')) for language in ('ru','en')}
+    return dict(schema_version='business-draft-1',status='draft_for_contract_review',explanations=explanations,
+        fingerprints=fingerprints,facts=facts,views=views,lineage=lineage,warnings=warnings,entities=names,
         unsupported=['CAC','marketing_causality','SKU_sales_join','currency_conversion','automatic_arbitrary_joins'])
 
 

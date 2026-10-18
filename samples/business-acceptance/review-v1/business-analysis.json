@@ -1,6 +1,34 @@
 {
   "schema_version": "business-draft-1",
   "status": "draft_for_contract_review",
+  "explanations": {
+    "ru": {
+      "monthly_trend": "Линии показывают 21 закрытый месяц. Выручка и прибыль в рублях без НДС; пропущенные периоды не заменяются нулями.",
+      "product_contribution": "Столбцы показывают вклад каждого продукта в изменение net-выручки к II кварталу, в рублях. Это абсолютные разницы, не проценты роста.",
+      "region_contribution": "Столбцы показывают региональный вклад в квартальное изменение net-выручки, в рублях. Это не отклонение плана.",
+      "channel_economics": "Столбцы сравнивают net-выручку каналов III квартала в рублях. Для оценки экономики смотрите также прибыль и взвешенную маржу.",
+      "region_plan_gap": "Столбцы показывают факт минус план III квартала по регионам в рублях. Отрицательный столбец означает недовыполнение.",
+      "channel_profitability": "Таблица сопоставляет net-выручку, прибыль и маржу каналов. Денежные столбцы в RUB; маржа в процентах, рассчитана отношением сумм.",
+      "plan_actual": "Парные столбцы сравнивают факт и план выручки и прибыли III квартала, в рублях. План учитывается один раз на месяц, регион и продукт.",
+      "product_structure": "Доли продуктов рассчитаны от общей net-выручки III квартала. Знаменатель включает все продукты; нулевая или отрицательная база не допускает процентный вывод.",
+      "refunds": "В таблице показаны возвраты и gross-выручка в RUB. Доля возвратов — их отношение в процентах; скидки не вычитаются из знаменателя.",
+      "priorities": "Таблица показывает суммы net-выручки и прибыли продуктов в RUB. Это финансовая детализация; действия и лимиты находятся в отдельной таблице решений.",
+      "quarter_kpi": "KPI показывают чистую выручку и прибыль III квартала в RUB. Маржа в содержательном блоке рассчитана как отношение сумм, а не среднее процентов."
+    },
+    "en": {
+      "monthly_trend": "Lines show 21 closed months. Revenue and profit are in RUB excluding VAT; missing periods are not replaced by zeros.",
+      "product_contribution": "Bars show each product contribution to the net revenue change versus Q2, in RUB. These are absolute differences, not growth rates.",
+      "region_contribution": "Bars show regional contributions to quarterly net revenue change in RUB. These are not plan deviations.",
+      "channel_economics": "Bars compare Q3 channel net revenue in RUB. Review profit and weighted margin as well to assess economics.",
+      "region_plan_gap": "Bars show Q3 actual minus plan by region in RUB. A negative bar indicates underperformance.",
+      "channel_profitability": "The table compares channel net revenue, profit and margin. Money columns are RUB; margin is a percentage calculated as a ratio of totals.",
+      "plan_actual": "Paired bars compare Q3 actual and plan revenue and profit in RUB. Each month-region-product plan key is counted once.",
+      "product_structure": "Product shares use total Q3 net revenue as denominator across all products. A nonpositive base cannot support a percentage conclusion.",
+      "refunds": "The table shows refunds and gross revenue in RUB. Refund share is their percentage ratio; discounts are not deducted from the denominator.",
+      "priorities": "The table shows product net revenue and profit totals in RUB. This is financial detail; actions and spending limits are in the separate decision table.",
+      "quarter_kpi": "KPIs show Q3 net revenue and profit in RUB. The semantic margin metric is a ratio of totals, not an average of percentages."
+    }
+  },
   "fingerprints": {
     "sales": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59",
     "plan": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe",
@@ -249,7 +277,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "q3_profit": {
       "id": "q3_profit",
@@ -492,7 +521,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "q3_margin": {
       "id": "q3_margin",
@@ -735,7 +765,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "qoq_net_growth": {
       "id": "qoq_net_growth",
@@ -1207,7 +1238,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "yoy_net_growth": {
       "id": "yoy_net_growth",
@@ -1679,7 +1711,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "q3_net_plan_attainment": {
       "id": "q3_net_plan_attainment",
@@ -2004,7 +2037,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "q3_profit_plan_attainment": {
       "id": "q3_profit_plan_attainment",
@@ -2329,7 +2363,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "q3_refund_share": {
       "id": "q3_refund_share",
@@ -2570,7 +2605,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "qoq_margin_change": {
       "id": "qoq_margin_change",
@@ -3042,7 +3078,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "product_contribution.P1": {
       "id": "product_contribution.P1",
@@ -3190,7 +3227,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "product_contribution.P2": {
       "id": "product_contribution.P2",
@@ -3338,7 +3376,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "product_contribution.P3": {
       "id": "product_contribution.P3",
@@ -3486,7 +3525,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "product_contribution.P4": {
       "id": "product_contribution.P4",
@@ -3634,7 +3674,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "best_product_contribution": {
       "id": "best_product_contribution",
@@ -4242,7 +4283,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": "P2"
     },
     "region_contribution.R1": {
       "id": "region_contribution.R1",
@@ -4354,7 +4396,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_contribution.R2": {
       "id": "region_contribution.R2",
@@ -4466,7 +4509,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_contribution.R3": {
       "id": "region_contribution.R3",
@@ -4578,7 +4622,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_contribution.R4": {
       "id": "region_contribution.R4",
@@ -4690,7 +4735,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_contribution.R5": {
       "id": "region_contribution.R5",
@@ -4802,7 +4848,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_contribution.R6": {
       "id": "region_contribution.R6",
@@ -4914,7 +4961,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "channel_economics.direct": {
       "id": "channel_economics.direct",
@@ -5098,7 +5146,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "channel_economics.online": {
       "id": "channel_economics.online",
@@ -5282,7 +5331,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "channel_economics.partners": {
       "id": "channel_economics.partners",
@@ -5466,7 +5516,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "partners_net_growth": {
       "id": "partners_net_growth",
@@ -5650,7 +5701,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "partners_margin_change": {
       "id": "partners_margin_change",
@@ -5834,7 +5886,8 @@
           "fingerprint": "a345b697b495da1498ce18188101adf2973cfb7ba05b550691cf82b00933fd59"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_plan_gap.R1": {
       "id": "region_plan_gap.R1",
@@ -5919,7 +5972,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_plan_gap.R2": {
       "id": "region_plan_gap.R2",
@@ -6004,7 +6058,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_plan_gap.R3": {
       "id": "region_plan_gap.R3",
@@ -6089,7 +6144,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_plan_gap.R4": {
       "id": "region_plan_gap.R4",
@@ -6174,7 +6230,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_plan_gap.R5": {
       "id": "region_plan_gap.R5",
@@ -6259,7 +6316,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "region_plan_gap.R6": {
       "id": "region_plan_gap.R6",
@@ -6344,7 +6402,8 @@
           "fingerprint": "74e18baaf9b2b7d096fae8dff3aff8253cc019fad7d836bb70190827090aaebe"
         }
       ],
-      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp"
+      "rounding": "unrounded Decimal(precision=50); display ROUND_HALF_UP 2dp",
+      "category": null
     },
     "worst_region_plan_gap": {
       "id": "worst_region_plan_gap",
@@ -18421,6 +18480,22 @@
     ]
   },
   "warnings": [],
+  "entities": {
+    "product_id": {
+      "P1": "Командный портал",
+      "P2": "Аналитика сделок",
+      "P3": "Интеграционный шлюз",
+      "P4": "Сервис сопровождения"
+    },
+    "region_id": {
+      "R1": "Москва и Московская область",
+      "R2": "Санкт-Петербург и Ленинградская область",
+      "R3": "Поволжье",
+      "R4": "Уральский федеральный округ",
+      "R5": "Сибирь и Дальневосточный федеральный округ",
+      "R6": "Южный и Северо-Кавказский федеральные округа"
+    }
+  },
   "unsupported": [
     "CAC",
     "marketing_causality",

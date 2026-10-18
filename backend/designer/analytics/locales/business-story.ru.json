@@ -1,0 +1,272 @@
+{
+  "slides": [
+    {
+      "id": "decision",
+      "position": 1,
+      "purpose": "Как распределить усилия в IV квартале?",
+      "fact_ids": [
+        "qoq_net_growth",
+        "qoq_margin_change"
+      ],
+      "view_id": "quarter_kpi",
+      "interpretation": "Разделить расширение продаж и проверку экономики; причинность не установлена.",
+      "context_refs": [
+        "business-context.txt#2"
+      ],
+      "statement_kind": "proposal",
+      "suggested_asset_role": "none",
+      "action_index": 0,
+      "next_step": "Разделить обсуждение расширения продаж и проверки партнёрской экономики."
+    },
+    {
+      "id": "kpi",
+      "position": 2,
+      "purpose": "Каковы результаты III квартала?",
+      "fact_ids": [
+        "q3_net",
+        "q3_profit",
+        "q3_margin"
+      ],
+      "view_id": "quarter_kpi",
+      "interpretation": "Маржа — отношение сумм, а не среднее строковых процентов.",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action_index": 0,
+      "next_step": "Согласовать единые определения выручки и валовой прибыли для решения."
+    },
+    {
+      "id": "trend",
+      "position": 3,
+      "purpose": "Сохраняется ли рост?",
+      "fact_ids": [
+        "qoq_net_growth",
+        "yoy_net_growth"
+      ],
+      "view_id": "monthly_trend",
+      "interpretation": "Кварталы закрыты полностью; прошлогодняя сезонность не является прогнозом.",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action_index": 0,
+      "next_step": "Проверить сезонные изменения перед обсуждением плана следующего квартала."
+    },
+    {
+      "id": "plan",
+      "position": 4,
+      "purpose": "Выполнены ли утверждённые цели?",
+      "fact_ids": [
+        "q3_net_plan_attainment",
+        "q3_profit_plan_attainment"
+      ],
+      "view_id": "plan_actual",
+      "interpretation": "План посчитан один раз по месяцу, региону и продукту; плана по каналам нет.",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action_index": 2,
+      "next_step": "Разобрать предпосылки плана без изменения исторических целевых сумм."
+    },
+    {
+      "id": "products",
+      "position": 5,
+      "purpose": "Какие продукты изменили выручку?",
+      "fact_ids": [
+        "best_product_contribution",
+        "worst_product_contribution"
+      ],
+      "view_id": "product_contribution",
+      "interpretation": "Вклад — абсолютная разница к II кварталу, а не темп роста.",
+      "context_refs": [
+        "business-context.txt#1"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "product_image",
+      "action_index": 1,
+      "next_step": "Сопоставить продуктовые приоритеты с очередью внедрения."
+    },
+    {
+      "id": "regions",
+      "position": 6,
+      "purpose": "Где проверить региональные предпосылки?",
+      "fact_ids": [
+        "worst_region_plan_gap"
+      ],
+      "view_id": "region_plan_gap",
+      "interpretation": "Показано абсолютное отклонение от плана, а не вклад региона в квартальный рост.",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action_index": 2,
+      "next_step": "Проверить предпосылки региона с наибольшим отрицательным отклонением."
+    },
+    {
+      "id": "channels",
+      "position": 7,
+      "purpose": "Где рост требует проверки экономики?",
+      "fact_ids": [
+        "partners_net_growth",
+        "partners_margin_change"
+      ],
+      "view_id": "channel_profitability",
+      "interpretation": "Изменение условий программы — событие контекста; его причинный эффект не доказан.",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "process",
+      "action_index": 0,
+      "next_step": "Сверить скидки, возвраты и себестоимость партнёрского канала."
+    },
+    {
+      "id": "concentration",
+      "position": 8,
+      "purpose": "Насколько результат зависит от ведущего продукта?",
+      "fact_ids": [
+        "top_product_revenue_share"
+      ],
+      "view_id": "product_structure",
+      "interpretation": "Доля рассчитана по net-выручке; концентрация не доказывает риск оттока.",
+      "context_refs": [
+        "business-context.txt#5"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action_index": 0,
+      "next_step": "Обсудить зависимость от ведущего продукта без неподтверждённого вывода об оттоке."
+    },
+    {
+      "id": "returns",
+      "position": 9,
+      "purpose": "Какова нагрузка возвратов?",
+      "fact_ids": [
+        "q3_refund_share"
+      ],
+      "view_id": "refunds",
+      "interpretation": "Знаменатель — выручка до скидок и возвратов, не net.",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action_index": 0,
+      "next_step": "Согласовать определение доли возвратов и проверить правила корректировок затрат."
+    },
+    {
+      "id": "priorities",
+      "position": 10,
+      "purpose": "Какие направления обсудить первыми?",
+      "fact_ids": [
+        "q3_profit",
+        "best_product_contribution"
+      ],
+      "view_id": "priorities",
+      "interpretation": "Приоритеты — предложение; эффект инвестиций не рассчитан.",
+      "context_refs": [
+        "business-context.txt#7"
+      ],
+      "statement_kind": "proposal",
+      "suggested_asset_role": "none",
+      "action_index": 1,
+      "next_step": "Назначить владельцев предложенных направлений и подтвердить бюджетные потолки."
+    },
+    {
+      "id": "risks",
+      "position": 11,
+      "purpose": "Какие ограничения меняют решение?",
+      "fact_ids": [
+        "partners_margin_change",
+        "worst_region_plan_gap"
+      ],
+      "view_id": null,
+      "interpretation": "Нет данных для CAC, удержания и причинной оценки рекламы. Не более двух параллельных внедрений.",
+      "context_refs": [
+        "business-context.txt#7"
+      ],
+      "statement_kind": "observation",
+      "suggested_asset_role": "none",
+      "action_index": 0,
+      "next_step": "Проверить инженерную мощность и перечислить недостающие данные для CAC."
+    },
+    {
+      "id": "actions",
+      "position": 12,
+      "purpose": "Что проверить за 90 дней?",
+      "fact_ids": [
+        "q3_margin",
+        "q3_net_plan_attainment"
+      ],
+      "view_id": null,
+      "interpretation": "Лимит 3 млн RUB; предлагаемые потолки 0,6/0,9/0,5 млн, резерв 1 млн. Это не прогноз эффекта.",
+      "context_refs": [
+        "business-context.txt#4"
+      ],
+      "statement_kind": "proposal",
+      "suggested_asset_role": "generated_illustration",
+      "action_index": 1,
+      "next_step": "Зафиксировать контрольные точки 30, 60 и 90 дней и порядок сверки результата."
+    }
+  ],
+  "actions": [
+    {
+      "action": "Проверить партнёрские скидки и себестоимость",
+      "owner_role": "Коммерческий директор и финансовый контролёр",
+      "deadline": "2026-10-31",
+      "context_ref": "business-context.txt#4",
+      "criterion": "Согласованы определения и условия; представлены маржа до и после изменений без причинных обещаний",
+      "budget_key": "partners",
+      "basis_fact_ids": [
+        "partners_net_growth",
+        "partners_margin_change"
+      ]
+    },
+    {
+      "action": "Проверить готовность внедрения аналитики",
+      "owner_role": "Руководитель продукта",
+      "deadline": "2026-11-30",
+      "context_ref": "business-context.txt#4",
+      "criterion": "Согласована очередь внедрений; одновременно не более двух интеграционных проектов",
+      "budget_key": "implementation",
+      "basis_fact_ids": [
+        "best_product_contribution"
+      ]
+    },
+    {
+      "action": "Проверить региональные предпосылки плана",
+      "owner_role": "Региональные директора",
+      "deadline": "2026-12-31",
+      "context_ref": "business-context.txt#4",
+      "criterion": "Подготовлены предпосылки по шести регионам; исходный план сохранён для сравнения",
+      "budget_key": "regions",
+      "basis_fact_ids": [
+        "worst_region_plan_gap"
+      ]
+    }
+  ],
+  "metric_labels": {
+    "q3_net": "Чистая выручка",
+    "q3_profit": "Валовая прибыль",
+    "q3_margin": "Валовая маржа",
+    "qoq_net_growth": "Рост выручки к II кварталу",
+    "yoy_net_growth": "Рост выручки к III кварталу 2025",
+    "q3_net_plan_attainment": "Выполнение плана выручки",
+    "q3_profit_plan_attainment": "Выполнение плана прибыли",
+    "best_product_contribution": "Наибольший вклад продукта",
+    "worst_product_contribution": "Наименьший вклад продукта",
+    "worst_region_plan_gap": "Наибольшее отрицательное отклонение региона",
+    "top_product_revenue_share": "Доля ведущего продукта",
+    "partners_net_growth": "Рост выручки партнёров",
+    "partners_margin_change": "Изменение маржи партнёров",
+    "q3_refund_share": "Доля возвратов от gross-выручки",
+    "qoq_margin_change": "Изменение общей маржи"
+  },
+  "channel_hypothesis": "Расширение партнёрской программы могло повлиять на выручку и маржу. Наблюдение не доказывает причинный эффект."
+}

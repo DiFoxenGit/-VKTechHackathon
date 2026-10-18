@@ -24,5 +24,9 @@
   "view.kpi": "KPIs show totals for the closed quarter. Margin is calculated separately as profit divided by revenue.",
   "view.trend": "Lines show ordered months and changing totals. Revenue and profit are in RUB excluding VAT.",
   "view.comparison": "Bars compare each segment's absolute contribution to revenue change. A negative value means a decline from the previous quarter.",
-  "view.table": "The table compares exact product totals. Full source rows remain available separately; these are not tariff-option sales."
+  "view.table": "The table links actions to verified facts, owners, deadlines and context spending limits. Investment effects are not estimated.",
+  "business.incomplete_history": "Sales must cover all 21 months and agreed segments. Restore missing rows; zeros are not substituted.",
+  "business.incomplete_plan": "The annual plan must cover all 12 months, regions and products without channels.",
+  "business.context": "The story requires the full context with eight numbered sections.",
+  "business.context_budget": "The context is missing an agreed budget: {field}. Recommendations require a confirmed spending limit."
 }
