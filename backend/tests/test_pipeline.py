@@ -2748,6 +2748,7 @@ def test_drawn_illustration_reaches_the_slide(client, monkeypatch):
         json={
             "template_id": template["id"],
             "brief": "Курьерская доставка",
+            "generate_images": True,
             "slide_count": 3,
             "outline": content,
         },

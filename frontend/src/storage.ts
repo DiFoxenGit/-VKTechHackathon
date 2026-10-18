@@ -17,6 +17,7 @@ const integer = (value: unknown, min: number, max = Number.MAX_SAFE_INTEGER): va
 function normalizeBrief(value: unknown, fallback: Brief = DEFAULT_BRIEF): Brief {
   const source = isRecord(value) ? value : {};
   return {
+    ...(typeof source.generateImages === 'boolean' ? {generateImages:source.generateImages} : {}),
     narrative: typeof source.narrative === "boolean" ? source.narrative : true,
     text: text(source.text, fallback.text),
     audience: text(source.audience, fallback.audience),
@@ -26,7 +27,7 @@ function normalizeBrief(value: unknown, fallback: Brief = DEFAULT_BRIEF): Brief 
     materials: text(source.materials, fallback.materials),
     ...(typeof source.materialName === 'string' ? { materialName: source.materialName } : {}),
     contentPackIds: Array.isArray(source.contentPackIds) ? [...new Set(source.contentPackIds.filter(identifier))] : [...(fallback.contentPackIds || [])],
-    ...(Array.isArray(source.materialFiles) ? {materialFiles: source.materialFiles.filter(isRecord).filter(m => identifier(m.id) && typeof m.name === 'string' && typeof m.text === 'string').map(m => ({id:String(m.id),name:String(m.name),text:String(m.text),...(typeof m.goal==='string'?{goal:m.goal}:{}),...(isRecord(m.analysisRequests)?{analysisRequests:m.analysisRequests as Record<string,AnalysisRequest>}:{}),file_report:Array.isArray(m.file_report) ? m.file_report.filter(isRecord).map(f => ({name:text(f.name),status:text(f.status),reason:text(f.reason)})) : undefined})) } : {}),
+    ...(Array.isArray(source.materialFiles) ? {materialFiles: source.materialFiles.filter(isRecord).filter(m => identifier(m.id) && typeof m.name === 'string' && typeof m.text === 'string').map(m => ({id:String(m.id),name:String(m.name),text:String(m.text),...(typeof m.sourceHash==='string'?{sourceHash:m.sourceHash}:{}),...(typeof m.goal==='string'?{goal:m.goal}:{}),...(isRecord(m.analysisRequests)?{analysisRequests:m.analysisRequests as Record<string,AnalysisRequest>}:{}),file_report:Array.isArray(m.file_report) ? m.file_report.filter(isRecord).map(f => ({name:text(f.name),status:text(f.status),reason:text(f.reason)})) : undefined})) } : {}),
     ...(isRecord(source.brandbook) && identifier(source.brandbook.id) && isRecord(source.brandbook.tokens) ? {brandbook:{id:source.brandbook.id,name:text(source.brandbook.name),tokens:{colors:Array.isArray(source.brandbook.tokens.colors)?source.brandbook.tokens.colors.filter((v):v is string=>typeof v==='string'&&/^#?[0-9a-f]{6}$/i.test(v)):[],font:text(source.brandbook.tokens.font)},warnings:Array.isArray(source.brandbook.warnings)?source.brandbook.warnings.filter((v):v is string=>typeof v==='string'):[]}} : {}),
   };
 }
@@ -104,6 +105,7 @@ function normalizeDeck(value: unknown): Deck | null {
     ...(integer(value.revision, 1) ? { revision: value.revision } : {}),
     ...(exports ? { exports } : {}),
     ...(serverIssues ? { serverIssues } : {}),
+    ...(isRecord(value.imageGeneration) && ['not_requested','ready','unavailable','failed'].includes(text(value.imageGeneration.status)) ? {imageGeneration:{status:value.imageGeneration.status as import('./types').ImageGeneration['status'],message:text(value.imageGeneration.message)}} : {}),
     ...(Array.isArray(value.analysis)?{analysis:value.analysis.filter(isRecord).filter(a=>identifier(a.analysis_id)&&isRecord(a.profile)&&Array.isArray(a.profile.columns)&&Array.isArray(a.candidates)&&Array.isArray(a.warnings)) as unknown as AnalysisResult[]} : {}),
   };
 }

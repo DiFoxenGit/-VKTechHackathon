@@ -5,7 +5,7 @@ export function AnalysisControls({result, value, onChange}: {
 }) {
   const columns = result.profile.columns;
   const update = (patch: Partial<AnalysisRequest>) => onChange({...value,...patch});
-  return <fieldset className="analysis-controls"><legend>{result.source_file} · {result.sheet}: параметры анализа</legend>
+  return <details className="analysis-settings"><summary>Настроить анализ · {result.source_file}</summary><fieldset className="analysis-controls"><legend>Параметры расчёта</legend>
     <label>Задача<select aria-label={`Задача ${result.dataset_id}`} value={value.task||''} onChange={e=>update({task:(e.target.value||undefined) as AnalysisRequest['task']})}>
       <option value="">По цели анализа</option>{Object.entries({dynamics:'Динамика',comparison:'Сравнение',shares:'Доли',distribution:'Распределение',relationship:'Взаимосвязь',reference:'Справочная таблица',summary:'Итоговый показатель'}).map(([key,name])=><option key={key} value={key}>{name}</option>)}
     </select></label>
@@ -16,5 +16,5 @@ export function AnalysisControls({result, value, onChange}: {
     <label>Десятичный разделитель<select aria-label={`Формат чисел ${result.dataset_id}`} value={value.number_locale||''} onChange={e=>update({number_locale:(e.target.value||null) as AnalysisRequest['number_locale']})}><option value="">Автоматически</option><option value="decimal_comma">Запятая</option><option value="decimal_point">Точка</option></select></label>
     <div>Метрики {columns.filter(c=>c.role==='metric').map(c=><label key={c.id}><input type="checkbox" checked={Boolean(value.metrics?.includes(c.id))} onChange={e=>update({metrics:e.target.checked?[...(value.metrics||[]),c.id]:(value.metrics||[]).filter(id=>id!==c.id)})}/>{c.name}</label>)}</div>
     <small>После изменения нажмите «Проверить данные». Пустой выбор метрик использует правила автоматического анализа.</small>
-  </fieldset>;
+  </fieldset></details>;
 }
