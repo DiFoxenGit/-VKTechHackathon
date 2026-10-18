@@ -20,9 +20,9 @@ from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
-from .assets import color_roles, draw_asset
+from .assets import color_roles, draw_asset, _mix
 from .analytics_bridge import CHARTS
-from .analytic_export import add_chart, add_source, numeric_cell
+from .analytic_export import add_chart, add_source, numeric_cell, display_number
 from .fonts import printable
 from .layout import STAT_BAR, STAT_INSET, estimated_text_height
 from .visuals import DIAGRAMS, MIN_LABEL_SIZE
@@ -625,15 +625,24 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                 for r, values in enumerate(rows):
                     for c, value in enumerate(values):
                         cell = table.cell(r, c)
-                        cell.text = printable(str(value), font, coverage)
+                        cell.text = printable(display_number(value) if r > 0 else str(value), font, coverage)
                         # Default Office padding adds 7.2 pt per row. LibreOffice
                         # expands dense tables beyond their planned frame to fit it.
-                        cell.margin_top = cell.margin_bottom = Pt(1)
-                        cell.margin_left = cell.margin_right = Pt(4)
+                        row_height = table.rows[r].height / 12700
+                        font_size = min(14, max(12, (row_height-4)/1.2))
+                        cell.margin_top = cell.margin_bottom = Pt(min(3,max(1,(row_height-font_size*1.2)/2)))
+                        cell.margin_left = cell.margin_right = Pt(7)
                         cell.fill.solid()
                         cell.fill.fore_color.rgb = RGBColor.from_string(
-                            accent if r == 0 else background
+                            accent if r == 0 else _mix(background, text_color, .96 if r % 2 else 1)
                         )
+                        tc_pr = cell._tc.get_or_add_tcPr()
+                        for edge in ('lnL','lnR','lnT','lnB'):
+                            for old in list(tc_pr.findall(qn('a:'+edge))):
+                                tc_pr.remove(old)
+                            line = OxmlElement('a:'+edge)
+                            line.append(OxmlElement('a:noFill'))
+                            tc_pr.append(line)
                         color = (
                             best_text_color(accent, palette) if r == 0 else text_color
                         )
@@ -641,7 +650,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                             p.alignment = PP_ALIGN.RIGHT if r > 0 and numeric_cell(value) else PP_ALIGN.LEFT
                             p.space_before = p.space_after = Pt(0)
                             p.line_spacing = 1.0
-                            _font(p.font, font, 13, color, r == 0)
+                            total = r > 0 and str(values[0]).strip().lower() in {'итого', 'всего', 'total'}
+                            _font(p.font, font, font_size, color, r == 0 or total)
                 add_source(slide, visual, (x, y, w, h), font, text_color)
             elif kind == "image":
                 icon = element.get("role") == "icon"

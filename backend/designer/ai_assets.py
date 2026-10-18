@@ -30,7 +30,7 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
             blob = await draw_image(prompt, size)
             info = inspect_image(blob)
         except Exception as exc:  # noqa: BLE001 - без картинки слайд собирается как раньше
-            LOGGER.warning("Illustration for slide %s failed: %s", index, exc)
+            LOGGER.warning("Illustration for slide %s failed (%s)", index, type(exc).__name__)
             return None
         identifier = hashlib.sha256(blob).hexdigest()[:24]
         label = [w for w in words(content.get("title") or "") if len(w) > 2][:5]
@@ -44,6 +44,7 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
                 "mono": False,
                 "color": info.get("color"),
                 "slide": index,
+                "target_title": content.get('title', ''),
                 "label": label,
                 "tags": tag_roots(label),
                 "prompt": prompt,

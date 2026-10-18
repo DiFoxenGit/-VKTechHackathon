@@ -1,6 +1,7 @@
 """Orchestrates deterministic algorithms, model calls and presentation assembly."""
 import logging
 import os
+import re
 from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
 from . import ai
@@ -10,7 +11,7 @@ from .algorithms.context import select_context
 from .algorithms.validation import validate_outline
 from .algorithms.balance import balance_plan, apply_condensation, finish_balance
 from .comparisons import add_comparison_charts
-from .analytics_bridge import analyse_sources, build_outline, verify_outline
+from .analytics_bridge import analyse_sources, build_outline, verify_outline, validate_business_scope
 LOGGER = logging.getLogger("designer.pipeline")
 
 
@@ -60,6 +61,7 @@ async def run_generation(request, template, sources, *, outline_factory, balance
     testable without FastAPI, a real model, filesystem exports or a job queue.
     """
     on_stage("outline", 5)
+    validate_business_scope(sources, request.brief)
     analysis_results = await run_in_threadpool(analyse_sources,sources,getattr(request, "analysis_goal", "") or request.brief)
     if analysis_results:
         on_stage("analytics", 8)
@@ -84,9 +86,16 @@ async def run_generation(request, template, sources, *, outline_factory, balance
     illustrations = None
     if draw_illustrations is not None:
         on_stage("illustrations", 15)
-        owner, metas = await draw_illustrations(
-            {"slides": [{"content": slide.model_dump()} for slide in outline.slides]}, template)
-        illustrations = (owner, metas) if metas else None
+        requested = getattr(request, 'generate_images', None)
+        if requested is None:
+            requested = bool(re.search(r'(?:сгенерир\w*|созда\w* нов\w*)[^.\n]{0,100}(?:иллюстрац|картин|изображ)|generate[^.\n]{0,100}(?:image|illustration)', request.brief, re.I))
+        drawn = await draw_illustrations(
+            {"slides": [{"content": slide.model_dump()} for slide in outline.slides], 'image_requested': requested}, template)
+        owner, metas = drawn[:2]
+        status = drawn[2] if len(drawn) > 2 else {'status': 'ready' if metas else 'failed', 'message': 'Иллюстрации готовы' if metas else 'Изображение не создано'}
+        illustrations = (owner, metas, status)
+        if status['status'] in {'unavailable', 'failed'}:
+            warnings.append(status['message'])
     findings = None
     if request.contextual_audit and contextual_check is not None:
         on_stage("contextual_audit", 15)

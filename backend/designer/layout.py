@@ -342,10 +342,17 @@ def slide_mode(content, variant, position, total, assets, used):
         or (total > 2 and position == total - 1)
     ):
         return None
+    generated = next((a for a in assets if a.get('source') == 'generated' and (a.get('target_title') == content['title'] or (not a.get('target_title') and a.get('slide') == position))), None)
+    if generated and len(bullets) <= 4 and sum(map(len, bullets)) <= 800:
+        return {'kind': 'picture', 'asset': generated}
     values = stat_plan(bullets)
     if values:
         return {"kind": "stats", "values": values}
     text = " ".join(bullets)
+    if len(bullets) <= 4 and len(text) <= 640:
+        pack_picture = pick_picture(text, [a for a in assets if a.get('source') == 'pack' and a['id'] not in used['pictures']], title=content['title'])
+        if pack_picture:
+            return {'kind': 'picture', 'asset': pack_picture}
     if variant == "classic" and 2 <= len(bullets) <= 5:
         icons, matched = pick_icons(bullets, assets, used["icons"])
         if icons[0] is not None and matched >= math.ceil(len(bullets) / 2):
@@ -1010,7 +1017,7 @@ def compose(outline, template, variant, assets=None):
     """assets — библиотека картинок колоды (шаблон, пакеты, встроенный набор)."""
     if outline.get("slides") and any(s.get("analysis_id") for s in outline["slides"]):
         from .analytics_layout import compose_analytics
-        return compose_analytics(outline, template, variant)
+        return compose_analytics(outline, template, variant, assets)
     if assets is None:
         assets = library(template)
     used = {"icons": set(), "pictures": set()}

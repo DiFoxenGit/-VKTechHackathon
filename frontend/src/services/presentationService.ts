@@ -49,6 +49,7 @@ type Job = {
 };
 
 type BackendPresentation = {
+  image_generation?: import('../types').ImageGeneration;
   id: string;
   title: string;
   template_id: string;
@@ -275,6 +276,7 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
     exports: record.exports,
     serverIssues,
     analysis: record.analysis,
+    imageGeneration: record.image_generation,
   };
 }
 
@@ -287,6 +289,7 @@ export interface PresentationService {
   analyseContent(packId: string, goal: string, options?: ServiceOptions, selections?: Record<string,AnalysisRequest>): Promise<{items: AnalysisResult[]}>;
   generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
   save(deck: Deck, options?: ServiceOptions): Promise<Deck>;
+  retryIllustration(deck: Deck, options?: ServiceOptions): Promise<Deck>;
   download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
 
@@ -304,7 +307,8 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       slide_count: brief.slideCount,
       content_pack_ids: brief.contentPackIds || [],
       contextual_audit: false,
-      narrative: brief.narrative === true,
+      narrative: brief.narrative !== false,
+      ...(brief.generateImages !== undefined ? {generate_images:brief.generateImages} : {}),
       analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n'),
       analysis_requests: Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
       analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
@@ -391,6 +395,11 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
       }
       options.onProgress?.({ stage: 'complete', progress: 100 });
       return result;
+    },
+
+    async retryIllustration(deck, options = {}) {
+      const record = await request<BackendPresentation>(`/presentations/${encodeURIComponent(deck.id)}/illustrations/retry`, {method:'POST',signal:options.signal,body:JSON.stringify({revision:deck.revision})}, GENERATION_TIMEOUT);
+      return mapPresentation(record, deck.brief || {text:deck.title,audience:'',goal:'',slideCount:deck.slides.length,templateId:deck.templateId,materials:''});
     },
 
     async save(deck, options = {}) {
