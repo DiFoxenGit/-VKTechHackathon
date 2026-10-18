@@ -21,12 +21,16 @@
   "business.orders_integer": "The order count in row {row} must be an integer.",
   "business.view_refused": "View {view} could not be built: {reason}. Changing the chart cannot bypass input restrictions.",
   "business.unknown": "Calculation stopped. Check the source data and request parameters.",
-  "view.kpi": "KPIs show totals for the closed quarter. Margin is calculated separately as profit divided by revenue.",
+  "view.kpi": "KPIs show totals for the selected closed period. Margin is calculated separately as profit divided by revenue.",
   "view.trend": "Lines show ordered months and changing totals. Revenue and profit are in RUB excluding VAT.",
   "view.comparison": "Bars compare each segment's absolute contribution to revenue change. A negative value means a decline from the previous quarter.",
   "view.table": "The table links actions to verified facts, owners, deadlines and context spending limits. Investment effects are not estimated.",
-  "business.incomplete_history": "Sales must cover all 21 months and agreed segments. Restore missing rows; zeros are not substituted.",
-  "business.incomplete_plan": "The annual plan must cover all 12 months, regions and products without channels.",
+  "business.incomplete_history": "Sales must cover the entire requested history and agreed segments. Restore missing rows; zeros are not substituted.",
+  "business.incomplete_plan": "The plan must cover the requested range, regions and products without channels.",
   "business.context": "The story requires the full context with eight numbered sections.",
-  "business.context_budget": "The context is missing an agreed budget: {field}. Recommendations require a confirmed spending limit."
+  "business.context_budget": "The context is missing an agreed budget: {field}. Recommendations require a confirmed spending limit.",
+  "business.period_settings": "Invalid periods: check ISO months, comparison lengths and source coverage.",
+  "business.context_conditions": "Ambiguous context conditions. Provide an explicit contract bound to current source quotes.",
+  "business.context_binding": "Condition {field} is not supported by the current text. Update its value and quote; the old constraint is not reused.",
+  "business.outside_history": "Rows retained outside the requested history and excluded from calculations: {count}."
 }

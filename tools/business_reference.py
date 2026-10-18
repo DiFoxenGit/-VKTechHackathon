@@ -5,13 +5,13 @@ from decimal import Decimal, ROUND_HALF_UP, localcontext
 from pathlib import Path
 
 
-def calculate(directory):
+def calculate(directory, periods=None):
     directory = Path(directory)
     with (directory / 'sales.csv').open(encoding='utf-8', newline='') as stream:
         sales = list(csv.DictReader(stream))
     with (directory / 'plan.csv').open(encoding='utf-8', newline='') as stream:
         plans = list(csv.DictReader(stream))
-    periods = {'q3': ('2026-07', '2026-09'), 'q2': ('2026-04', '2026-06'),
+    periods = periods or {'q3': ('2026-07', '2026-09'), 'q2': ('2026-04', '2026-06'),
                'year_ago': ('2025-07', '2025-09')}
     answers = []
 
@@ -49,7 +49,7 @@ def calculate(directory):
             answer(label+'_net_growth', (current['net']-baseline['net'])/baseline['net']*100, '%',
                    '100*(net_Q3-net_base)/net_base', extra={'base_period':list(periods[period]),
                    'base_source_rows':[i for i, _ in select(period)]})
-        selected_plan = [(i+2,r) for i,r in enumerate(plans) if '2026-07' <= r['month'] <= '2026-09']
+        selected_plan = [(i+2,r) for i,r in enumerate(plans) if periods['q3'][0] <= r['month'] <= periods['q3'][1]]
         for metric, column in [('net','net_revenue_plan_rub'),('profit','gross_profit_plan_rub')]:
             plan = sum(Decimal(r[column]) for _,r in selected_plan)
             answer('q3_'+metric+'_plan_attainment', current[metric]/plan*100, '%', '100*SUM(actual)/SUM(plan)',

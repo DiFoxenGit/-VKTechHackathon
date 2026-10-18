@@ -6,7 +6,7 @@
       "slide": {
         "id": "kpi",
         "position": 2,
-        "purpose": "Каковы результаты III квартала?",
+        "purpose": "Каковы результаты периода 2026-07 – 2026-09?",
         "fact_ids": [
           "q3_net",
           "q3_profit",
@@ -746,7 +746,7 @@
           }
         ],
         "answer": "Чистая выручка: 116 241 720,00 ₽; Валовая прибыль: 31 763 784,00 ₽; Валовая маржа: 27,33 %",
-        "title": "Каковы результаты III квартала? 116 241 720,00 ₽",
+        "title": "Каковы результаты периода 2026-07 – 2026-09? 116 241 720,00 ₽",
         "context_evidence": {
           "source": "business-context.txt",
           "sha256": "67210abd434b55b33eb66cf25424d0b5b00ffc058c3673bf4e36a3b283fd0b4e",
@@ -1458,6 +1458,7 @@
           }
         ],
         "action_ref": "partners",
+        "condition_evidence": {},
         "statements": [
           {
             "kind": "observation",
@@ -1484,8 +1485,8 @@
         "dataset": {
           "schema_version": "1.0",
           "ref": {
-            "dataset_id": "d5a7ad2ad8661bbf3991088a",
-            "source_sha256": "9db30e1b287b1c2bfd34a8edd5f1052370dbc1a06c7d7538ca19a77c137dc099",
+            "dataset_id": "4b70d5689ee6ec9dcd19caab",
+            "source_sha256": "2fa55a6c7f8acea5775d9bdcc3a0377c7f317138b1c67031fca1c1cbe46907b9",
             "filename": "quarter_kpi.json",
             "archive_path": null,
             "table": "1"
@@ -1512,7 +1513,7 @@
           ],
           "rows": [
             [
-              "Q3 2026",
+              "2026-07 – 2026-09",
               "116241720.0",
               "31763784.0"
             ]
@@ -1548,8 +1549,8 @@
         "result": {
           "schema_version": "1.0",
           "dataset_ref": {
-            "dataset_id": "d5a7ad2ad8661bbf3991088a",
-            "source_sha256": "9db30e1b287b1c2bfd34a8edd5f1052370dbc1a06c7d7538ca19a77c137dc099",
+            "dataset_id": "4b70d5689ee6ec9dcd19caab",
+            "source_sha256": "2fa55a6c7f8acea5775d9bdcc3a0377c7f317138b1c67031fca1c1cbe46907b9",
             "filename": "quarter_kpi.json",
             "archive_path": null,
             "table": "1"
@@ -1676,7 +1677,7 @@
               "unit": "RUB",
               "period": [],
               "evidence": {
-                "source_sha256": "9db30e1b287b1c2bfd34a8edd5f1052370dbc1a06c7d7538ca19a77c137dc099",
+                "source_sha256": "2fa55a6c7f8acea5775d9bdcc3a0377c7f317138b1c67031fca1c1cbe46907b9",
                 "row_ids": [
                   1
                 ],
@@ -1695,7 +1696,7 @@
               "unit": "RUB",
               "period": [],
               "evidence": {
-                "source_sha256": "9db30e1b287b1c2bfd34a8edd5f1052370dbc1a06c7d7538ca19a77c137dc099",
+                "source_sha256": "2fa55a6c7f8acea5775d9bdcc3a0377c7f317138b1c67031fca1c1cbe46907b9",
                 "row_ids": [
                   1
                 ],
@@ -1964,8 +1965,8 @@
         }
       ],
       "explanation": {
-        "ru": "KPI показывают суммы закрытого квартала. Маржа считается отдельно как отношение прибыли к выручке.",
-        "en": "KPIs show totals for the closed quarter. Margin is calculated separately as profit divided by revenue."
+        "ru": "KPI показывают суммы выбранного закрытого периода. Маржа считается отдельно как отношение прибыли к выручке.",
+        "en": "KPIs show totals for the selected closed period. Margin is calculated separately as profit divided by revenue."
       }
     },
     {
@@ -1979,7 +1980,7 @@
           "yoy_net_growth"
         ],
         "view_id": "monthly_trend",
-        "interpretation": "Кварталы закрыты полностью; прошлогодняя сезонность не является прогнозом.",
+        "interpretation": "Сравниваются полные периоды 2026-07 – 2026-09 и 2026-04 – 2026-06; прошлые результаты не являются прогнозом.",
         "context_refs": [
           "business-context.txt#3"
         ],
@@ -1988,7 +1989,7 @@
         "next_step": "Проверить сезонные изменения перед обсуждением плана следующего квартала.",
         "metrics": [
           {
-            "label": "Рост выручки к II кварталу",
+            "label": "Изменение выручки к периоду 2026-04 – 2026-06",
             "formatted": "24,24 %",
             "fact_id": "qoq_net_growth",
             "unit": "%",
@@ -2458,7 +2459,7 @@
             ]
           },
           {
-            "label": "Рост выручки к III кварталу 2025",
+            "label": "Изменение выручки к периоду 2025-07 – 2025-09",
             "formatted": "30,48 %",
             "fact_id": "yoy_net_growth",
             "unit": "%",
@@ -2928,7 +2929,7 @@
             ]
           }
         ],
-        "answer": "Рост выручки к II кварталу: 24,24 %; Рост выручки к III кварталу 2025: 30,48 %",
+        "answer": "Изменение выручки к периоду 2026-04 – 2026-06: 24,24 %; Изменение выручки к периоду 2025-07 – 2025-09: 30,48 %",
         "title": "Сохраняется ли рост? 24,24 %",
         "context_evidence": {
           "source": "business-context.txt",
@@ -3865,6 +3866,7 @@
           }
         ],
         "action_ref": "partners",
+        "condition_evidence": {},
         "statements": [
           {
             "kind": "observation",
@@ -3873,7 +3875,7 @@
               "qoq_net_growth",
               "yoy_net_growth"
             ],
-            "text": "Рост выручки к II кварталу: 24,24 %; Рост выручки к III кварталу 2025: 30,48 %"
+            "text": "Изменение выручки к периоду 2026-04 – 2026-06: 24,24 %; Изменение выручки к периоду 2025-07 – 2025-09: 30,48 %"
           },
           {
             "kind": "proposal",
@@ -7393,7 +7395,7 @@
           "worst_product_contribution"
         ],
         "view_id": "product_contribution",
-        "interpretation": "Вклад — абсолютная разница к II кварталу, а не темп роста.",
+        "interpretation": "Вклад — абсолютная разница к периоду 2026-04 – 2026-06, а не темп роста.",
         "context_refs": [
           "business-context.txt#1"
         ],
@@ -7983,6 +7985,7 @@
           }
         ],
         "action_ref": "implementation",
+        "condition_evidence": {},
         "statements": [
           {
             "kind": "observation",
@@ -9683,6 +9686,7 @@
           }
         ],
         "action_ref": "implementation",
+        "condition_evidence": {},
         "statements": [
           {
             "kind": "observation",
@@ -9708,8 +9712,8 @@
         "dataset": {
           "schema_version": "1.0",
           "ref": {
-            "dataset_id": "4c86df1dd95b49f271d5b3f6",
-            "source_sha256": "213d3407aa71af8c1eb22fc453b154952342b0e1215049c65f8b74d6b1d9accd",
+            "dataset_id": "dd38e78a6150605476e19883",
+            "source_sha256": "05a9b43876f6bc05cd4c1594df1913c92cddeca2d8fcdfef6d20d9ae4464682c",
             "filename": "action-priorities.json",
             "archive_path": null,
             "table": "1"
@@ -9767,7 +9771,7 @@
               "Руководитель продукта",
               "2026-11-30",
               900000,
-              "Согласована очередь внедрений; одновременно не более двух интеграционных проектов"
+              "Согласована очередь внедрений; одновременно не более 2 интеграционных проектов; доступно инженеров: 2, аналитиков: 1"
             ],
             [
               "Проверить региональные предпосылки плана",
@@ -9775,7 +9779,7 @@
               "Региональные директора",
               "2026-12-31",
               500000,
-              "Подготовлены предпосылки по шести регионам; исходный план сохранён для сравнения"
+              "Подготовлены предпосылки по всем 6 регионам; исходный план сохранён для сравнения"
             ]
           ],
           "row_ids": [
@@ -9806,8 +9810,8 @@
         "result": {
           "schema_version": "1.0",
           "dataset_ref": {
-            "dataset_id": "4c86df1dd95b49f271d5b3f6",
-            "source_sha256": "213d3407aa71af8c1eb22fc453b154952342b0e1215049c65f8b74d6b1d9accd",
+            "dataset_id": "dd38e78a6150605476e19883",
+            "source_sha256": "05a9b43876f6bc05cd4c1594df1913c92cddeca2d8fcdfef6d20d9ae4464682c",
             "filename": "action-priorities.json",
             "archive_path": null,
             "table": "1"
@@ -9887,8 +9891,8 @@
               {
                 "id": "c6",
                 "name": "Критерий",
-                "kind": "category",
-                "role": "dimension",
+                "kind": "text",
+                "role": "unknown",
                 "unit": "",
                 "missing": 0,
                 "distinct": 3,
@@ -9899,7 +9903,7 @@
               }
             ],
             "hierarchies": [],
-            "dimension_count": 5,
+            "dimension_count": 4,
             "metric_count": 1,
             "warnings": []
           },
@@ -9964,7 +9968,7 @@
                 "Руководитель продукта",
                 "2026-11-30",
                 900000,
-                "Согласована очередь внедрений; одновременно не более двух интеграционных проектов"
+                "Согласована очередь внедрений; одновременно не более 2 интеграционных проектов; доступно инженеров: 2, аналитиков: 1"
               ],
               [
                 "Проверить региональные предпосылки плана",
@@ -9972,7 +9976,7 @@
                 "Региональные директора",
                 "2026-12-31",
                 500000,
-                "Подготовлены предпосылки по шести регионам; исходный план сохранён для сравнения"
+                "Подготовлены предпосылки по всем 6 регионам; исходный план сохранён для сравнения"
               ]
             ],
             "row_ids": [
@@ -10053,7 +10057,6 @@
     {
       "action": "Проверить партнёрские скидки и себестоимость",
       "owner_role": "Коммерческий директор и финансовый контролёр",
-      "deadline": "2026-10-31",
       "context_ref": "business-context.txt#4",
       "criterion": "Согласованы определения и условия; представлены маржа до и после изменений без причинных обещаний",
       "basis_fact_ids": [
@@ -10062,33 +10065,37 @@
       ],
       "id": "partners",
       "budget_cap_rub": 600000,
-      "provenance": "proposal_from_context; effect_not_estimated"
+      "provenance": "proposal_from_context; effect_not_estimated",
+      "deadline": "2026-10-31",
+      "capacity_status": "not_evaluated_for_this_action"
     },
     {
       "action": "Проверить готовность внедрения аналитики",
       "owner_role": "Руководитель продукта",
-      "deadline": "2026-11-30",
       "context_ref": "business-context.txt#4",
-      "criterion": "Согласована очередь внедрений; одновременно не более двух интеграционных проектов",
+      "criterion": "Согласована очередь внедрений; одновременно не более 2 интеграционных проектов; доступно инженеров: 2, аналитиков: 1",
       "basis_fact_ids": [
         "best_product_contribution"
       ],
       "id": "implementation",
       "budget_cap_rub": 900000,
-      "provenance": "proposal_from_context; effect_not_estimated"
+      "provenance": "proposal_from_context; effect_not_estimated",
+      "deadline": "2026-11-30",
+      "capacity_status": "requires_capacity_review"
     },
     {
       "action": "Проверить региональные предпосылки плана",
       "owner_role": "Региональные директора",
-      "deadline": "2026-12-31",
       "context_ref": "business-context.txt#4",
-      "criterion": "Подготовлены предпосылки по шести регионам; исходный план сохранён для сравнения",
+      "criterion": "Подготовлены предпосылки по всем 6 регионам; исходный план сохранён для сравнения",
       "basis_fact_ids": [
         "worst_region_plan_gap"
       ],
       "id": "regions",
       "budget_cap_rub": 500000,
-      "provenance": "proposal_from_context; effect_not_estimated"
+      "provenance": "proposal_from_context; effect_not_estimated",
+      "deadline": "2026-12-31",
+      "capacity_status": "not_evaluated_for_this_action"
     }
   ]
 }

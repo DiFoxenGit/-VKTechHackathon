@@ -2,6 +2,7 @@
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
 from . import Dataset, AnalysisRequest, AnalysisResult
+from .business_periods import BusinessPeriods
 
 
 class Strict(BaseModel):
@@ -39,6 +40,12 @@ class DerivedRow(Strict):
     evidence: list[SourceEvidence]=Field(min_length=1)
 
 
+class SourceScope(Strict):
+    included_sales_rows: list[int]
+    excluded_sales_rows: list[int]
+    history: tuple[str,str]
+
+
 class BusinessResult(Strict):
     schema_version: Literal['business-draft-1']
     status: Literal['draft_for_contract_review']
@@ -50,3 +57,6 @@ class BusinessResult(Strict):
     entities: dict[str,dict[str,str]]
     unsupported: list[str]
     explanations: dict[str,dict[str,str]]
+
+    period_settings: BusinessPeriods
+    source_scope: SourceScope

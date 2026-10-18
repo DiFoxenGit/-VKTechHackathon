@@ -1,0 +1,200 @@
+[
+  {
+    "row": 1087,
+    "before": {
+      "gross_revenue_rub": "535614",
+      "cogs_rub": "274770"
+    },
+    "after": {
+      "gross_revenue_rub": "605614",
+      "cogs_rub": "289770"
+    }
+  },
+  {
+    "row": 1099,
+    "before": {
+      "gross_revenue_rub": "478951",
+      "cogs_rub": "242972"
+    },
+    "after": {
+      "gross_revenue_rub": "548951",
+      "cogs_rub": "257972"
+    }
+  },
+  {
+    "row": 1111,
+    "before": {
+      "gross_revenue_rub": "520043",
+      "cogs_rub": "260854"
+    },
+    "after": {
+      "gross_revenue_rub": "590043",
+      "cogs_rub": "275854"
+    }
+  },
+  {
+    "row": 1123,
+    "before": {
+      "gross_revenue_rub": "553048",
+      "cogs_rub": "274257"
+    },
+    "after": {
+      "gross_revenue_rub": "623048",
+      "cogs_rub": "289257"
+    }
+  },
+  {
+    "row": 1135,
+    "before": {
+      "gross_revenue_rub": "592115",
+      "cogs_rub": "303755"
+    },
+    "after": {
+      "gross_revenue_rub": "662115",
+      "cogs_rub": "318755"
+    }
+  },
+  {
+    "row": 1147,
+    "before": {
+      "gross_revenue_rub": "614308",
+      "cogs_rub": "328041"
+    },
+    "after": {
+      "gross_revenue_rub": "684308",
+      "cogs_rub": "343041"
+    }
+  },
+  {
+    "row": 1159,
+    "before": {
+      "gross_revenue_rub": "568905",
+      "cogs_rub": "288605"
+    },
+    "after": {
+      "gross_revenue_rub": "638905",
+      "cogs_rub": "303605"
+    }
+  },
+  {
+    "row": 1171,
+    "before": {
+      "gross_revenue_rub": "520374",
+      "cogs_rub": "261020"
+    },
+    "after": {
+      "gross_revenue_rub": "590374",
+      "cogs_rub": "276020"
+    }
+  },
+  {
+    "row": 1183,
+    "before": {
+      "gross_revenue_rub": "552511",
+      "cogs_rub": "273991"
+    },
+    "after": {
+      "gross_revenue_rub": "622511",
+      "cogs_rub": "288991"
+    }
+  },
+  {
+    "row": 1195,
+    "before": {
+      "gross_revenue_rub": "586345",
+      "cogs_rub": "300795"
+    },
+    "after": {
+      "gross_revenue_rub": "656345",
+      "cogs_rub": "315795"
+    }
+  },
+  {
+    "row": 1207,
+    "before": {
+      "gross_revenue_rub": "626301",
+      "cogs_rub": "317722"
+    },
+    "after": {
+      "gross_revenue_rub": "696301",
+      "cogs_rub": "332722"
+    }
+  },
+  {
+    "row": 1219,
+    "before": {
+      "gross_revenue_rub": "669676",
+      "cogs_rub": "353589"
+    },
+    "after": {
+      "gross_revenue_rub": "739676",
+      "cogs_rub": "368589"
+    }
+  },
+  {
+    "row": 1231,
+    "before": {
+      "gross_revenue_rub": "627572",
+      "cogs_rub": "314790"
+    },
+    "after": {
+      "gross_revenue_rub": "697572",
+      "cogs_rub": "329790"
+    }
+  },
+  {
+    "row": 1243,
+    "before": {
+      "gross_revenue_rub": "556604",
+      "cogs_rub": "276020"
+    },
+    "after": {
+      "gross_revenue_rub": "626604",
+      "cogs_rub": "291020"
+    }
+  },
+  {
+    "row": 1255,
+    "before": {
+      "gross_revenue_rub": "593813",
+      "cogs_rub": "304626"
+    },
+    "after": {
+      "gross_revenue_rub": "663813",
+      "cogs_rub": "319626"
+    }
+  },
+  {
+    "row": 1267,
+    "before": {
+      "gross_revenue_rub": "639318",
+      "cogs_rub": "324326"
+    },
+    "after": {
+      "gross_revenue_rub": "709318",
+      "cogs_rub": "339326"
+    }
+  },
+  {
+    "row": 1279,
+    "before": {
+      "gross_revenue_rub": "677167",
+      "cogs_rub": "339666"
+    },
+    "after": {
+      "gross_revenue_rub": "747167",
+      "cogs_rub": "354666"
+    }
+  },
+  {
+    "row": 1291,
+    "before": {
+      "gross_revenue_rub": "722429",
+      "cogs_rub": "377108"
+    },
+    "after": {
+      "gross_revenue_rub": "792429",
+      "cogs_rub": "392108"
+    }
+  }
+]

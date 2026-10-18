@@ -3,7 +3,7 @@
     {
       "id": "decision",
       "position": 1,
-      "purpose": "Как распределить усилия в IV квартале?",
+      "purpose": "Как распределить усилия после периода {current_label}?",
       "fact_ids": [
         "qoq_net_growth",
         "qoq_margin_change"
@@ -21,7 +21,7 @@
     {
       "id": "kpi",
       "position": 2,
-      "purpose": "Каковы результаты III квартала?",
+      "purpose": "Каковы результаты периода {current_label}?",
       "fact_ids": [
         "q3_net",
         "q3_profit",
@@ -46,7 +46,7 @@
         "yoy_net_growth"
       ],
       "view_id": "monthly_trend",
-      "interpretation": "Кварталы закрыты полностью; прошлогодняя сезонность не является прогнозом.",
+      "interpretation": "Сравниваются полные периоды {current_label} и {previous_label}; прошлые результаты не являются прогнозом.",
       "context_refs": [
         "business-context.txt#3"
       ],
@@ -64,7 +64,7 @@
         "q3_profit_plan_attainment"
       ],
       "view_id": "plan_actual",
-      "interpretation": "План посчитан один раз по месяцу, региону и продукту; плана по каналам нет.",
+      "interpretation": "План за {current_label} посчитан один раз по месяцу, региону и продукту; плана по каналам нет.",
       "context_refs": [
         "business-context.txt#6"
       ],
@@ -82,7 +82,7 @@
         "worst_product_contribution"
       ],
       "view_id": "product_contribution",
-      "interpretation": "Вклад — абсолютная разница к II кварталу, а не темп роста.",
+      "interpretation": "Вклад — абсолютная разница к периоду {previous_label}, а не темп роста.",
       "context_refs": [
         "business-context.txt#1"
       ],
@@ -187,7 +187,7 @@
         "worst_region_plan_gap"
       ],
       "view_id": null,
-      "interpretation": "Нет данных для CAC, удержания и причинной оценки рекламы. Не более двух параллельных внедрений.",
+      "interpretation": "Нет данных для CAC, удержания и причинной оценки рекламы. Параллельных внедрений — не более {max_parallel_implementations}; инженеров — {engineers}, аналитиков — {analysts}.",
       "context_refs": [
         "business-context.txt#7"
       ],
@@ -219,7 +219,6 @@
     {
       "action": "Проверить партнёрские скидки и себестоимость",
       "owner_role": "Коммерческий директор и финансовый контролёр",
-      "deadline": "2026-10-31",
       "context_ref": "business-context.txt#4",
       "criterion": "Согласованы определения и условия; представлены маржа до и после изменений без причинных обещаний",
       "budget_key": "partners",
@@ -231,9 +230,8 @@
     {
       "action": "Проверить готовность внедрения аналитики",
       "owner_role": "Руководитель продукта",
-      "deadline": "2026-11-30",
       "context_ref": "business-context.txt#4",
-      "criterion": "Согласована очередь внедрений; одновременно не более двух интеграционных проектов",
+      "criterion": "Согласована очередь внедрений; одновременно не более {max_parallel_implementations} интеграционных проектов; доступно инженеров: {engineers}, аналитиков: {analysts}",
       "budget_key": "implementation",
       "basis_fact_ids": [
         "best_product_contribution"
@@ -242,9 +240,8 @@
     {
       "action": "Проверить региональные предпосылки плана",
       "owner_role": "Региональные директора",
-      "deadline": "2026-12-31",
       "context_ref": "business-context.txt#4",
-      "criterion": "Подготовлены предпосылки по шести регионам; исходный план сохранён для сравнения",
+      "criterion": "Подготовлены предпосылки по всем {region_count} регионам; исходный план сохранён для сравнения",
       "budget_key": "regions",
       "basis_fact_ids": [
         "worst_region_plan_gap"
@@ -255,8 +252,8 @@
     "q3_net": "Чистая выручка",
     "q3_profit": "Валовая прибыль",
     "q3_margin": "Валовая маржа",
-    "qoq_net_growth": "Рост выручки к II кварталу",
-    "yoy_net_growth": "Рост выручки к III кварталу 2025",
+    "qoq_net_growth": "Изменение выручки к периоду {previous_label}",
+    "yoy_net_growth": "Изменение выручки к периоду {year_label}",
     "q3_net_plan_attainment": "Выполнение плана выручки",
     "q3_profit_plan_attainment": "Выполнение плана прибыли",
     "best_product_contribution": "Наибольший вклад продукта",
@@ -268,5 +265,7 @@
     "q3_refund_share": "Доля возвратов от gross-выручки",
     "qoq_margin_change": "Изменение общей маржи"
   },
-  "channel_hypothesis": "Расширение партнёрской программы могло повлиять на выручку и маржу. Наблюдение не доказывает причинный эффект."
+  "channel_hypothesis": "Расширение партнёрской программы могло повлиять на выручку и маржу. Наблюдение не доказывает причинный эффект.",
+  "channel_hypothesis_normalized": "Событие из контекста могло быть связано с изменением показателей канала. Причинный эффект не установлен.",
+  "channel_interpretation_normalized": "Сопоставлены выручка и маржа канала за выбранные периоды. Причины изменения требуют отдельной проверки."
 }
