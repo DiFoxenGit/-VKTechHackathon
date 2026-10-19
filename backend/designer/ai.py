@@ -144,6 +144,14 @@ def image_provider():
     Контракт — OpenAI-совместимый `/images/generations`, поэтому подключается
     любой сервис с таким эндпоинтом: хватает адреса, модели и ключа в окружении.
     """
+    profile = os.getenv("DESIGNER_IMAGE_PROVIDER", "openai").strip().lower()
+    if profile not in {"openai", "genapi"}:
+        raise HTTPException(503, "DESIGNER_IMAGE_PROVIDER must be openai or genapi")
+    if profile == "genapi":
+        from .image_genapi import BASE_URL
+        if os.getenv("DESIGNER_IMAGE_MODEL") != "z-image" or not os.getenv("DESIGNER_IMAGE_API_KEY", "").strip():
+            raise HTTPException(503, "Configure GenAPI image model z-image and its separate API key")
+        return BASE_URL, "z-image"
     url = (
         os.getenv("DESIGNER_IMAGE_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL", "")
     ).rstrip("/")
@@ -156,6 +164,11 @@ def image_provider():
     return url, model
 
 def image_available():
+    profile = os.getenv("DESIGNER_IMAGE_PROVIDER", "openai").strip().lower()
+    if profile not in {"openai", "genapi"}:
+        return False
+    if profile == "genapi":
+        return bool(os.getenv("DESIGNER_IMAGE_MODEL") == "z-image" and os.getenv("DESIGNER_IMAGE_API_KEY", "").strip())
     return bool(
         os.getenv("DESIGNER_IMAGE_MODEL")
         and (os.getenv("DESIGNER_IMAGE_BASE_URL") or os.getenv("DESIGNER_LLM_BASE_URL"))
@@ -170,6 +183,12 @@ async def draw_image(prompt, size=None) -> bytes:
     """
     url, model = image_provider()
     size = size or os.getenv("DESIGNER_IMAGE_SIZE", "1024x1024")
+    if os.getenv("DESIGNER_IMAGE_PROVIDER", "openai").strip().lower() == "genapi":
+        from .image_genapi import generate, GenApiError
+        try:
+            return await generate(prompt, size, os.environ["DESIGNER_IMAGE_API_KEY"])
+        except GenApiError as exc:
+            raise InvalidCompletion(str(exc)) from None
     key = os.getenv("DESIGNER_IMAGE_API_KEY") or os.getenv("DESIGNER_LLM_API_KEY", "local")
     async with httpx.AsyncClient(timeout=httpx.Timeout(180, connect=15)) as client:
         response = await client.post(
