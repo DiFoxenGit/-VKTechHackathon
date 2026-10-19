@@ -20,9 +20,9 @@ from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Pt
 
-from .assets import color_roles, draw_asset
+from .assets import color_roles, draw_asset, _mix
 from .analytics_bridge import CHARTS
-from .analytic_export import add_chart, add_source, numeric_cell
+from .analytic_export import add_chart, add_source, numeric_cell, display_number
 from .fonts import printable
 from .layout import STAT_BAR, STAT_INSET, estimated_text_height
 from .visuals import DIAGRAMS, MIN_LABEL_SIZE
@@ -186,6 +186,42 @@ def _clone_slide(
             _resize(element, fix["box"], deck.slide_width, deck.slide_height)
         target.shapes._spTree.insert_element_before(element, "p:extLst")
     return target
+
+
+def _materialize_footer(slide, layout, width, height):
+    """Make inherited logos explicit on a page containing only text boxes.
+
+    LibreOffice can omit layout artwork on these pages despite retaining its
+    relationships. Copy only small footer images/groups at their exact original
+    coordinates; keep their editable objects and original image bytes.
+    """
+    seen = {shape_key(shape, width, height) for shape in slide.shapes}
+    mapping = {}
+    for rel in layout.part.rels.values():
+        if rel.reltype.endswith(('/slideMaster', '/slideLayout')):
+            continue
+        mapping[rel.rId] = slide.part.relate_to(
+            rel.target_ref if rel.is_external else rel.target_part,
+            rel.reltype, is_external=rel.is_external,
+        )
+    identifier = slide.shapes._next_shape_id
+    for shape in layout.shapes:
+        key = shape_key(shape, width, height)
+        if key in seen or shape.shape_type not in (MSO_SHAPE_TYPE.GROUP, MSO_SHAPE_TYPE.PICTURE):
+            continue
+        if not (shape.top >= height*.8 and shape.width <= width*.45 and shape.height <= height*.15):
+            continue
+        element = copy.deepcopy(shape._element)
+        for node in element.iter():
+            if node.tag == qn('p:cNvPr'):
+                node.set('id', str(identifier))
+                identifier += 1
+                node.set('name', 'template-footer-' + node.get('name', ''))
+            for key_attr, value in list(node.attrib.items()):
+                if key_attr.startswith('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}') and value in mapping:
+                    node.set(key_attr, mapping[value])
+        slide.shapes._spTree.insert_element_before(element, 'p:extLst')
+        seen.add(key)
 
 
 def _mix(color, other, ratio):
@@ -471,6 +507,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             orphans,
             slide_data.get("shape_fixes"),
         )
+        if not template.get('brandbook') and all(e['kind'] == 'text' for e in slide_data['elements']):
+            _materialize_footer(slide, source.slide_layout, deck.slide_width, deck.slide_height)
         if slide_data.get("analytic_layout") and not template.get("brandbook"):
             # Large empty layout placeholders can carry a white fill even after
             # their slide instances are removed (e.g. Education image slots).
@@ -616,24 +654,42 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             elif kind == "table":
                 visual = element["data"]
                 rows = [visual["columns"], *visual["rows"]]
-                table = slide.shapes.add_table(
-                    len(rows), len(rows[0]), x, y, w, h - (Pt(24) if visual.get("source") else 0)
-                ).table
-                weights = [max(8, min(50, max(len(str(row[c])) for row in rows))) for c in range(len(rows[0]))]
+                # Keep the source below the last row, including Office's text
+                # margins; the source textbox itself is 24 pt high.
+                table_height=min(h - (Pt(34) if visual.get('source') else 0), Pt(38*len(rows))) if len(rows)<=3 else h - (Pt(34) if visual.get('source') else 0)
+                table = slide.shapes.add_table(len(rows), len(rows[0]), x, y, w, table_height).table
+                def column_weight(c):
+                    values=[str(row[c]) for row in rows]
+                    # Minimum width for unbroken numbers/dates plus cell padding.
+                    longest=max((len(word) for value in values for word in value.split()),default=1)
+                    return max(12, min(42, max(map(len,values))), min(30,longest)+5)
+                weights = [column_weight(c) for c in range(len(rows[0]))]
                 for c, weight in enumerate(weights):
                     table.columns[c].width = int(w * weight / sum(weights))
+                table.rows[0].height=min(table.rows[0].height,Pt(32))
+                remaining=table_height-table.rows[0].height
+                for r in range(1,len(rows)):table.rows[r].height=int(remaining/(len(rows)-1))
                 for r, values in enumerate(rows):
                     for c, value in enumerate(values):
                         cell = table.cell(r, c)
-                        cell.text = printable(str(value), font, coverage)
+                        cell.text = printable(display_number(value) if r > 0 else str(value), font, coverage)
                         # Default Office padding adds 7.2 pt per row. LibreOffice
                         # expands dense tables beyond their planned frame to fit it.
-                        cell.margin_top = cell.margin_bottom = Pt(1)
-                        cell.margin_left = cell.margin_right = Pt(4)
+                        row_height = table.rows[r].height / 12700
+                        font_size = min(14, max(12, (row_height-4)/1.2))
+                        cell.margin_top = cell.margin_bottom = Pt(min(3,max(1,(row_height-font_size*1.2)/2)))
+                        cell.margin_left = cell.margin_right = Pt(7)
                         cell.fill.solid()
                         cell.fill.fore_color.rgb = RGBColor.from_string(
-                            accent if r == 0 else background
+                            accent if r == 0 else _mix(background, text_color, .96 if r % 2 else 1)
                         )
+                        tc_pr = cell._tc.get_or_add_tcPr()
+                        for edge in ('lnL','lnR','lnT','lnB'):
+                            for old in list(tc_pr.findall(qn('a:'+edge))):
+                                tc_pr.remove(old)
+                            line = OxmlElement('a:'+edge)
+                            line.append(OxmlElement('a:noFill'))
+                            tc_pr.append(line)
                         color = (
                             best_text_color(accent, palette) if r == 0 else text_color
                         )
@@ -641,7 +697,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                             p.alignment = PP_ALIGN.RIGHT if r > 0 and numeric_cell(value) else PP_ALIGN.LEFT
                             p.space_before = p.space_after = Pt(0)
                             p.line_spacing = 1.0
-                            _font(p.font, font, 13, color, r == 0)
+                            total = r > 0 and str(values[0]).strip().lower() in {'итого', 'всего', 'total'}
+                            _font(p.font, font, font_size, color, r == 0 or total)
                 add_source(slide, visual, (x, y, w, h), font, text_color)
             elif kind == "image":
                 icon = element.get("role") == "icon"

@@ -1,0 +1,16 @@
+{
+  "baseline": {
+    "engineers": 2,
+    "analysts": 1,
+    "max_parallel_implementations": 2
+  },
+  "version-b": {
+    "engineers": 3,
+    "analysts": 2,
+    "max_parallel_implementations": 1
+  },
+  "net_delta_rub": 1260000,
+  "profit_delta_rub": 990000,
+  "synthetic": true,
+  "source_dictionaries": "../data-v1/products.csv and regions.csv; sales and plan copied for standalone oracle replay"
+}

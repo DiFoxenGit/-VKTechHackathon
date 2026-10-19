@@ -342,10 +342,17 @@ def slide_mode(content, variant, position, total, assets, used):
         or (total > 2 and position == total - 1)
     ):
         return None
+    generated = next((a for a in assets if a.get('source') == 'generated' and (a.get('target_title') == content['title'] or (not a.get('target_title') and a.get('slide') == position))), None)
+    if generated and len(bullets) <= 4 and sum(map(len, bullets)) <= 800:
+        return {'kind': 'picture', 'asset': generated}
     values = stat_plan(bullets)
     if values:
         return {"kind": "stats", "values": values}
     text = " ".join(bullets)
+    if len(bullets) <= 4 and len(text) <= 640:
+        pack_picture = pick_picture(text, [a for a in assets if a.get('source') == 'pack' and a['id'] not in used['pictures']], title=content['title'])
+        if pack_picture:
+            return {'kind': 'picture', 'asset': pack_picture}
     if variant == "classic" and 2 <= len(bullets) <= 5:
         icons, matched = pick_icons(bullets, assets, used["icons"])
         if icons[0] is not None and matched >= math.ceil(len(bullets) / 2):
@@ -370,7 +377,7 @@ def content_demand(content, position=1, total=1, mode=None):
         "cover": position == 0,
         "closing": total > 1 and position == total - 1,
         # Сколько карточек пригодилось бы этому слайду.
-        "cards": 0 if content["visual"]["kind"] != "none" or mode else len(bullets),
+        "cards": 0 if content["visual"]["kind"] != "none" or (mode and mode['kind'] != 'icons') else len(bullets),
     }
 
 
@@ -531,7 +538,7 @@ def score_pattern(pattern, demand, recent, uses=0):  # noqa: C901 - правил
     return round(score, 6)
 
 
-def choose_pattern(candidates, content, recent, usage=None, position=1, total=1, mode=None):
+def choose_pattern(candidates, content, recent, usage=None, position=1, total=1, mode=None, slide_size=(960, 540)):
     demand = content_demand(content, position, total, mode)
     usage = usage or {}
     wanted = 'cover' if demand['cover'] else 'closing' if demand['closing'] else None
@@ -541,6 +548,15 @@ def choose_pattern(candidates, content, recent, usage=None, position=1, total=1,
     elif not demand['cover']:
         reusable = [p for p in candidates if p.get('role') not in ('cover', 'closing')]
         candidates = reusable or candidates
+    if not wanted:
+        # Capacity is a constraint, before variety and decoration scores. A
+        # three-card specimen cannot become a two-block page without leaving an
+        # empty container. Prefer an exact grid, otherwise a page without one.
+        grids = {p['index']: len(card_slots(p.get('slots') or [], 1., 1.)) for p in candidates}
+        exact = [p for p in candidates if demand['cards'] >= 2 and grids[p['index']] == demand['cards']
+                 and cards_fit(content['bullets'], card_slots(p.get('slots') or [], *slide_size), slide_size[1])]
+        unframed = [p for p in candidates if not grids[p['index']]]
+        candidates = exact or unframed or candidates
     scored = [
         (score_pattern(p, demand, recent, usage.get(p["index"], 0)), -p["index"], p)
         for p in candidates
@@ -726,6 +742,49 @@ def card_slots(body_slots, width, height, minimum=2, maximum=6):
         [b["x"] * width, b["y"] * height, b["w"] * width, b["h"] * height]
         for b in cards
     ]
+
+
+def card_containers(pattern, branding=()):
+    """Specimen card backgrounds to remove when their grid is not being used.
+
+    Retain photographs, grouped artwork, and repeated branding. Only simple
+    shapes enclosing one of the specimen's text slots qualify as containers.
+    """
+    cards = card_slots(pattern.get('slots') or [], 1., 1.)
+    found = []
+    for shape in pattern.get('shapes') or []:
+        box = shape['box']
+        key = tuple(round(box[k], 3) for k in ('x', 'y', 'w', 'h'))
+        if shape.get('text', '').strip() or key in {tuple(b) for b in branding}:
+            continue
+        if not str(shape.get('type', '')).startswith('AUTO_SHAPE'):
+            continue
+        x, y, w, h = (box[k] for k in ('x', 'y', 'w', 'h'))
+        if not .02 <= w*h < .5:
+            continue
+        if any(x <= cx+.01 and y <= cy+.01 and x+w >= cx+cw-.01 and y+h >= cy+ch-.01 for cx, cy, cw, ch in cards):
+            found.append(shape['id'])
+    return found
+
+
+def cards_fit(bullets, cards, height, minimum=14):
+    """A correct block count still needs enough room for readable sentences."""
+    if len(cards) != len(bullets):
+        return False
+    for bullet, box in zip(bullets, cards):
+        pad = min(12., box[2]*.08, box[3]*.12)
+        chars = max(1, (box[2]-2*pad-12)/(minimum*.58))
+        lines, used = 1, 0
+        for word in bullet.split():
+            if used and used+len(word)+1 > chars:
+                lines += 1
+                used = 0
+            lines += max(0, math.ceil(len(word)/chars)-1)
+            used += len(word)+1
+        available = card_depth(box, cards, [], height*.88)-2*pad
+        if lines*minimum*1.3+8 > available:
+            return False
+    return True
 
 
 def slot_align(style):
@@ -1010,7 +1069,7 @@ def compose(outline, template, variant, assets=None):
     """assets — библиотека картинок колоды (шаблон, пакеты, встроенный набор)."""
     if outline.get("slides") and any(s.get("analysis_id") for s in outline["slides"]):
         from .analytics_layout import compose_analytics
-        return compose_analytics(outline, template, variant)
+        return compose_analytics(outline, template, variant, assets)
     if assets is None:
         assets = library(template)
     used = {"icons": set(), "pictures": set()}
@@ -1045,9 +1104,11 @@ def compose(outline, template, variant, assets=None):
     recent: list[int] = []
     usage: dict[int, int] = {}
     for i, content in enumerate(outline["slides"]):
-        mode = slide_mode(content, variant, i, len(outline["slides"]), assets, used)
+        position = i + 1 if outline.get('content_pages') else i
+        total = len(outline['slides']) + (2 if outline.get('content_pages') else 0)
+        mode = slide_mode(content, variant, position, total, assets, used)
         pattern, pattern_score = choose_pattern(
-            candidates, content, recent, usage, i, len(outline["slides"]), mode
+            candidates, content, recent, usage, position, total, mode, (width, height)
         )
         if mode and mode["kind"] == "icons":
             # Карточная страница с местом под значок над каждой карточкой — это
@@ -1114,14 +1175,21 @@ def compose(outline, template, variant, assets=None):
         # выше первой из них, иначе длинный заголовок ложится прямо на карточку.
         cards = (
             card_slots(body_slots, width, height)
-            if not has_visual and variant != "focus" and not mode
+            if not has_visual and not mode
             else []
         )
+        specimen_cards = card_slots(body_slots, width, height)
+        # Never concatenate independent blocks into the last card, or retain
+        # unused cards. The fallback uses the whole stage and drops the specimen
+        # containers at export, preserving the template's logos and artwork.
+        if cards and not cards_fit(content['bullets'], cards, height):
+            cards = []
+        adapting_cards = bool(specimen_cards and not cards)
         # Compose around branding the template keeps on every slide: narrow the
         # title away from a corner logo, and drop below a full-width wordmark.
         # Диаграмма и своя композиция (фактоиды, иконки, картинка) занимают
         # сцену целиком: стрелки и значки образца рядом с ними — мусор.
-        staged = bool(mode) or content["visual"]["kind"] != "none"
+        staged = bool(mode) or content["visual"]["kind"] != "none" or adapting_cards
         # Своя композиция (фактоиды, иконки, картинка) убирает со сцены мелкие
         # образцы страницы: экспорт их не переносит, обходить их незачем.
         branding = template.get("branding") or ()
@@ -1326,6 +1394,24 @@ def compose(outline, template, variant, assets=None):
                 }
             )
             used["pictures"].add(asset["id"])
+        elif cards:
+            # Each independent block owns one filled template card, in every variant.
+            groups = [[b] for b in bullets]
+            for index, (group, box) in enumerate(zip(groups, cards)):
+                # Отступ внутри карточки: текст не липнет к её рамке.
+                pad = min(12.0, box[2] * 0.08, box[3] * 0.12)
+                text_box(
+                    f"card_{index}",
+                    group,
+                    [
+                        box[0] + pad,
+                        box[1] + pad,
+                        box[2] - pad * 2,
+                        card_depth(box, cards, reserved, bottom) - pad * 2,
+                    ],
+                    marker=False,
+                )
+                elements[-1]["from_template"] = True
         elif variant == "split" and (not special_region or w >= width * 0.7):
             bw = (w - gap) / 2
             if has_visual:
@@ -1431,27 +1517,6 @@ def compose(outline, template, variant, assets=None):
                         h - lead_h - h * 0.06,
                     ],
                 )
-        elif cards and len(bullets) >= 2:
-            # Тезисы расходятся по карточкам шаблона: по одному на карточку,
-            # остаток дописывается в последнюю, чтобы ничего не потерять.
-            groups = [[b] for b in bullets[: len(cards)]]
-            for extra in bullets[len(cards) :]:
-                groups[-1].append(extra)
-            for index, (group, box) in enumerate(zip(groups, cards)):
-                # Отступ внутри карточки: текст не липнет к её рамке.
-                pad = min(12.0, box[2] * 0.08, box[3] * 0.12)
-                text_box(
-                    f"card_{index}",
-                    group,
-                    [
-                        box[0] + pad,
-                        box[1] + pad,
-                        box[2] - pad * 2,
-                        card_depth(box, cards, reserved, bottom) - pad * 2,
-                    ],
-                    marker=False,
-                )
-                elements[-1]["from_template"] = True
         else:
             text_box("body", bullets, [margin, top, w, h])
         # A sparse opening slide follows the cover's own title/subtitle frames,
@@ -1596,7 +1661,7 @@ def compose(outline, template, variant, assets=None):
             # Фон не измерен: о его светлоте ничего не известно, поэтому под
             # текст кладётся светлая подложка — самый безопасный вариант.
             background = tokens["theme"].get("lt1", "FFFFFF")
-        native_cover = i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1
+        native_cover = not outline.get('content_pages') and i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1
         if native_cover:
             sampled = pattern.get('title_background')
             if sampled:
@@ -1642,7 +1707,7 @@ def compose(outline, template, variant, assets=None):
                 "clear_stage": staged,
                 # Значки образца страницы: на слайд они не переносятся, на их
                 # местах стоят подобранные иконки (swap_*), если нашлись.
-                "drop_shapes": [slot["id"] for slot in slots],
+                "drop_shapes": [slot["id"] for slot in slots] + (card_containers(pattern, branding) if adapting_cards else []),
                 # Kept so the UI and the pitch can answer "why this layout?".
                 "pattern_choice": {
                     "score": pattern_score,

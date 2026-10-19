@@ -176,7 +176,23 @@ def analyse_sources(sources, goal):
     return results
 
 
+def validate_business_scope(sources, brief):
+    """Never present primitive sums as requested joins/derived profitability.
+
+    Remove this guard only when the business-analysis contract covers these
+    operations. Simple explicit analysis of gross sales remains available.
+    """
+    import re
+    columns = {str(c).lower() for s in sources for t in s.get('datasets',[]) for c in t['columns']}
+    derived = re.search(r'марж|прибыл|план[ -]?факт|после[^.\n]{0,50}(?:скид|возврат)|net[_ ]revenue|gross[_ ]profit', brief, re.I)
+    if 'gross_revenue_rub' in columns and derived:
+        raise ValueError('Этот бизнес-запрос пока не поддержан полностью: нужны выручка после скидок и возвратов, отношение сумм для маржи и соединение с планом по месяцу, региону и продукту. Текущий анализатор строит отдельные представления таблиц. Презентация остановлена, чтобы не подменить запрошенные расчёты суммой gross_revenue_rub. Требуется интеграция бизнес-аналитики D2.')
+
+
 def _verify_results(results, sources):
+    if sources[0].get('_business'):
+        from .business_bridge import verify_business
+        return verify_business(sources, results)
     for result in results:
         if "contract" not in result:
             raise ValueError("Презентация создана временной аналитикой. Пересоздайте её из сохранённых исходных файлов для проверки AnalysisResult 1.0")
@@ -194,6 +210,9 @@ def _verify_results(results, sources):
 
 
 def build_outline(results, sources, limit):
+    if sources[0].get('_business'):
+        from .business_bridge import business_outline
+        return business_outline(sources, limit)
     from .models import Outline
     slides = []
     for result in results:

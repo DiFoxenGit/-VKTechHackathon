@@ -15,11 +15,12 @@ export type AnalysisResult = {
   status: string; reason?: string; source_file: string; sheet: string; source_hash: string;
   candidates: {kind: string; reason: string}[]; warnings: string[];
   profile: {row_count: number; columns: {id: string; name: string; kind: string; role: string; missing: number}[]};
-  analysis_request?: AnalysisRequest; packId?: string;
+  analysis_request?: AnalysisRequest; packId?: string; business_view?: string;
+  business_explanation?: {metric:string;formula:string;period:string;unit:string;source:string;exclusions:string;filters:string};
   contract?: {schema_version: '1.0'; dataset_ref: unknown; analysis: unknown; visualization: unknown; data: unknown; facts: unknown[]; presentation: unknown; status: string};
   facts: unknown[]; provenance: unknown[]; visual: Visual;
 };
-export type Material = { id: string; name: string; text: string; goal?: string; analysisRequests?: Record<string,AnalysisRequest>; file_report?: {name: string; status: string; reason?: string}[] };
+export type Material = { sizeBytes?: number; rowCount?: number; tableCount?: number; sourceHash?: string; id: string; name: string; text: string; goal?: string; analysisRequests?: Record<string,AnalysisRequest>; file_report?: {name: string; status: string; reason?: string}[] };
 export type Brandbook = {id: string; name: string; tokens: {colors?: string[]; font?: string; background?: string}; warnings: string[]};
 export const visualNames: Record<string, string> = {table:'Таблица',bar:'Столбцы',line:'Линия',pie:'Круговая',scatter:'Точечная',histogram:'Гистограмма',grouped_bar:'Группированные столбцы',stacked_bar:'Накопительные столбцы',kpi:'Ключевой показатель'};
 export function parseVisual(input: unknown): Visual | undefined {

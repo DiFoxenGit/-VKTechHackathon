@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
-    "check": "tsc -b && node scripts/check-pipeline.mjs && node scripts/check-service.mjs && node scripts/check-storage.mjs && node scripts/check-analytics.mjs && node scripts/check-slide-count.mjs",
+    "check": "tsc -b && node scripts/check-pipeline.mjs && node scripts/check-service.mjs && node scripts/check-storage.mjs && node scripts/check-analytics.mjs && node scripts/check-business.mjs && node scripts/check-slide-count.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "npm run check"
   },

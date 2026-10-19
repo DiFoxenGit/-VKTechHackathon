@@ -25,6 +25,8 @@ const generationStages: Record<ServiceProgress['stage'], { title: string; detail
 };
 
 const generationTitles: Record<string, string> = {
+  analytics: 'Проверяем данные и периоды',
+  model_content: 'Модель готовит выводы',
   outline: 'Собираем структуру',
   balance: 'Распределяем содержание',
   assets: 'Подбираем материалы',

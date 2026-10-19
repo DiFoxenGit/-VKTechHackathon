@@ -1,3 +1,6 @@
+import { businessApiFields } from '../business';
+import { parseInference } from '../inference';
+import type { BusinessRequest } from '../business';
 import { templates as localTemplates } from '../data/templates';
 import { toBackendOutline } from '../algorithms/outline';
 import type { Outline } from '../algorithms/outline';
@@ -36,9 +39,12 @@ type BackendTemplate = {
   layouts?: Array<{ index: number; name: string }>;
 };
 
-type ContentPack = Material & {sha256: string};
+export const materialSourceUrl = (id: string) => `${API_BASE}/content-packs/${encodeURIComponent(id)}/source`;
+
+type ContentPack = Material & {sha256: string; datasets?: {rows: unknown[]; sheet: string}[]};
 
 type Job = {
+  inference?: unknown;
   id: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
   progress?: number;
@@ -49,6 +55,9 @@ type Job = {
 };
 
 type BackendPresentation = {
+  generation?: { inference?: unknown };
+  business_request?: BusinessRequest | null;
+  image_generation?: import('../types').ImageGeneration;
   id: string;
   title: string;
   template_id: string;
@@ -186,6 +195,8 @@ function upload<T>(path: string, file: File, options: ServiceOptions): Promise<T
 
 function jobProgress(job: Job): ServiceProgress {
   const messages: Record<string, string> = {
+    analytics: 'Проверяем факты и рассчитываем показатели',
+    model_content: 'Текстовая модель формулирует выводы по проверенным фактам',
     outline: 'Собираем структуру презентации',
     balance: 'Распределяем содержание по слайдам',
     assets: 'Подбираем материалы шаблона',
@@ -269,12 +280,14 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
     templateId: record.template_id,
     layout: record.variant === 'focus' ? 'focus' : record.variant === 'split' ? 'story' : 'classic',
     updatedAt: record.created_at ? new Date(record.created_at * 1000).toISOString() : new Date().toISOString(),
-    brief: { ...brief },
+    brief: { ...brief, ...(record.business_request ? {business:record.business_request} : {}) },
     remote: true,
     revision: record.revision,
     exports: record.exports,
     serverIssues,
     analysis: record.analysis,
+    imageGeneration: record.image_generation,
+    inference: parseInference(record.generation?.inference),
   };
 }
 
@@ -285,8 +298,10 @@ export interface PresentationService {
   uploadContent(file: File, options?: ServiceOptions): Promise<ContentPack>;
   uploadBrandbook(file: File, options?: ServiceOptions): Promise<Brandbook>;
   analyseContent(packId: string, goal: string, options?: ServiceOptions, selections?: Record<string,AnalysisRequest>): Promise<{items: AnalysisResult[]}>;
+  analyseMaterials(brief: Brief, options?: ServiceOptions): Promise<{items: AnalysisResult[]}>;
   generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
   save(deck: Deck, options?: ServiceOptions): Promise<Deck>;
+  retryIllustration(deck: Deck, options?: ServiceOptions): Promise<Deck>;
   download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
 
@@ -304,8 +319,10 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       slide_count: brief.slideCount,
       content_pack_ids: brief.contentPackIds || [],
       contextual_audit: false,
-      narrative: brief.narrative === true,
-      analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n'),
+      narrative: brief.narrative !== false,
+      ...(brief.generateImages !== undefined ? {generate_images:brief.generateImages} : {}),
+      analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n').slice(0,1000),
+      ...businessApiFields(brief.business),
       analysis_requests: Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
       analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
       ...(brief.brandbook ? {brandbook_id: brief.brandbook.id} : {}),
@@ -372,6 +389,16 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
       return request<{items: AnalysisResult[]}>(`/content-packs/${encodeURIComponent(packId)}/analysis`, {method: 'POST',body:JSON.stringify({goal,requests:selections}),signal: options.signal});
     },
 
+    async analyseMaterials(brief, options = {}) {
+      return request<{items: AnalysisResult[]}>('/analysis', {method:'POST',signal:options.signal,body:JSON.stringify({
+        brief:brief.text, template_id:brief.templateId || 'analysis', slide_count:brief.slideCount,
+        content_pack_ids:brief.contentPackIds || [], analysis_goal:brief.text.slice(0,1000),
+        ...businessApiFields(brief.business),
+        analysis_requests:Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
+        analysis_goals:Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
+      })});
+    },
+
     async generate(brief, templateId, options = {}) {
       const messages: Partial<Record<PipelineStage, string>> = {
         prepare: 'Подготавливаем материалы', algorithms: 'Распределяем исходный текст по слайдам',
@@ -391,6 +418,11 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
       }
       options.onProgress?.({ stage: 'complete', progress: 100 });
       return result;
+    },
+
+    async retryIllustration(deck, options = {}) {
+      const record = await request<BackendPresentation>(`/presentations/${encodeURIComponent(deck.id)}/illustrations/retry`, {method:'POST',signal:options.signal,body:JSON.stringify({revision:deck.revision})}, GENERATION_TIMEOUT);
+      return mapPresentation(record, deck.brief || {text:deck.title,audience:'',goal:'',slideCount:deck.slides.length,templateId:deck.templateId,materials:''});
     },
 
     async save(deck, options = {}) {

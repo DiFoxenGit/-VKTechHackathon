@@ -33,3 +33,18 @@ assert.deepEqual(readSaved(), { brief: DEFAULT_BRIEF, decks: [], customTemplates
 globalThis.localStorage.getItem = () => { throw new Error('Storage denied'); };
 assert.equal(readSaved().decks.length, 0);
 console.log('PASS: saved project round-trip, damaged data recovery, independent slide IDs, legacy defaults, denied storage');
+
+globalThis.localStorage.getItem = () => stored;
+const inference = {requested:true,attempted:true,completed:true,provider:'vk',model:'qwen38-27b-fp8',attempts:1,successful_calls:1,duration_seconds:1.2,validation:'passed',fallback_used:false,status:'completed',error_code:null,response_id:'provider-response',content_reused_for_variants:3};
+assert.deepEqual(load({decks:[{...deck,inference}]}).decks[0].inference,inference,'Verified model evidence must survive reopening');
+assert.equal(load({decks:[{...deck,inference:{...inference,authorization:'secret',calls:[{headers:'secret'}]}}]}).decks[0].inference.authorization,undefined,'Only public diagnostic fields are stored');
+const {parseInference,hasValidatedModelText,inferenceCopy} = await loadModule('src/inference.ts');
+assert.equal(hasValidatedModelText(parseInference(inference)),true);
+for (const patch of [{attempted:false},{attempts:0},{successful_calls:0},{completed:false},{validation:'failed'},{fallback_used:true}]) {
+  const evidence=parseInference({...inference,...patch});
+  assert.equal(hasValidatedModelText(evidence),false,'Configuration or inconsistent evidence must never prove a model call');
+  assert.equal(inferenceCopy(evidence).retry,true);
+}
+assert.match(inferenceCopy(parseInference({...inference,completed:false,fallback_used:true,error_code:'timeout'})).message,/не ответил вовремя/);
+assert.equal(parseInference({model:'qwen',completed:true}),undefined);
+console.log('PASS: model evidence persistence, secret-field exclusion, fail-closed success and actionable fallback');

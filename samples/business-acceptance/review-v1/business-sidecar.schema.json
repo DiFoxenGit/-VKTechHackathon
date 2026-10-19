@@ -1,0 +1,1513 @@
+{
+  "$defs": {
+    "Analysis": {
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "title": "Goal",
+          "type": "string"
+        },
+        "task": {
+          "enum": [
+            "dynamics",
+            "comparison",
+            "shares",
+            "distribution",
+            "relationship",
+            "reference",
+            "summary"
+          ],
+          "title": "Task",
+          "type": "string"
+        },
+        "dimension": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimension"
+        },
+        "series_dimension": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Series Dimension"
+        },
+        "metrics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metrics",
+          "type": "array"
+        },
+        "aggregation": {
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "missing_policy": {
+          "const": "preserve_gaps_exclude_from_aggregate",
+          "default": "preserve_gaps_exclude_from_aggregate",
+          "title": "Missing Policy",
+          "type": "string"
+        },
+        "transformations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Transformations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "goal",
+        "task",
+        "aggregation"
+      ],
+      "title": "Analysis",
+      "type": "object"
+    },
+    "AnalysisRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "default": "",
+          "title": "Goal",
+          "type": "string"
+        },
+        "task": {
+          "anyOf": [
+            {
+              "enum": [
+                "dynamics",
+                "comparison",
+                "shares",
+                "distribution",
+                "relationship",
+                "reference",
+                "summary"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Task"
+        },
+        "dimension": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimension"
+        },
+        "series_dimension": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Series Dimension"
+        },
+        "series_additive": {
+          "default": false,
+          "title": "Series Additive",
+          "type": "boolean"
+        },
+        "metrics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Metrics",
+          "type": "array"
+        },
+        "aggregation": {
+          "default": "sum",
+          "enum": [
+            "sum",
+            "mean",
+            "median",
+            "count"
+          ],
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "locale": {
+          "default": "ru",
+          "enum": [
+            "ru",
+            "en"
+          ],
+          "title": "Locale",
+          "type": "string"
+        },
+        "bins": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bins"
+        },
+        "page_size": {
+          "default": 10,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "slide_budget": {
+          "default": 30,
+          "maximum": 30,
+          "minimum": 1,
+          "title": "Slide Budget",
+          "type": "integer"
+        },
+        "column_types": {
+          "additionalProperties": {
+            "enum": [
+              "number",
+              "date",
+              "category",
+              "text"
+            ],
+            "type": "string"
+          },
+          "title": "Column Types",
+          "type": "object"
+        },
+        "number_locale": {
+          "anyOf": [
+            {
+              "enum": [
+                "decimal_comma",
+                "decimal_point"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number Locale"
+        },
+        "filters": {
+          "additionalProperties": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "title": "Filters",
+          "type": "object"
+        }
+      },
+      "title": "AnalysisRequest",
+      "type": "object"
+    },
+    "AnalysisResult": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "dataset_ref": {
+          "$ref": "#/$defs/DatasetRef"
+        },
+        "profile": {
+          "$ref": "#/$defs/Profile"
+        },
+        "analysis": {
+          "$ref": "#/$defs/Analysis"
+        },
+        "visualization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Visualization"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data": {
+          "$ref": "#/$defs/VisualData"
+        },
+        "facts": {
+          "items": {
+            "$ref": "#/$defs/Fact"
+          },
+          "title": "Facts",
+          "type": "array"
+        },
+        "presentation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Presentation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "warning",
+            "refused"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "refusal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Notice"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "dataset_ref",
+        "profile",
+        "analysis",
+        "status"
+      ],
+      "title": "AnalysisResult",
+      "type": "object"
+    },
+    "BusinessFact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "exact": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Exact"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "unit": {
+          "enum": [
+            "RUB",
+            "%",
+            "pp"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "period": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Period",
+          "type": "array"
+        },
+        "formula": {
+          "title": "Formula",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/SourceEvidence"
+          },
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "rounding": {
+          "title": "Rounding",
+          "type": "string"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        }
+      },
+      "required": [
+        "id",
+        "exact",
+        "value",
+        "unit",
+        "period",
+        "formula",
+        "evidence",
+        "rounding"
+      ],
+      "title": "BusinessFact",
+      "type": "object"
+    },
+    "BusinessPeriods": {
+      "additionalProperties": false,
+      "properties": {
+        "current": {
+          "default": [
+            "2026-07",
+            "2026-09"
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Current",
+          "type": "array"
+        },
+        "previous": {
+          "default": [
+            "2026-04",
+            "2026-06"
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Previous",
+          "type": "array"
+        },
+        "year_ago": {
+          "default": [
+            "2025-07",
+            "2025-09"
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Year Ago",
+          "type": "array"
+        },
+        "history": {
+          "default": [
+            "2025-01",
+            "2026-09"
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "History",
+          "type": "array"
+        },
+        "plan": {
+          "default": [
+            "2026-01",
+            "2026-12"
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Plan",
+          "type": "array"
+        }
+      },
+      "title": "BusinessPeriods",
+      "type": "object"
+    },
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "table",
+            "line",
+            "bar",
+            "histogram",
+            "pie",
+            "scatter",
+            "grouped_bar",
+            "stacked_bar",
+            "kpi"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "rank": {
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "reason": {
+          "$ref": "#/$defs/Notice"
+        }
+      },
+      "required": [
+        "kind",
+        "rank",
+        "reason"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "Column": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "normalization": {
+          "default": "identity",
+          "enum": [
+            "identity",
+            "excel_percentage_points",
+            "excel_day_fraction"
+          ],
+          "title": "Normalization",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Column",
+      "type": "object"
+    },
+    "ColumnProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "number",
+            "date",
+            "category",
+            "text",
+            "empty",
+            "ambiguous"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "metric",
+            "dimension",
+            "time",
+            "identifier",
+            "unknown"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "missing": {
+          "default": 0,
+          "title": "Missing",
+          "type": "integer"
+        },
+        "distinct": {
+          "default": 0,
+          "title": "Distinct",
+          "type": "integer"
+        },
+        "outlier_row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Outlier Row Ids",
+          "type": "array"
+        },
+        "period": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Period",
+          "type": "array"
+        },
+        "periodicity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Periodicity"
+        },
+        "missing_periods": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Periods",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "role"
+      ],
+      "title": "ColumnProfile",
+      "type": "object"
+    },
+    "Dataset": {
+      "additionalProperties": false,
+      "description": "Store this object in full. rows are never slide-sized samples.",
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "ref": {
+          "$ref": "#/$defs/DatasetRef"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/Column"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Row Ids",
+          "type": "array"
+        },
+        "context": {
+          "default": "",
+          "title": "Context",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ref",
+        "columns",
+        "rows",
+        "row_ids"
+      ],
+      "title": "Dataset",
+      "type": "object"
+    },
+    "DatasetRef": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "source_sha256": {
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "archive_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Archive Path"
+        },
+        "table": {
+          "title": "Table",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataset_id",
+        "source_sha256",
+        "filename",
+        "table"
+      ],
+      "title": "DatasetRef",
+      "type": "object"
+    },
+    "DerivedRow": {
+      "additionalProperties": false,
+      "properties": {
+        "derived_row": {
+          "minimum": 2,
+          "title": "Derived Row",
+          "type": "integer"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/SourceEvidence"
+          },
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "derived_row",
+        "evidence"
+      ],
+      "title": "DerivedRow",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "description": "Source coordinates, not a global whitelist of numbers.",
+      "properties": {
+        "source_sha256": {
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Row Ids",
+          "type": "array"
+        },
+        "column_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Column Ids",
+          "type": "array"
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Parameters",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source_sha256",
+        "row_ids",
+        "column_ids",
+        "operation"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Fact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "exact": {
+          "title": "Exact",
+          "type": "string"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "period": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Period",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "rounding_digits": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rounding Digits"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "exact",
+        "unit",
+        "evidence"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "Notice": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "Notice",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "row_id": {
+          "title": "Row Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "row_id"
+      ],
+      "title": "Point",
+      "type": "object"
+    },
+    "Presentation": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "x_label": {
+          "default": "",
+          "title": "X Label",
+          "type": "string"
+        },
+        "y_label": {
+          "default": "",
+          "title": "Y Label",
+          "type": "string"
+        },
+        "x_unit": {
+          "default": "",
+          "title": "X Unit",
+          "type": "string"
+        },
+        "y_unit": {
+          "default": "",
+          "title": "Y Unit",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "period": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Period",
+          "type": "array"
+        },
+        "source_label": {
+          "title": "Source Label",
+          "type": "string"
+        },
+        "conclusion_fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conclusion Fact Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "title",
+        "source_label"
+      ],
+      "title": "Presentation",
+      "type": "object"
+    },
+    "Profile": {
+      "additionalProperties": false,
+      "properties": {
+        "row_count": {
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "column_count": {
+          "title": "Column Count",
+          "type": "integer"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/ColumnProfile"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "hierarchies": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Hierarchies",
+          "type": "array"
+        },
+        "dimension_count": {
+          "title": "Dimension Count",
+          "type": "integer"
+        },
+        "metric_count": {
+          "title": "Metric Count",
+          "type": "integer"
+        },
+        "warnings": {
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "row_count",
+        "column_count",
+        "columns",
+        "dimension_count",
+        "metric_count"
+      ],
+      "title": "Profile",
+      "type": "object"
+    },
+    "ReadyView": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset": {
+          "$ref": "#/$defs/Dataset"
+        },
+        "request": {
+          "$ref": "#/$defs/AnalysisRequest"
+        },
+        "result": {
+          "$ref": "#/$defs/AnalysisResult"
+        }
+      },
+      "required": [
+        "dataset",
+        "request",
+        "result"
+      ],
+      "title": "ReadyView",
+      "type": "object"
+    },
+    "Series": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        },
+        "fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fact Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "values",
+        "fact_ids"
+      ],
+      "title": "Series",
+      "type": "object"
+    },
+    "SourceEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "table": {
+          "enum": [
+            "sales",
+            "plan"
+          ],
+          "title": "Table",
+          "type": "string"
+        },
+        "row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Row Ids",
+          "type": "array"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Fields",
+          "type": "array"
+        },
+        "role": {
+          "enum": [
+            "numerator",
+            "baseline",
+            "denominator"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Fingerprint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "table",
+        "row_ids",
+        "fields",
+        "role",
+        "fingerprint"
+      ],
+      "title": "SourceEvidence",
+      "type": "object"
+    },
+    "SourceScope": {
+      "additionalProperties": false,
+      "properties": {
+        "included_sales_rows": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Included Sales Rows",
+          "type": "array"
+        },
+        "excluded_sales_rows": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Excluded Sales Rows",
+          "type": "array"
+        },
+        "history": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "History",
+          "type": "array"
+        }
+      },
+      "required": [
+        "included_sales_rows",
+        "excluded_sales_rows",
+        "history"
+      ],
+      "title": "SourceScope",
+      "type": "object"
+    },
+    "VisualData": {
+      "additionalProperties": false,
+      "properties": {
+        "categories": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Categories",
+          "type": "array"
+        },
+        "series": {
+          "items": {
+            "$ref": "#/$defs/Series"
+          },
+          "title": "Series",
+          "type": "array"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "title": "Points",
+          "type": "array"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "row_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Row Ids",
+          "type": "array"
+        },
+        "pages": {
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "series_pages": {
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Series Pages",
+          "type": "array"
+        },
+        "bins": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Bins",
+          "type": "array"
+        },
+        "kpi_fact_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Kpi Fact Ids",
+          "type": "array"
+        }
+      },
+      "title": "VisualData",
+      "type": "object"
+    },
+    "Visualization": {
+      "additionalProperties": false,
+      "properties": {
+        "selected": {
+          "enum": [
+            "table",
+            "line",
+            "bar",
+            "histogram",
+            "pie",
+            "scatter",
+            "grouped_bar",
+            "stacked_bar",
+            "kpi"
+          ],
+          "title": "Selected",
+          "type": "string"
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Candidates",
+          "type": "array"
+        }
+      },
+      "required": [
+        "selected",
+        "candidates"
+      ],
+      "title": "Visualization",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "business-draft-1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "const": "draft_for_contract_review",
+      "title": "Status",
+      "type": "string"
+    },
+    "fingerprints": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Fingerprints",
+      "type": "object"
+    },
+    "facts": {
+      "additionalProperties": {
+        "$ref": "#/$defs/BusinessFact"
+      },
+      "title": "Facts",
+      "type": "object"
+    },
+    "views": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ReadyView"
+      },
+      "title": "Views",
+      "type": "object"
+    },
+    "lineage": {
+      "additionalProperties": {
+        "items": {
+          "$ref": "#/$defs/DerivedRow"
+        },
+        "type": "array"
+      },
+      "title": "Lineage",
+      "type": "object"
+    },
+    "warnings": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "entities": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "title": "Entities",
+      "type": "object"
+    },
+    "unsupported": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unsupported",
+      "type": "array"
+    },
+    "explanations": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "title": "Explanations",
+      "type": "object"
+    },
+    "period_settings": {
+      "$ref": "#/$defs/BusinessPeriods"
+    },
+    "source_scope": {
+      "$ref": "#/$defs/SourceScope"
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "fingerprints",
+    "facts",
+    "views",
+    "lineage",
+    "warnings",
+    "entities",
+    "unsupported",
+    "explanations",
+    "period_settings",
+    "source_scope"
+  ],
+  "title": "BusinessResult",
+  "type": "object"
+}

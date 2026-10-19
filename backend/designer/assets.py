@@ -1398,7 +1398,7 @@ def illustration_targets(slides, limit):
         if (content.get("visual") or {}).get("kind", "none") != "none":
             continue
         bullets = content.get("bullets") or []
-        if not bullets or len(bullets) > 4 or sum(len(b) for b in bullets) > 320:
+        if not bullets or len(bullets) > 4 or sum(len(b) for b in bullets) > 800:
             continue
         chosen.append((index, content))
         if len(chosen) >= limit:

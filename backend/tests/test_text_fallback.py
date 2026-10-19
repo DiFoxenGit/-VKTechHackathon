@@ -12,6 +12,25 @@ from designer import text_genapi
 CHAT = {"choices": [{"finish_reason": "stop", "message": {"content": '{"ok":true}'}}]}
 
 
+def test_editorial_trace_attributes_validated_reply_to_fallback_not_failed_vk(transport):
+    from designer.inference_trace import capture_inference, validated_content
+    requests = transport(lambda r: httpx.Response(500) if r.url.host == 'vk.invalid'
+                         else httpx.Response(200, json={'response': [CHAT]}))
+    async def call():
+        with capture_inference() as trace:
+            value = await ai.complete_json([], attempts=1)
+            return value, trace
+    value, trace = asyncio.run(call())
+    assert value == {'ok': True} and len(requests) == 2
+    assert trace['provider'] == 'genapi' and trace['model'] == 'gemma-4-31b'
+    assert trace['calls'][0]['status_code'] == 500
+    assert trace['calls'][0]['validation'] == 'failed'
+    assert trace['calls'][1]['status_code'] == 200
+    assert trace['calls'][1]['validation'] == 'passed'
+    assert validated_content(trace)
+    assert 'private' not in json.dumps(trace)
+
+
 @pytest.fixture(autouse=True)
 def profiles(monkeypatch):
     import os

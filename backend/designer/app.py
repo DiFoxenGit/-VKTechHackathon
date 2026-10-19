@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi import Body, Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
@@ -39,6 +39,7 @@ from .exporting import (
     verify_pptx,
 )
 from .pipeline import balance_outline, generate_outline, run_generation
+from .inference_trace import new_trace, validated_content
 from .ai import image_available, provider, vision_available
 from .workflow import workflow
 from .sources import sources_for
@@ -54,7 +55,7 @@ LOGGER = logging.getLogger(__name__)
 MAX_UPLOAD = 50 * 1024 * 1024
 # Сколько картинок рисовать на колоду: каждая — отдельный платный запрос,
 # а иллюстрация нужна не всякому слайду.
-IMAGE_LIMIT = max(0, int(os.getenv("DESIGNER_IMAGE_LIMIT", "3")))
+IMAGE_LIMIT = max(0, min(2, int(os.getenv("DESIGNER_IMAGE_LIMIT", "1"))))
 # Ширины миниатюр: лента и карточки, холст редактора, крупный просмотр.
 # Набор фиксированный, чтобы кеш на диске не рос от произвольных запросов.
 THUMB_WIDTHS = (320, 640, 1280)
@@ -307,7 +308,15 @@ def create_app(data_dir=None, seed_dir=None):
         name = file.filename or ""
         try:
             datasets, file_report = await run_in_threadpool(extract_pack, data, name)
-            text, assets = await run_in_threadpool(read_pack, data, name, file_report)
+            if datasets and Path(name).suffix.lower() in {'.csv', '.json', '.xlsx'}:
+                # Full cells stay in datasets; the text context is a labelled preview,
+                # so a complete multi-table package does not exhaust the LLM text budget.
+                text = '\n\n'.join(t['sheet'] + f" — {len(t['rows'])} строк (предпросмотр)\n" +
+                    '\n'.join(' | '.join(str(v) if v is not None else '' for v in row)
+                        for row in [t['columns'], *t['rows'][:8]]) for t in datasets)
+                assets = []
+            else:
+                text, assets = await run_in_threadpool(read_pack, data, name, file_report)
         except ValueError as exc:
             # Отказ по размеру или устройству архива — пользователю нужна причина.
             if str(exc).startswith(("Archive", "Encrypted", "Content pack holds")):
@@ -410,8 +419,10 @@ def create_app(data_dir=None, seed_dir=None):
         Картинки рисуются один раз на колоду и достаются всем трём вариантам:
         так они не разъезжаются между вариантами и не тратится лишний запрос.
         """
+        if not outline.get('image_requested'):
+            return None, [], {'status': 'not_requested', 'message': 'Генерация иллюстрации не запрашивалась'}
         if not image_available():
-            return None, []
+            return None, [], {'status': 'unavailable', 'message': 'Иллюстрация не создана: провайдер изображений не настроен. Подключите его на сервере и повторите.'}
         owner = store.new_id()
         folder = store.directory("illustrations", owner) / "assets"
         tokens = template["tokens"]
@@ -435,11 +446,11 @@ def create_app(data_dir=None, seed_dir=None):
                 metas = await drop_lettered(metas, folder)
         except TimeoutError:
             LOGGER.warning("Illustration generation timed out; deck goes without drawn pictures")
-            return None, []
+            return None, [], {'status': 'failed', 'message': 'Провайдер не успел создать иллюстрацию. Повторите генерацию.'}
         if not metas:
-            return None, []
+            return None, [], {'status': 'failed', 'message': 'Иллюстрация не создана: проверьте доступ к image-модели и наличие смыслового слайда для картинки. Можно повторить.'}
         store.put("illustrations", {"id": owner, "assets": metas})
-        return owner, metas
+        return owner, metas, {'status': 'ready', 'message': 'Новая иллюстрация создана моделью', 'count': len(metas)}
 
     @api.get("/templates/{template_id}/assets", tags=["Templates"])
     def template_assets(template_id: str):
@@ -518,13 +529,39 @@ def create_app(data_dir=None, seed_dir=None):
         tagged = await label_assets(template, [])
         return {"tagged": tagged, "counts": asset_counts(store.get("templates", template_id).get("assets"))}
 
+    @api.get('/content-packs/{pack_id}/source', tags=['Content'])
+    def content_source(pack_id: str):
+        pack=store.get('content_packs', pack_id)
+        return FileResponse(store.directory('content_packs',pack_id)/'source.bin', filename=pack['name'], media_type='application/octet-stream')
+
     @api.get("/content-packs/{pack_id}", tags=["Content"])
     def content_pack(pack_id: str):
         return store.get("content_packs", pack_id)
 
+    @api.post('/analysis', tags=['Content'])
+    async def analyse_materials(request: GenerateRequest):
+        from .business_bridge import prepare_business
+        sources = sources_for(store, request)
+        try:
+            items = await run_in_threadpool(prepare_business, sources, request.brief)
+            if items is None:
+                items = await run_in_threadpool(analyse_sources, sources, request.analysis_goal or request.brief)
+                items = [{**r, 'packId': r.get('source_id')} for r in items]
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return {'items': items, 'business': bool(sources[0].get('_business'))}
+
     @api.post("/outlines", tags=["Generation"])
     async def outline(request: Brief):
-        return await generate_outline(request, sources_for(store, request))
+        from .business_bridge import prepare_business
+        from .analytics_bridge import build_outline
+        sources=sources_for(store,request)
+        try:
+            results=await run_in_threadpool(prepare_business,sources,request.brief)
+            if results is not None:return build_outline(results,sources,request.slide_count)
+        except ValueError as exc:
+            raise HTTPException(422,str(exc)) from exc
+        return await generate_outline(request, sources)
 
     def generate_variant(
         request,
@@ -550,6 +587,7 @@ def create_app(data_dir=None, seed_dir=None):
             for finding in contextual_findings:
                 report["counts"]["errors" if finding["severity"] == "error" else "warnings"] += 1
             report["contextual"] = {"status": "completed", "input": "structured_text"}
+        inference = copy.deepcopy(sources[0].get('_inference', new_trace()))
         record = {
             "id": identifier,
             "template_id": request.template_id,
@@ -561,9 +599,11 @@ def create_app(data_dir=None, seed_dir=None):
             "sources": sources,
             "workflow": workflow(),
             "generation": {
-                "mode": "deterministic_analytics" if sources[0].get("_analysis_results") else "provided_outline" if request.outline else "llm",
-                "model": llm_settings().model or None,
-                "provider": llm_settings().profile,
+                "mode": "llm" if validated_content(inference) else "deterministic_analytics" if sources[0].get("_analysis_results") else "provided_outline" if request.outline else "unconfirmed",
+                "model": inference.get('model'),
+                "provider": inference.get('provider'),
+                "inference": inference,
+                "editorial": copy.deepcopy(sources[0].get('_business_editorial', {}).get('before_after', [])),
                 "actual_inference": inference_route(),
                 "purpose": request.purpose,
                 "language": request.language,
@@ -572,10 +612,15 @@ def create_app(data_dir=None, seed_dir=None):
             # Пакеты с картинками нужны снова при правке слайда и исправлениях.
             "content_pack_ids": list(request.content_pack_ids),
             "analysis": sources[0].get("_analysis_results", []),
+            "business_request": copy.deepcopy(sources[0].get('business_request')) if sources[0].get('_business') else None,
+            "business_proof": {key: copy.deepcopy(sources[0]['_business']['analysis'][key])
+                               for key in ('period_settings', 'facts', 'source_scope', 'fingerprints')}
+                              if sources[0].get('_business') else None,
             "analysis_results": [r["contract"] for r in sources[0].get("_analysis_results", [])],
             "style": template.get("brandbook"),
             # То же для нарисованных моделью иллюстраций.
             "illustrations_id": illustrations[0] if illustrations else None,
+            "image_generation": illustrations[2] if illustrations and len(illustrations)>2 else {'status': 'not_requested', 'message': 'Генерация иллюстрации не запрашивалась'},
         }
         folder = store.directory("presentations", identifier)
         source = store.directory("templates", template["id"]) / "source.pptx"
@@ -604,6 +649,10 @@ def create_app(data_dir=None, seed_dir=None):
                     async def render_variant(*args):
                         return await run_in_threadpool(generate_variant, *args)
 
+                    def inference_update(value):
+                        job['inference'] = value
+                        store.put('jobs', job)
+
                     await run_generation(
                         request, template, sources,
                         outline_factory=generate_outline, balance=balance_outline,
@@ -612,8 +661,9 @@ def create_app(data_dir=None, seed_dir=None):
                         on_variant=lambda result: job["presentation_ids"].append(result["id"]),
                         warnings=job["warnings"],
                         label_assets=label_assets if vision_available() else None,
-                        draw_illustrations=draw_illustrations if image_available() else None,
+                        draw_illustrations=draw_illustrations,
                         contextual_check=contextual_audit,
+                        on_inference=inference_update,
                     )
                     job.update(status="completed", stage="completed", progress=100)
         except asyncio.CancelledError:
@@ -661,6 +711,7 @@ def create_app(data_dir=None, seed_dir=None):
                 "presentation_ids": [],
                 # То, о чём пользователь должен знать, но что не прерывает работу.
                 "warnings": [],
+                "inference": new_trace(),
                 "created_at": time.time(),
                 "workflow": workflow(),
             },
@@ -799,6 +850,27 @@ def create_app(data_dir=None, seed_dir=None):
         )
         return public_presentation(store.put("presentations", record))
 
+    @api.post('/presentations/{presentation_id}/illustrations/retry', tags=['Presentations'])
+    async def retry_illustrations(presentation_id: str, revision: int = Body(embed=True, ge=1)):
+        record = store.get('presentations', presentation_id)
+        if record['revision'] != revision:
+            raise HTTPException(409, 'Презентация изменилась. Откройте актуальную версию.')
+        if (record.get('image_generation') or {}).get('status') == 'ready':
+            return public_presentation(record)
+        template = apply_style(store.get('templates', record['template_id']), record.get('style'))
+        outline = {'slides': [s['content'] for s in record['deck']['slides']]}
+        owner, metas, status = await draw_illustrations({**outline, 'image_requested': True}, template)
+        with store.lock:
+            current = store.get('presentations', presentation_id)
+            if current['revision'] != revision:
+                raise HTTPException(409, 'Презентация изменилась во время генерации. Откройте актуальную версию.')
+            current['image_generation'] = status
+            if not metas:
+                return public_presentation(store.put('presentations', current))
+            current['illustrations_id'] = owner
+            current['deck'] = compose(outline, template, current['variant'], deck_library(template, current.get('content_pack_ids'), metas))
+            return save_revision(current)
+
     @api.post("/presentations/{presentation_id}/fixes", tags=["Audit"])
     def fixes(presentation_id: str, request: FixRequest):
         with store.lock:
@@ -917,7 +989,7 @@ def create_app(data_dir=None, seed_dir=None):
         return min(THUMB_WIDTHS, key=lambda allowed: abs(allowed - width))
 
     @api.get("/presentations/{presentation_id}/slides/{index}/thumbnail", tags=["Export"])
-    def slide_thumbnail(presentation_id: str, index: int, width: int = 640):
+    def slide_thumbnail(presentation_id: str, index: int, width: int = 640, revision: int | None = Query(None, ge=1)):
         """Слайд картинкой — ровно так, как он выглядит в выгруженном файле.
 
         Рисуется из PDF текущей ревизии сразу для всей колоды и кешируется на
@@ -925,6 +997,8 @@ def create_app(data_dir=None, seed_dir=None):
         Параметр revision в адресе клиенту нужен только чтобы сбросить кеш браузера.
         """
         record = store.get("presentations", presentation_id)
+        if revision is not None and revision != record['revision']:
+            raise HTTPException(409, 'Предпросмотр устарел. Откройте актуальную ревизию презентации.')
         if not 0 <= index < len(record["deck"]["slides"]):
             raise HTTPException(404, "Slide not found")
         width = thumb_width(width)
