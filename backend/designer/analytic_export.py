@@ -147,7 +147,7 @@ def add_chart(slide, visual, box, font, palette, text_color):
                 if value is None:continue
                 label = series.points[j].data_label
                 label.position = XL_LABEL_POSITION.INSIDE_END if value < 0 else XL_LABEL_POSITION.OUTSIDE_END
-                label.font.name, label.font.size = font, Pt(12)
+                label.font.name, label.font.size = font, Pt(10 if value < 0 and scale and abs(value) < .5*scale else 12)
                 r, g, b = (int(color[k:k+2], 16) for k in (0, 2, 4))
                 label.font.color.rgb = RGBColor.from_string(('FFFFFF' if .2126*r+.7152*g+.0722*b < 155 else '111827') if value < 0 else text_color)
                 # LibreOffice does not inherit these settings once any point has
