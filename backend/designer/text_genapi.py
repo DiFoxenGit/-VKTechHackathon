@@ -32,7 +32,7 @@ def _completion(value):
     return result
 
 
-async def generate(messages, settings):
+async def generate(messages, settings, on_submission=None):
     payload = {"model": settings.model, "messages": messages, "is_sync": False,
                "max_tokens": settings.max_tokens, "temperature": 0.2,
                "response_format": {"type": "json_object"}, "reasoning_effort": "low"}
@@ -47,6 +47,8 @@ async def generate(messages, settings):
                 identifier = value.get("request_id")
                 if isinstance(identifier, bool) or not re.fullmatch(r"[1-9][0-9]{0,19}", str(identifier)):
                     raise GenApiTextError("GenAPI text returned invalid request ID")
+                if on_submission is not None:
+                    on_submission(str(identifier))
                 while True:
                     if value.get("status") in {"failed", "error", "cancelled", "canceled"}:
                         raise GenApiTextError("GenAPI text task failed")

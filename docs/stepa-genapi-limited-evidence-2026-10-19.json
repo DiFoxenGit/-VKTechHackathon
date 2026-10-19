@@ -1,0 +1,195 @@
+{
+  "status": "limited_fallback_run_passed_full_acceptance_pending",
+  "base_commit": "924f7b051fd19280730c00a7c3fbb261573c40e1",
+  "provider": "genapi",
+  "model": "gemma-4-31b",
+  "primary_vk_verified": false,
+  "provider_fallback_used": true,
+  "paid_submissions": 2,
+  "image_requests": 0,
+  "vision_requests": 0,
+  "full_matrix_executed": false,
+  "probe": {
+    "seconds": 8.632,
+    "usage": {
+      "prompt_tokens": 29,
+      "completion_tokens": 64,
+      "total_tokens": 93
+    },
+    "schema_validated": true
+  },
+  "business": {
+    "seconds_for_three_variants": 121.243,
+    "usage": {
+      "prompt_tokens": 14517,
+      "completion_tokens": 5058,
+      "total_tokens": 19575
+    },
+    "paid_submissions": 1,
+    "calls": [
+      {
+        "attempt": 1,
+        "status_code": 500,
+        "duration_seconds": 1.233,
+        "validation": "failed",
+        "response_id": null,
+        "response_sha256": null,
+        "usage": null,
+        "error_code": "provider_error"
+      },
+      {
+        "attempt": 2,
+        "status_code": 200,
+        "duration_seconds": 112.489,
+        "validation": "passed",
+        "response_id": null,
+        "response_sha256": "3ad7e3db298b293cafacf1e400097bd1314a2c4d374d638371e36fcb798b5b5b",
+        "usage": {
+          "prompt_tokens": 14517,
+          "completion_tokens": 5058,
+          "total_tokens": 19575
+        },
+        "error_code": null
+      }
+    ],
+    "model_response_reused_for_variants": 3,
+    "periods": {
+      "current": [
+        "2026-04",
+        "2026-06"
+      ],
+      "previous": [
+        "2026-01",
+        "2026-03"
+      ],
+      "year_ago": [
+        "2025-04",
+        "2025-06"
+      ],
+      "history": [
+        "2025-01",
+        "2026-06"
+      ],
+      "plan": [
+        "2026-01",
+        "2026-12"
+      ]
+    },
+    "runs": [
+      {
+        "id": "281d134c4c6e435d9144d6ca21cb6ca4",
+        "variant": "classic",
+        "revision": 2,
+        "slides": 12,
+        "native_charts": 5,
+        "native_tables": 2,
+        "native_values_verified": true,
+        "independent_numeric_controls": 15,
+        "save_reopen_verified": true,
+        "pptx_sha256": "2b1b8f7383f2620336e26aad33d18f0591f830ba0ad9a480fc8a530efd7841e7",
+        "pdf_sha256": "84225634f54b9af250740b16e5af3e2215376306989f9ffe81439fcf848c17fb",
+        "text_comparisons": [
+          {
+            "page": "decision",
+            "before": "Выручка к I кв. 2026: 24,68%; маржа: 0,41 п.п.",
+            "after": "Рост выручки 24,68% и маржи 0,41 п.п."
+          },
+          {
+            "page": "kpi",
+            "before": "II кв. 2026: 93,56 млн ₽ выручки; маржа 32,68%",
+            "after": "Выручка 93,56 млн ₽ и маржа 32,68%"
+          },
+          {
+            "page": "trend",
+            "before": "Изменение выручки: 24,68% к I кв. 2026, 14,35% за год",
+            "after": "Рост выручки 24,68% к базе сравнения и 14,35% к выбранному периоду"
+          },
+          {
+            "page": "plan",
+            "before": "Выполнение плана: выручка 85,86%, прибыль 103,50%",
+            "after": "Выполнение плана по выручке 85,86% и прибыли 103,50%"
+          }
+        ]
+      },
+      {
+        "id": "f1f0c97a462a42c7a2b8ce7cc7a5ab16",
+        "variant": "split",
+        "revision": 2,
+        "slides": 12,
+        "native_charts": 5,
+        "native_tables": 2,
+        "native_values_verified": true,
+        "independent_numeric_controls": 15,
+        "save_reopen_verified": true,
+        "pptx_sha256": "43ed63092e0ff40ed893f20f4d387f45befe5568bcfcc50fb1ab98b5369b43b4",
+        "pdf_sha256": "7292d800e944ced8461cd691d398bd34b2ee334791d8396cfe734b8786fa4875",
+        "text_comparisons": [
+          {
+            "page": "decision",
+            "before": "Выручка к I кв. 2026: 24,68%; маржа: 0,41 п.п.",
+            "after": "Рост выручки 24,68% и маржи 0,41 п.п."
+          },
+          {
+            "page": "kpi",
+            "before": "II кв. 2026: 93,56 млн ₽ выручки; маржа 32,68%",
+            "after": "Выручка 93,56 млн ₽ и маржа 32,68%"
+          },
+          {
+            "page": "trend",
+            "before": "Изменение выручки: 24,68% к I кв. 2026, 14,35% за год",
+            "after": "Рост выручки 24,68% к базе сравнения и 14,35% к выбранному периоду"
+          },
+          {
+            "page": "plan",
+            "before": "Выполнение плана: выручка 85,86%, прибыль 103,50%",
+            "after": "Выполнение плана по выручке 85,86% и прибыли 103,50%"
+          }
+        ]
+      },
+      {
+        "id": "fa42b36316234105b2eb7aa3d6494f7c",
+        "variant": "focus",
+        "revision": 2,
+        "slides": 12,
+        "native_charts": 5,
+        "native_tables": 2,
+        "native_values_verified": true,
+        "independent_numeric_controls": 15,
+        "save_reopen_verified": true,
+        "pptx_sha256": "f066ebeafd7e41cb386243232bc592be73ebc52e0b043b37f1fa4a5e733a62d1",
+        "pdf_sha256": "84e724a81943b8703872cbad9cea551fd9725437550cd601af7d78c337c0ccb9",
+        "text_comparisons": [
+          {
+            "page": "decision",
+            "before": "Выручка к I кв. 2026: 24,68%; маржа: 0,41 п.п.",
+            "after": "Рост выручки 24,68% и маржи 0,41 п.п."
+          },
+          {
+            "page": "kpi",
+            "before": "II кв. 2026: 93,56 млн ₽ выручки; маржа 32,68%",
+            "after": "Выручка 93,56 млн ₽ и маржа 32,68%"
+          },
+          {
+            "page": "trend",
+            "before": "Изменение выручки: 24,68% к I кв. 2026, 14,35% за год",
+            "after": "Рост выручки 24,68% к базе сравнения и 14,35% к выбранному периоду"
+          },
+          {
+            "page": "plan",
+            "before": "Выполнение плана: выручка 85,86%, прибыль 103,50%",
+            "after": "Выполнение плана по выручке 85,86% и прибыли 103,50%"
+          }
+        ]
+      }
+    ]
+  },
+  "visual_review": "Three PDF contact sheets and large KPI/region/decision/risk samples reviewed; cards filled, no clipping found. Comparison title on page 3 could label its two bases more clearly; trusted period footnotes are present.",
+  "offline_tests": "144 passed; accepted task ID success/timeout behavior tested with controlled HTTP responses after live runs; no further paid call",
+  "limitations": [
+    "Only one original template and baseline were tested live",
+    "Version B, alternate period, independent repeats and nine-deck parallel clock remain pending",
+    "GenAPI is a fallback and does not establish availability of VK Qwen",
+    "Native task IDs were not retained in this pre-fix live trace; telemetry fix covered by controlled tests"
+  ],
+  "total_tokens": 19668
+}

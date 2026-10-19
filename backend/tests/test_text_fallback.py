@@ -141,6 +141,42 @@ def test_genapi_async_response_is_polled_without_reposting(transport,monkeypatch
     assert [r.method for r in requests]==['POST','GET']
 
 
+@pytest.mark.parametrize('timeout', [False, True])
+def test_accepted_task_id_survives_success_or_timeout_without_another_paid_post(transport, monkeypatch, timeout):
+    from fastapi import HTTPException
+    from designer.inference_trace import capture_inference
+    if timeout:
+        monkeypatch.setenv('DESIGNER_FALLBACK_TIMEOUT', '0.01')
+    else:
+        async def no_wait(_): pass
+        monkeypatch.setattr(text_genapi.asyncio, 'sleep', no_wait)
+    requests = transport(lambda r: httpx.Response(500) if r.url.host == 'vk.invalid'
+        else httpx.Response(200, json={'request_id': 17, 'status': 'processing'}) if r.method == 'POST'
+        else httpx.Response(200, json={'status': 'success', 'full_response': [CHAT]}))
+    async def call():
+        with capture_inference() as trace:
+            if timeout:
+                with pytest.raises(HTTPException): await ai.complete_json([], attempts=1)
+            else:
+                await ai.complete_json([], attempts=1)
+            return trace
+    trace = asyncio.run(call())
+    assert trace['response_id'] == trace['calls'][-1]['response_id'] == 'genapi:17'
+    assert len([r for r in requests if r.url.host == 'api.gen-api.ru' and r.method == 'POST']) == 1
+
+
+def test_immediate_provider_response_id_is_retained(transport):
+    from designer.inference_trace import capture_inference
+    transport(lambda r: httpx.Response(500) if r.url.host == 'vk.invalid'
+              else httpx.Response(200, json={'response': [{**CHAT, 'id': 'completion-fixture'}]}))
+    async def call():
+        with capture_inference() as trace:
+            await ai.complete_json([], attempts=1)
+            return trace
+    trace = asyncio.run(call())
+    assert trace['completed'] and trace['response_id'] == 'completion-fixture'
+
+
 def test_genapi_failure_hides_body_and_does_not_retry(transport):
     requests=transport(lambda r: httpx.Response(500,json={'error':'fallback-private'}))
     with pytest.raises(text_genapi.GenApiTextError) as error:
