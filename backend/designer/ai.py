@@ -78,7 +78,9 @@ async def ask(messages):
         answer = _chat_text(value)
         parse_json(answer)
     except GenApiTextError as exc:
-        raise InvalidCompletion(str(exc)) from None
+        # A timed-out paid task may still run. Do not let the agent retry loop
+        # submit a second paid task when transport completion is unknown.
+        raise HTTPException(503, str(exc)) from None
     record_inference(fallback, settings)
     return answer
 

@@ -54,7 +54,7 @@ def test_vk_first_then_genapi_uses_separate_credentials_and_records_actual_model
     assert requests[1].headers['Authorization'] == 'Bearer fallback-private'
     assert 'Project-ID' not in requests[1].headers
     body = json.loads(requests[1].content)
-    assert body['model'] == 'gemma-4-31b' and body['is_sync'] is True
+    assert body['model'] == 'gemma-4-31b' and body['is_sync'] is False
     assert 'callback_url' not in body
     assert body['messages'] == [{"role":"user", "content":"JSON"}]
 
@@ -127,6 +127,15 @@ def test_genapi_failure_hides_body_and_does_not_retry(transport):
     with pytest.raises(text_genapi.GenApiTextError) as error:
         asyncio.run(text_genapi.generate([],fallback_settings()))
     assert str(error.value)=='GenAPI text HTTP 500' and len(requests)==1
+
+
+def test_agent_does_not_resubmit_a_failed_paid_transport(transport):
+    from fastapi import HTTPException
+    requests=transport(lambda r: httpx.Response(500))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(ai.completion('outline',{}))
+    assert error.value.status_code==503
+    assert len(requests)==2  # One VK attempt, one GenAPI submission, no agent retry.
 
 
 def test_genapi_timeout_does_not_resubmit(transport,monkeypatch):

@@ -33,10 +33,11 @@ def _completion(value):
 
 
 async def generate(messages, settings):
-    payload = {"model": settings.model, "messages": messages, "is_sync": True,
+    payload = {"model": settings.model, "messages": messages, "is_sync": False,
                "max_tokens": settings.max_tokens, "temperature": 0.2,
                "response_format": {"type": "json_object"}, "reasoning_effort": "low"}
     headers = {"Authorization": "Bearer " + settings.key, "Accept": "application/json"}
+    identifier = None
     try:
         async with asyncio.timeout(settings.timeout):
             async with httpx.AsyncClient(timeout=httpx.Timeout(settings.timeout, connect=15), follow_redirects=False) as client:
@@ -56,6 +57,6 @@ async def generate(messages, settings):
                     if value.get("status") not in {"processing", "pending", "queued", "created", "starting", "in_progress"}:
                         raise GenApiTextError("GenAPI text task returned an invalid status")
     except TimeoutError:
-        raise GenApiTextError("GenAPI text timed out; task may still be running") from None
+        raise GenApiTextError(f"GenAPI text timed out; task {identifier} may still be running") from None
     except httpx.HTTPError:
         raise GenApiTextError("GenAPI text transport failed") from None
