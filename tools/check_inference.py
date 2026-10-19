@@ -36,6 +36,16 @@ def validate_probe(value):
     return value
 
 
+def probe_profile(settings, trace, accept_fallback=False):
+    """Accept only the primary or an explicitly opted-in configured fallback."""
+    if accept_fallback:
+        from designer.inference import fallback_settings
+        fallback = fallback_settings() if settings.profile == 'vk' else None
+        if fallback and trace.get('provider') == fallback.profile and trace.get('model') == fallback.model:
+            return fallback
+    return settings
+
+
 async def run(args):
     from designer.ai import complete_json
     from designer.inference import require_llm
@@ -53,8 +63,11 @@ async def run(args):
                 {"role": "system", "content": "Return only a JSON object."},
                 {"role": "user", "content": 'Return {"ok": true}.'},
             ], validate=validate_probe, agent="acceptance_probe", attempts=args.attempts)
+        actual = probe_profile(settings, trace, getattr(args, 'accept_fallback', False))
         report["inference"] = validate_inference(trace, live=True, variants=0,
-                                                  provider=settings.profile, model=settings.model)
+                                                  provider=actual.profile, model=actual.model)
+        report["primary_model_verified"] = (actual.profile, actual.model) == (settings.profile, settings.model)
+        report["provider_fallback_used"] = not report["primary_model_verified"]
         report["probe_seconds"] = round(time.monotonic() - started, 3)
         if args.service:
             base = args.service.rstrip("/")
@@ -82,12 +95,16 @@ def main():
     parser.add_argument("--template-id")
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--attempts", type=int, default=1, help="Probe retries (default one; full service has its own retry policy)")
+    parser.add_argument("--accept-fallback", action="store_true",
+                        help="Accept the explicitly configured fallback in a single-attempt transport probe; does not verify VK")
     parser.add_argument("--output", type=Path, default=ROOT / "output/live-qwen/inference.json")
     args = parser.parse_args()
     if bool(args.service) != bool(args.template_id):
         parser.error("--service and --template-id must be supplied together")
     if args.attempts < 1:
         parser.error("--attempts must be positive")
+    if args.accept_fallback and (args.attempts != 1 or args.service):
+        parser.error("--accept-fallback permits one probe attempt only; service generation has a separate request budget")
     load_env(args.env_file)
     asyncio.run(run(args))
 

@@ -105,10 +105,18 @@ async def ask(messages):
         trace.update(provider=fallback.profile, model=fallback.model,
                      attempts=len(trace['calls']), status='running')
         publish()
-    try:
-        value = await generate(messages, fallback)
+    def submitted(identifier):
         if call is not None:
-            call.update(status_code=200, usage=_usage(value.get('usage')))
+            # Preserve the accepted task even if polling times out. Repeating
+            # its GET does not submit a second paid generation.
+            call['response_id'] = 'genapi:' + identifier
+            trace['response_id'] = call['response_id']
+            publish()
+    try:
+        value = await generate(messages, fallback, on_submission=submitted)
+        if call is not None:
+            call.update(status_code=200, usage=_usage(value.get('usage')),
+                        response_id=call['response_id'] or (str(value['id'])[:200] if value.get('id') else None))
         answer = _chat_text(value)
         parse_json(answer)
         if call is not None:

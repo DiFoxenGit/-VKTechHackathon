@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 from acceptance_evidence import (response_summary, sanitized_inference, validate_inference,
     verify_business, verify_independent_jobs, verify_office_exports)
-from check_inference import validate_probe
+from check_inference import probe_profile, validate_probe
 from check_parallel_generation import business_inputs
 
 
@@ -26,6 +26,33 @@ def valid_trace():
         attempts=1, successful_calls=1, duration_seconds=1.2, validation="passed", fallback_used=False,
         status="completed", error_code=None, response_id="response-one", content_reused_for_variants=3,
         calls=[dict(attempt=1, status_code=200, duration_seconds=1.2, validation="passed", response_id="response-one")])
+
+
+def test_probe_fallback_requires_opt_in_and_exact_configured_model(monkeypatch):
+    from designer.inference import Inference
+    primary = Inference(profile='vk', url='https://primary.invalid/v1', model='qwen-fixture', key='fixture')
+    monkeypatch.setenv('DESIGNER_FALLBACK_PROVIDER', 'genapi')
+    monkeypatch.setenv('DESIGNER_FALLBACK_MODEL', 'gemma-4-31b')
+    monkeypatch.setenv('DESIGNER_FALLBACK_API_KEY', 'fixture-not-live')
+    trace = {'provider': 'genapi', 'model': 'gemma-4-31b'}
+    assert probe_profile(primary, trace) is primary
+    assert probe_profile(primary, trace, True).profile == 'genapi'
+    assert probe_profile(primary, {**trace, 'model': 'unconfigured-model'}, True) is primary
+    monkeypatch.delenv('DESIGNER_FALLBACK_PROVIDER')
+    assert probe_profile(primary, trace, True) is primary
+
+
+@pytest.mark.parametrize('arguments', [
+    ['--accept-fallback', '--attempts', '2'],
+    ['--accept-fallback', '--service', 'http://localhost', '--template-id', 'fixture'],
+])
+def test_budgeted_fallback_probe_rejects_modes_with_unbounded_extra_calls(monkeypatch, arguments):
+    import check_inference
+    monkeypatch.setattr(sys, 'argv', ['check_inference.py', *arguments])
+    monkeypatch.setattr(check_inference, 'load_env', lambda *args: pytest.fail('must reject before loading credentials'))
+    with pytest.raises(SystemExit) as error:
+        check_inference.main()
+    assert error.value.code == 2
 
 
 @pytest.mark.parametrize("change", [
