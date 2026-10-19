@@ -27,7 +27,7 @@ def test_qualitative_words_are_not_number_literals(word):
     validate_editorial(response, sources, outline)
 
 
-@pytest.mark.parametrize('word', ['первый', 'первая', 'первую', 'первых', 'первым', 'третья', 'третьих', 'третий'])
+@pytest.mark.parametrize('word', ['первый', 'первая', 'первую', 'первых', 'первым', 'третья', 'третьих', 'третий', 'треть', 'трети', 'третей', 'третям', 'третями', 'третях'])
 def test_actual_ordinals_remain_forbidden(word):
     sources, _, outline = prepared()
     response = response_for(editor_payload(sources, outline, 'Отчёт'))

@@ -112,7 +112,7 @@ NUMBER_WORDS = re.compile(
     r'половин\w*|четверт\w*|вдвое|втрое|вчетверо|впятеро|дважды|трижды|четырежды|'
     r'перв(?:ый|ая|ое|ые|ого|ому|ым|ом|ой|ую|ых|ыми)|'
     r'втор(?:ой|ая|ое|ые|ого|ому|ым|ом|ую|ых|ыми)|'
-    r'трет(?:ий|ья|ье|ьи|ьего|ьему|ьим|ьем|ьей|ью|ьих|ьими)|'
+    r'трет(?:ий|ья|ье|ьи|ьего|ьему|ьим|ьем|ьей|ью|ьих|ьими|ь|и|ей|ям|ями|ях)|'
     r'zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|'
     r'thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|'
     r'forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|trillion)\b', re.I)
