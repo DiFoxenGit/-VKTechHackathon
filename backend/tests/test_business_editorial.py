@@ -318,7 +318,7 @@ def test_outline_success_survives_optional_condense_authorization_failure(monkey
 def test_optional_asset_calls_cannot_replace_primary_content_provenance(monkeypatch, model_env, primary_model, asset_status):
     from designer.models import GenerateRequest, Outline
     from designer.pipeline import run_generation
-    plan = {'title': 'План', 'slides': [{'title': 'Пилот', 'bullets': ['Проверить ограничения']}]} 
+    plan = {'title': 'План', 'slides': [{'title': 'Пилот', 'bullets': ['Проверить ограничения']}]}
     snapshots, warnings, calls = [], [], []
     def handler(request):
         calls.append(request)
