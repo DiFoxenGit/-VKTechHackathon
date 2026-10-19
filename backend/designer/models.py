@@ -101,6 +101,14 @@ class Brief(StrictModel):
     slide_count: int = Field(default=12, ge=1, le=30)
     content_pack_ids: list[str] = Field(default_factory=list, max_length=10)
 
+    @model_validator(mode="after")
+    def slide_count_matches_text(self):
+        from .slide_count import explicit_slide_count
+        specified = explicit_slide_count(self.brief)
+        if specified is not None and specified != self.slide_count:
+            raise ValueError(f'В тексте указано {specified} слайдов, в настройках {self.slide_count}. Согласуйте количество до генерации / Brief and settings must specify the same slide count')
+        return self
+
 
 class PackAnalysisRequest(StrictModel):
     goal: str = Field(default="", max_length=1000)

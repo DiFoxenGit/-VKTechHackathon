@@ -15,6 +15,8 @@ import { visualMarkup, visualStyles } from './analytics';
 import type { AnalysisResult } from './analytics';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { AnalysisControls } from './components/AnalysisControls';
+import { countFromText, explicitSlideCount, slideCountIssue } from './algorithms/slideCount';
+import { slideCountText } from './locales/slideCount';
 
 type Screen = 'create' | 'outline' | 'design' | 'editor' | 'projects' | 'templates';
 type Operation = 'save' | 'generation' | 'material' | 'template' | 'pptx' | 'pdf' | 'html';
@@ -24,6 +26,16 @@ function slideCountLabel(count: number) {
   const last = count % 10;
   const word = lastTwo >= 11 && lastTwo <= 14 ? 'слайдов' : last === 1 ? 'слайд' : last >= 2 && last <= 4 ? 'слайда' : 'слайдов';
   return `${count} ${word}`;
+}
+
+function SlideCountHint({text, count, onUseText}: {text: string; count: number; onUseText: () => void}) {
+  const issue = slideCountIssue(text, count);
+  let specified: number | undefined;
+  try { specified = explicitSlideCount(text); } catch { /* The issue is rendered below. */ }
+  return <div id="slide-count-hint" className={`slide-count-hint ${issue ? 'is-error' : ''}`} aria-live="polite">
+    {issue || (specified !== undefined ? slideCountText.ru.sync : '')}
+    {issue && specified !== undefined && <button type="button" className="text-button" onClick={onUseText}>{slideCountText.ru.useText}</button>}
+  </div>;
 }
 
 function IconButton({ children, label, ...props }: { children: ReactNode; label: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -70,7 +82,7 @@ const layoutOptions: { id: Layout; name: string; description: string; detail: st
 
 export default function App() {
   const [initial] = useState(readSaved);
-  const [brief, setBrief] = useState<Brief>(initial.brief);
+  const [brief, setBrief] = useState<Brief>(() => countFromText(initial.brief));
   const [decks, setDecks] = useState<Deck[]>(initial.decks);
   const [customTemplates, setCustomTemplates] = useState<Template[]>(initial.customTemplates);
   const [remoteTemplates, setRemoteTemplates] = useState<Template[]>([]);
@@ -190,10 +202,13 @@ export default function App() {
     if (busy === 'material' || busy === 'template') cancelOperation();
     setDeck(saved); setActiveSlide(0); setRemovedSlide(null); setReadyDeck(null);
     const source = saved.brief || { ...DEFAULT_BRIEF, text: saved.slides.map(s => `${s.title}\n${s.body}`).join('\n\n'), slideCount: saved.slides.length, templateId: saved.templateId };
-    setBrief(source); setMaterialName(source.materialName || (source.materials || source.contentPackIds?.length ? 'Сохранённые материалы' : ''));
+    setBrief(countFromText(source)); setMaterialName(source.materialName || (source.materials || source.contentPackIds?.length ? 'Сохранённые материалы' : ''));
     navigate('editor');
   }
-  function updateBrief<K extends keyof Brief>(key: K, value: Brief[K]) { setBrief(prev => ({ ...prev, [key]: value })); if (key === 'text') { setError(''); setBriefError(''); } }
+  function updateBrief<K extends keyof Brief>(key: K, value: Brief[K]) {
+    setBrief(prev => key === 'text' ? countFromText({ ...prev, [key]: value }) : { ...prev, [key]: value });
+    if (key === 'text' || key === 'slideCount') { setError(''); setBriefError(''); }
+  }
   function updateDeck(updater: (prev: Deck) => Deck) { setDeck(prev => {
     if (!prev) return prev;
     const next = updater(prev);
@@ -257,6 +272,8 @@ export default function App() {
     setToast(busy === 'generation' ? 'Ожидание прекращено. Ваш бриф сохранён; задание на сервере может продолжиться.' : 'Загрузка отменена. Можно попробовать ещё раз.');
   }
   async function startDeck() {
+    const countIssue = slideCountIssue(brief.text, brief.slideCount);
+    if (countIssue) { setBriefError(countIssue); briefInput.current?.focus(); return; }
     if (brief.text.trim().length < 20) { setBriefError('Добавьте хотя бы 20 символов: тему и несколько тезисов.'); briefInput.current?.focus(); return; }
     if (connection !== 'ready') return;
     const controller = beginOperation('generation');
@@ -379,7 +396,8 @@ export default function App() {
             <div className="composer-toolbar"><div className="composer-tools"><button className="composer-tool" disabled={Boolean(busy)} title="TXT, MD, CSV, XLSX, JSON, DOCX, PPTX, PDF или ZIP до 50 МБ" onClick={() => materialInput.current?.click()}><Paperclip size={18} /><span>Материалы</span></button><button className="composer-tool" disabled={Boolean(busy)} onClick={() => setDialog('settings')}><SlidersHorizontal size={17} /><span>Настроить</span></button></div><button className="primary-button create-deck-button" disabled={Boolean(busy) || connection !== 'ready'} onClick={() => void startDeck()}><Sparkles size={17} /><span>Создать презентацию</span><ArrowUpRight size={18} /></button></div>
           </div>
           <div className={`brief-hint ${briefError ? 'is-error' : ''}`} id="brief-hint" role={briefError ? 'alert' : undefined}><span>{briefError || 'Опишите тему, основные мысли и желаемый результат.'}</span><span>{brief.text.length.toLocaleString('ru-RU')} / 6 000</span></div>
-          <div className="composer-meta"><span>{slideCountLabel(brief.slideCount)} <i /> {currentTemplate.name}</span><span>Ctrl / ⌘ + Enter</span></div>
+          <div className="composer-meta"><label className="slide-count-control">{slideCountText.ru.label}<select aria-describedby="slide-count-hint" disabled={Boolean(busy)} value={brief.slideCount} onChange={e => updateBrief('slideCount', Number(e.target.value))}>{Array.from({length:30}, (_, i) => i + 1).map(count => <option key={count} value={count}>{slideCountLabel(count)}</option>)}</select><span>{currentTemplate.name}</span></label><span>Ctrl / ⌘ + Enter</span></div>
+          <SlideCountHint text={brief.text} count={brief.slideCount} onUseText={() => {setBrief(prev => countFromText(prev)); setBriefError('');}} />
           <div className="starter-prompts"><span>Нужна идея?</span><button onClick={() => updateBrief('text', EXAMPLE_BRIEF)}>Питч продукта<ArrowUpRight size={14} /></button><button onClick={() => updateBrief('text', 'Итоги работы над проектом для команды. Мы подготовили прототип сервиса, обсудили сценарии с пользователями и собрали обратную связь. Расскажите о проделанной работе, найденных сложностях и следующих шагах. Следующий этап — проверить основные сценарии и определить приоритеты разработки.')}>Итоги проекта<ArrowUpRight size={14} /></button><button onClick={() => updateBrief('text', 'Предлагаем запустить внутреннюю базу знаний. Сейчас полезные материалы распределены по разным чатам. Соберём инструкции и ответы на частые вопросы в одном месте. Начнём с пилота в одной команде, получим обратную связь и улучшим поиск. Цель — согласовать пилот и ответственных.')}>Предложить идею<ArrowUpRight size={14} /></button></div>
           <div className="material-files">{brief.materialFiles?.map(file=><div key={file.id} className="attached-material"><FileText size={15}/><span>{file.name}</span><IconButton label={`Удалить ${file.name}`} disabled={Boolean(busy)} onClick={()=>{setBrief(prev=>{const files=(prev.materialFiles||[]).filter(f=>f.id!==file.id);return {...prev,materialFiles:files,contentPackIds:(prev.contentPackIds||[]).filter(id=>id!==file.id),materials:files.map(f=>f.text).join('\n\n')};});setAnalysisPreview([]);}}><X size={14}/></IconButton><label className="material-analysis-goal">Цель анализа<input aria-label={`Цель анализа ${file.name}`} placeholder="Автоматически из описания. Например: доли каналов" value={file.goal||''} maxLength={1000} disabled={Boolean(busy)} onChange={e=>{const goal=e.target.value;setBrief(prev=>({...prev,materialFiles:prev.materialFiles?.map(f=>f.id===file.id?{...f,goal}:f)}));setAnalysisPreview([]);}}/></label>{file.file_report?.map((entry,i)=><small key={i}>{entry.status==='accepted'?'Принят':'Отклонён'}: {entry.name}{entry.reason ? ` · ${entry.reason}` : ''}</small>)}</div>)}</div>
           <label className="story-toggle"><input type="checkbox" checked={brief.narrative !== false} onChange={e=>updateBrief('narrative',e.target.checked)}/>Связная история: задача, контекст, данные и выводы</label><div className="data-actions"><button className="secondary-button" disabled={Boolean(busy)} onClick={()=>brandbookInput.current?.click()}><Upload size={16}/>Загрузить брендбук</button>{Boolean(brief.contentPackIds?.length)&&<button className="secondary-button" disabled={Boolean(busy)} onClick={()=>void previewAnalysis()}>Проверить данные</button>}</div>
