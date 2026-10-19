@@ -8,6 +8,10 @@ import httpx
 class GenApiTextError(ValueError):
     """Safe diagnostic without credentials, prompts or provider bodies."""
 
+    def __init__(self, message, code='provider_error'):
+        super().__init__(message)
+        self.code = code
+
 
 def _object(response):
     if response.status_code != 200:
@@ -59,6 +63,6 @@ async def generate(messages, settings, on_submission=None):
                     if value.get("status") not in {"processing", "pending", "queued", "created", "starting", "in_progress"}:
                         raise GenApiTextError("GenAPI text task returned an invalid status")
     except TimeoutError:
-        raise GenApiTextError(f"GenAPI text timed out; task {identifier} may still be running") from None
+        raise GenApiTextError(f"GenAPI text timed out; task {identifier} may still be running", code='timeout') from None
     except httpx.HTTPError:
         raise GenApiTextError("GenAPI text transport failed") from None

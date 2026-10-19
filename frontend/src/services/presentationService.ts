@@ -1,5 +1,5 @@
 import { businessApiFields } from '../business';
-import { parseInference } from '../inference';
+import { parseInference, modelRetryReason } from '../inference';
 import type { BusinessRequest } from '../business';
 import { templates as localTemplates } from '../data/templates';
 import { toBackendOutline } from '../algorithms/outline';
@@ -24,6 +24,9 @@ export type ServiceProgress = {
   jobId?: string;
   serverStage?: string;
   message?: string;
+  modelAttempt?: number;
+  modelMaxAttempts?: number;
+  retryReason?: string;
 };
 
 export type ServiceOptions = {
@@ -194,9 +197,12 @@ function upload<T>(path: string, file: File, options: ServiceOptions): Promise<T
 }
 
 function jobProgress(job: Job): ServiceProgress {
+  const inference = parseInference(job.inference);
   const messages: Record<string, string> = {
     analytics: 'Проверяем факты и рассчитываем показатели',
-    model_content: 'Текстовая модель формулирует выводы по проверенным фактам',
+    model_content: inference?.status === 'waiting_for_shared_content'
+      ? 'Модель редактирует общий текст для выбранных шаблонов'
+      : 'Текстовая модель редактирует текст по проверенным фактам',
     outline: 'Собираем структуру презентации',
     balance: 'Распределяем содержание по слайдам',
     assets: 'Подбираем материалы шаблона',
@@ -210,6 +216,8 @@ function jobProgress(job: Job): ServiceProgress {
     jobId: job.id,
     serverStage: job.stage,
     message: job.status === 'queued' ? 'Ожидаем свободное место на сервере' : messages[job.stage || ''] || 'Собираем презентацию',
+    ...(job.stage === 'model_content' ? {modelAttempt: inference?.model_attempt, modelMaxAttempts: inference?.model_max_attempts,
+      retryReason: modelRetryReason(inference?.retry_reason)} : {}),
   };
 }
 

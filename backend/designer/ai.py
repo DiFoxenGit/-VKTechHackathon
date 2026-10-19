@@ -140,8 +140,8 @@ async def ask(messages):
     except GenApiTextError as exc:
         LOGGER.warning("GenAPI fallback failed: %s", exc)
         if call is not None:
-            call.update(error_code='provider_error', validation='failed')
-            trace.update(error_code='provider_error', validation='failed', status='failed')
+            call.update(error_code=exc.code, validation='failed')
+            trace.update(error_code=exc.code, validation='failed', status='failed')
         # A timed-out paid task may still run. Do not let the agent retry loop
         # submit a second paid task when transport completion is unknown.
         raise HTTPException(503, str(exc)) from None
@@ -410,6 +410,10 @@ async def complete_json(messages, validate=None, agent='probe', attempts=None):
         answer = None
         trace = current_trace()
         call_count = len(trace['calls']) if trace is not None else 0
+        if trace is not None:
+            trace.update(model_attempt=attempt, model_max_attempts=attempts,
+                         retry_reason=last_code if attempt > 1 else None)
+            publish()
         try:
             answer = await ask(messages)
             value = parse_json(answer)

@@ -26,7 +26,7 @@ const generationStages: Record<ServiceProgress['stage'], { title: string; detail
 
 const generationTitles: Record<string, string> = {
   analytics: 'Проверяем данные и периоды',
-  model_content: 'Модель готовит выводы',
+  model_content: 'Модель редактирует текст',
   outline: 'Собираем структуру',
   balance: 'Распределяем содержание',
   assets: 'Подбираем материалы',
@@ -110,6 +110,10 @@ export function OperationProgress({ kind, progress, startedAt, onCancel, compact
         <span className="operation-eyebrow">{label}</span>
         <h2 id={titleId} aria-live="polite" aria-atomic="true">{title}</h2>
         <p>{detail}</p>
+        {kind === 'generation' && progress.serverStage === 'model_content' && Boolean(progress.modelAttempt) && <p role="status">
+          Попытка {progress.modelAttempt}{progress.modelMaxAttempts ? ` из ${progress.modelMaxAttempts}` : ''}.
+          {progress.retryReason && <> {progress.retryReason}</>}
+        </p>}
       </div>
       <div className="operation-timer" aria-label={`Прошло ${Math.floor(elapsed / 60)} мин. ${elapsed % 60} сек.`}>
         <Clock3 size={14} aria-hidden="true" /><span aria-hidden="true">{time}</span>

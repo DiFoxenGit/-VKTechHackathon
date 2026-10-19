@@ -11,7 +11,7 @@ def new_trace(requested=False):
                 model=None, attempts=0, successful_calls=0, duration_seconds=0.0,
                 validation='not_run', fallback_used=False, status='not_requested',
                 error_code=None, message='', response_id=None, response_sha256=None, usage=None, calls=[],
-                content_reused_for_variants=0)
+                content_reused_for_variants=0, model_attempt=0, model_max_attempts=0, retry_reason=None)
 
 
 @contextmanager
@@ -31,6 +31,16 @@ def current_trace():
 
 
 def validated_content(trace):
+    shared = trace.get('shared_inference')
+    if shared is not None:
+        return bool(trace.get('requested') and trace.get('completed')
+            and trace.get('validation') == 'passed' and not trace.get('fallback_used')
+            and not trace.get('attempted') and not trace.get('calls')
+            and trace.get('content_revalidated') is True and trace.get('shared_from_job_id')
+            and trace.get('shared_from_job_id') == shared.get('content_source_job_id')
+            and trace.get('content_input_sha256') == shared.get('content_input_sha256')
+            and trace.get('content_batch_id') == shared.get('content_batch_id')
+            and not shared.get('shared_inference') and validated_content(shared))
     return bool(trace.get('requested') and trace.get('attempted') and trace.get('completed')
         and trace.get('validation') == 'passed' and not trace.get('fallback_used')
         and trace.get('successful_calls', 0) > 0

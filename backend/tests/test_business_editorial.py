@@ -44,6 +44,12 @@ def response_for(payload):
     return dict(input_sha256=payload['input_sha256'], pages=pages)
 
 
+def draft_for(payload):
+    return dict(input_sha256=payload['input_sha256'], pages=[
+        {'id': page['id'], 'title': page['title'], 'hypothesis': None}
+        for page in response_for(payload)['pages']])
+
+
 def install_transport(monkeypatch, handler):
     real_client = httpx.AsyncClient
     monkeypatch.setattr(ai.httpx, 'AsyncClient', lambda **kwargs: real_client(
@@ -135,8 +141,9 @@ def test_protected_narrative_preserves_current_verified_text_and_card_count():
     payload = editor_payload(sources, outline, sources[0]['text'])
     response = response_for(payload)
     for page in payload['pages']:
-        assert page['allowed_tokens']['interpretation:' + page['id']] == page['verified_interpretation']
-        assert page['allowed_tokens']['next_step:' + page['id']] == page['verified_next_step']
+        original = next(item for item in sources[0]['_business']['story']['slides'] if item['id'] == page['id'])
+        assert page['verified_interpretation'] == original['interpretation']
+        assert all(token.startswith('fact:') for token in page['allowed_tokens'])
     edited, _ = validate_editorial(response, sources, outline)
     assert [slide.bullets for slide in edited.slides] == [slide.bullets for slide in outline.slides]
     assert all('{{' not in slide.title for slide in edited.slides)
@@ -357,7 +364,7 @@ def test_browser_job_shares_one_actual_validated_answer_and_safe_retry(tmp_path,
         if failing: return httpx.Response(401, json={'error': 'denied'})
         payload = json.loads(json.loads(request.content)['messages'][1]['content'])
         return httpx.Response(200, json={'id': 'business-fixture', 'usage': {'total_tokens': 22},
-            'choices': [{'message': {'content': json.dumps(response_for(payload), ensure_ascii=False)}}]})
+            'choices': [{'message': {'content': json.dumps(draft_for(payload), ensure_ascii=False)}}]})
     install_transport(monkeypatch, handler)
     prs = Presentation(); slide = prs.slides.add_slide(prs.slide_layouts[1])
     slide.shapes.title.text = 'Обложка'; slide.placeholders[1].text = 'Образец'

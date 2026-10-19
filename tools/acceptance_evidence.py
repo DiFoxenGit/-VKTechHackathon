@@ -57,11 +57,16 @@ def sanitized_inference(trace):
     fields = ("requested", "attempted", "completed", "provider", "model", "attempts",
               "successful_calls", "duration_seconds", "validation", "fallback_used", "status",
               "error_code", "response_id", "response_sha256", "usage", "content_reused_for_variants",
-              "primary_skipped_calls")
+              "primary_skipped_calls", "content_batch_id", "content_source_job_id", "shared_from_job_id",
+              "content_input_sha256", "content_revalidated", "model_attempt", "model_max_attempts", "retry_reason")
     call_fields = ("attempt", "status_code", "duration_seconds", "validation", "response_id",
                    "response_sha256", "usage", "error_code", "provider", "validation_error")
-    return {**{key: trace.get(key) for key in fields},
-            "calls": [{key: call.get(key) for key in call_fields} for call in trace.get("calls", [])]}
+    result = {**{key: trace.get(key) for key in fields},
+              "calls": [{key: call.get(key) for key in call_fields} for call in trace.get("calls", [])]}
+    if isinstance(trace.get('shared_inference'), dict):
+        require(not trace['shared_inference'].get('shared_inference'), 'Nested shared provenance is invalid')
+        result['shared_inference'] = sanitized_inference(trace['shared_inference'])
+    return result
 
 
 def validate_inference(trace, *, live, variants=3, provider=None, model=None):
@@ -83,11 +88,29 @@ def validate_inference(trace, *, live, variants=3, provider=None, model=None):
                  and isinstance(call.get("status_code"), int) and 200 <= call["status_code"] < 300]
     require(trace.get("successful_calls") == len(validated), "Successful calls lack validated HTTP evidence")
     if live:
-        require(trace.get("requested") is True and trace.get("attempted") is True,
-                "Model was configured but never requested/attempted")
+        shared = trace.get('shared_inference')
+        if shared is not None:
+            require(isinstance(shared, dict) and not shared.get('shared_inference'), 'Invalid shared call evidence')
+            validate_inference(shared, live=True, variants=0, provider=provider, model=model)
+            require(trace.get('attempted') is False and not calls and trace['attempts'] == trace['successful_calls'] == 0,
+                    'Reused content must not claim another HTTP call')
+            require(trace.get('content_revalidated') is True and trace.get('shared_from_job_id')
+                    and trace['shared_from_job_id'] == trace.get('content_source_job_id') == shared.get('content_source_job_id'),
+                    'Missing source job or per-template validation')
+            require(bool(re.fullmatch(r'[a-f0-9]{64}', trace.get('content_input_sha256') or ''))
+                    and trace['content_input_sha256'] == shared.get('content_input_sha256')
+                    and trace.get('content_batch_id') and trace['content_batch_id'] == shared.get('content_batch_id'),
+                    'Shared response belongs to another input or batch')
+            require(all(trace.get(key) == shared.get(key) for key in ('provider', 'model', 'response_id', 'response_sha256')),
+                    'Shared response identity differs from source')
+        if shared is None:
+            require(trace.get('requested') is True and trace.get('attempted') is True,
+                    'Model was configured but never requested/attempted')
+        else:
+            require(trace.get('requested') is True, 'Shared content was not requested')
         require(trace.get("completed") is True and trace.get("validation") == "passed"
                 and trace.get("status") == "completed", "Model response was not validated")
-        require(bool(validated), "No actual validated model call")
+        require(bool(validated) or shared is not None, "No actual validated model call")
         require(trace.get("fallback_used") is False and not trace.get("error_code"),
                 "Fallback/error cannot pass live Qwen acceptance")
         if variants:
@@ -109,12 +132,42 @@ def response_summary(traces):
              if call.get("validation") == "passed" and 200 <= (call.get("status_code") or 0) < 300]
     ids = [call["response_id"] for call in calls if call.get("response_id")]
     digests = [call["response_sha256"] for call in calls if call.get("response_sha256")]
+    owners = [trace for trace in traces if not trace.get('shared_from_job_id') and trace.get('requested')]
+    first_passes = sum(trace.get('completed') is True and trace.get('validation') == 'passed'
+                      and (trace.get('model_attempt') == 1 if trace.get('model_attempt') else
+                           bool(trace.get('calls') and trace['calls'][0].get('validation') == 'passed'))
+                      for trace in owners)
     return {"actual_attempts": sum(t.get("attempts") or 0 for t in traces),
             "validated_model_calls": len(calls), "provider_response_ids": ids,
             "distinct_provider_response_ids": len(set(ids)) if len(ids) == len(calls) else None,
             "distinct_response_content_hashes": len(set(digests)) if len(digests) == len(calls) else None,
             "response_identity_complete": len(ids) == len(calls),
-            "fallback_jobs": sum(bool(t["fallback_used"]) for t in traces)}
+            "fallback_jobs": sum(bool(t["fallback_used"]) for t in traces),
+            "first_attempt_passed": first_passes, "independent_editorial_requests": len(owners),
+            "first_attempt_pass_rate": first_passes / len(owners) if owners else None}
+
+
+def verify_shared_jobs(jobs, expected_count):
+    require(len(jobs) == expected_count and len({job['job_id'] for job in jobs}) == expected_count,
+            'Expected distinct template jobs')
+    owners = [job for job in jobs if not job['inference'].get('shared_from_job_id')]
+    require(len(owners) == 1, 'Expected exactly one fresh editorial source job per batch')
+    owner = owners[0]
+    source = validate_inference(owner['inference'], live=True)
+    require(source.get('content_source_job_id') == owner['job_id'], 'Editorial source job mismatch')
+    for job in jobs:
+        trace = validate_inference(job['inference'], live=True)
+        if job is owner:
+            continue
+        require(trace.get('shared_from_job_id') == owner['job_id'], 'Shared content links to a missing job')
+        inherited = trace['shared_inference']
+        require(all(inherited.get(key) == source.get(key) for key in
+                    ('calls', 'response_id', 'response_sha256', 'content_input_sha256', 'content_batch_id')),
+                'Shared content does not match the source HTTP journal')
+    summary = response_summary([job['inference'] for job in jobs])
+    require(summary['validated_model_calls'] == 1, 'Expected one validated model response for all templates')
+    return {**summary, 'source_job_id': owner['job_id'], 'templates_reusing_content': expected_count - 1,
+            'per_template_validation_verified': True}
 
 
 def verify_independent_jobs(jobs, expected_count):

@@ -48,3 +48,14 @@ for (const patch of [{attempted:false},{attempts:0},{successful_calls:0},{comple
 assert.match(inferenceCopy(parseInference({...inference,completed:false,fallback_used:true,error_code:'timeout'})).message,/не ответил вовремя/);
 assert.equal(parseInference({model:'qwen',completed:true}),undefined);
 console.log('PASS: model evidence persistence, secret-field exclusion, fail-closed success and actionable fallback');
+
+const source = {...inference,content_source_job_id:'source-job',content_input_sha256:'a'.repeat(64),content_batch_id:'batch'};
+const reused = {...source,attempted:false,attempts:0,successful_calls:0,shared_from_job_id:'source-job',
+  content_revalidated:true,shared_inference:source};
+assert.equal(hasValidatedModelText(parseInference(reused)),true);
+assert.equal(hasValidatedModelText(load({decks:[{...deck,inference:reused}]}).decks[0].inference),true);
+for(const patch of [{content_revalidated:false},{content_input_sha256:'b'.repeat(64)},
+  {content_batch_id:'other-batch'},{shared_from_job_id:'missing'},{attempted:true}]) {
+  assert.equal(hasValidatedModelText(parseInference({...reused,...patch})),false,'Shared content requires matching source and input evidence');
+}
+console.log('PASS: shared model content survives reopening without inventing additional calls');

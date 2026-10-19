@@ -140,11 +140,13 @@ assert(edited.slides[0].previewUrl.includes('revision=2'));
 console.log('PASS: server edits preserve source references, revision and export-backed preview');
 
 const inference={requested:true,attempted:true,completed:false,provider:'vk',model:'qwen38-27b-fp8',attempts:3,successful_calls:0,duration_seconds:4,validation:'failed',fallback_used:true,status:'fallback',error_code:'provider_error',response_id:null,content_reused_for_variants:0};
-const modelJobs=[{id:'model-job',status:'running',stage:'model_content',progress:10},{id:'model-job',status:'completed',presentation_ids:['deck']},{...record,generation:{inference}}];
+const modelJobs=[{id:'model-job',status:'running',stage:'model_content',progress:10,inference:{...inference,model_attempt:2,model_max_attempts:2,retry_reason:'invalid_response'}},{id:'model-job',status:'completed',presentation_ids:['deck']},{...record,generation:{inference}}];
 progress=[];
 globalThis.fetch=async()=>response(modelJobs.shift());
 const fallbackDeck=await service.generate(brief,'template',{onProgress:event=>progress.push(event)});
 assert.deepEqual(fallbackDeck.inference,inference,'A saved fallback must preserve factual evidence, including failed calls');
 assert.match(progress.find(event=>event.serverStage==='model_content').message,/модель/);
+assert.equal(progress.find(event=>event.serverStage==='model_content').modelAttempt,2);
+assert.match(progress.find(event=>event.serverStage==='model_content').retryReason,/проверку фактов или формата/);
 assert.equal(fallbackDeck.inference.completed,false,'A configured provider must not become a successful model result');
 console.log('PASS: real model stage and fallback evidence reach the editor');
