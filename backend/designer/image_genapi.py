@@ -75,10 +75,12 @@ async def generate(prompt, size, key):
     if not match:
         raise GenApiError("Invalid GenAPI image size")
     width, height = map(int, match.groups())
-    if not all(256 <= side <= 2048 and side % 16 == 0 for side in (width, height)):
+    if not all(512 <= side <= 2048 and side % 16 == 0 for side in (width, height)):
         raise GenApiError("Invalid GenAPI image dimensions")
     headers = {"Authorization": "Bearer " + key, "Accept": "application/json"}
-    payload = {"callback_url": None, "prompt": prompt, "model": "turbo", "width": width,
+    # GenAPI rejects an explicit null callback_url (HTTP 422). Polling does not
+    # use callbacks, so omit this optional field altogether.
+    payload = {"prompt": prompt, "model": "turbo", "width": width,
                "height": height, "num_images": 1, "output_format": "png", "num_inference_steps": 8,
                "guidance_scale": 0, "enable_safety_checker": True,
                "translate_input": False, "enable_prompt_expansion": False}

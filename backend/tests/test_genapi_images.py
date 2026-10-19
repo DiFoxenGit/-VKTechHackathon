@@ -40,7 +40,7 @@ def test_submit_poll_and_download_without_leaking_key(transport):
     body = json.loads(requests[0].content)
     assert body["model"] == "turbo" and body["num_images"] == 1 and body["num_inference_steps"] == 8
     assert body["guidance_scale"] == 0 and body["enable_prompt_expansion"] is False
-    assert body["enable_safety_checker"] is True and body["callback_url"] is None
+    assert body["enable_safety_checker"] is True and "callback_url" not in body
     assert (body["width"], body["height"]) == (1024, 1024)
     assert all(r.headers["Authorization"] == "Bearer image-secret" for r in requests[:-1])
     assert "Authorization" not in requests[-1].headers
@@ -70,7 +70,7 @@ def test_untrusted_result_never_fetched(url, transport):
     assert len(requests) == 1
 
 
-@pytest.mark.parametrize("status", [401, 402, 429, 500])
+@pytest.mark.parametrize("status", [401, 402, 422, 429, 500])
 def test_errors_hide_provider_body_and_do_not_retry(status, transport):
     requests = transport(lambda r: httpx.Response(status, json={"error": "image-secret"}))
     with pytest.raises(gen.GenApiError) as exc: asyncio.run(gen.generate("scene", "1024x1024", "key"))
@@ -109,7 +109,7 @@ def test_timeout_does_not_resubmit(transport, monkeypatch):
     assert len(requests) == 1
 
 
-@pytest.mark.parametrize("size", ["bad", "1000x1000", "9999x9999", "128x128"])
+@pytest.mark.parametrize("size", ["bad", "1000x1000", "9999x9999", "128x128", "256x256"])
 def test_invalid_dimensions_fail_before_charge(size, transport):
     requests = transport(lambda r: pytest.fail("must not call provider"))
     with pytest.raises(gen.GenApiError): asyncio.run(gen.generate("scene", size, "key"))
