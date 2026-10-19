@@ -212,3 +212,38 @@ def test_parallel_calls_keep_inference_route_isolated(transport):
         assert inference_route() is None
         return values
     assert asyncio.run(call())==[True,True]
+
+
+def test_vk_outage_skips_primary_for_following_calls(monkeypatch):
+    from designer import ai
+    calls = []
+
+    async def primary(messages, settings):
+        calls.append("vk")
+        request = httpx.Request("POST", "https://vk.invalid/v1/chat/completions")
+        raise httpx.HTTPStatusError("boom", request=request, response=httpx.Response(500, request=request))
+
+    async def fallback(messages, settings, on_submission=None):
+        calls.append("genapi")
+        return {"choices": [{"message": {"content": '{"ok": true}'}}]}
+
+    monkeypatch.setenv("DESIGNER_LLM_PROVIDER", "vk")
+    monkeypatch.setenv("DESIGNER_VK_BASE_URL", "https://vk.invalid/v1")
+    monkeypatch.setenv("DESIGNER_VK_MODEL", "qwen38-27b-fp8")
+    monkeypatch.setenv("DESIGNER_VK_API_KEY", "vk-key")
+    monkeypatch.setenv("DESIGNER_VK_PROJECT_ID", "project")
+    monkeypatch.setenv("DESIGNER_FALLBACK_PROVIDER", "genapi")
+    monkeypatch.setenv("DESIGNER_FALLBACK_MODEL", "gemma-4-31b")
+    monkeypatch.setenv("DESIGNER_FALLBACK_API_KEY", "genapi-key")
+    monkeypatch.setattr(ai, "_ask_primary", primary)
+    import designer.text_genapi as text_genapi
+    monkeypatch.setattr(text_genapi, "generate", fallback)
+
+    async def run():
+        await ai.ask([{"role": "user", "content": "x"}])
+        await ai.ask([{"role": "user", "content": "x"}])
+    asyncio.run(run())
+    assert calls == ["vk", "genapi", "genapi"]
+    ai._vk_unavailable_until = 0.0
+    asyncio.run(ai.ask([{"role": "user", "content": "x"}]))
+    assert calls[-2:] == ["vk", "genapi"]

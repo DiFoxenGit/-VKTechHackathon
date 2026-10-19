@@ -36,7 +36,7 @@ def fallback_settings():
         raise HTTPException(503, "Configure a supported GenAPI fallback model and its separate API key")
     try:
         tokens = int(os.getenv("DESIGNER_FALLBACK_MAX_TOKENS", "14000"))
-        timeout = float(os.getenv("DESIGNER_FALLBACK_TIMEOUT", "150"))
+        timeout = float(os.getenv("DESIGNER_FALLBACK_TIMEOUT", "220"))
         if tokens <= 1024 or not math.isfinite(timeout) or timeout <= 0:
             raise ValueError
     except ValueError:

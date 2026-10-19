@@ -162,7 +162,9 @@ def refresh_templates(store):
 def create_app(data_dir=None, seed_dir=None):
     store = Store(Path(data_dir or os.getenv("DESIGNER_DATA_DIR", "./designer_data")))
     tasks = set()
-    semaphore = asyncio.Semaphore(2)
+    # Jobs mostly wait on the text model. GenAPI stalled three concurrent Gemma
+    # tasks from one account on 19.10, so keep two unless the provider allows more.
+    semaphore = asyncio.Semaphore(max(1, int(os.getenv("DESIGNER_MAX_JOBS", "2"))))
 
     @asynccontextmanager
     async def lifespan(app):
