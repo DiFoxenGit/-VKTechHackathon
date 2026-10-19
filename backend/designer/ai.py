@@ -6,7 +6,8 @@ import logging
 import os
 import httpx
 from fastapi import HTTPException
-from .inference import llm_settings, require_llm
+from .inference import (llm_settings, require_llm, fallback_settings,
+                        record_inference)
 from .workflow import PROMPTS, workflow
 LOGGER = logging.getLogger("designer.ai")
 MAX_ATTEMPTS = max(1, int(os.getenv("DESIGNER_LLM_ATTEMPTS", "3")))
@@ -57,6 +58,41 @@ def parse_json(text):
 
 async def ask(messages):
     settings = require_llm()
+    fallback = fallback_settings() if settings.profile == "vk" else None
+    try:
+        answer = await _ask_primary(messages, settings)
+        if settings.json_mode and fallback is not None:
+            parse_json(answer)
+        record_inference(settings, settings)
+        return answer
+    except httpx.HTTPStatusError as exc:
+        if fallback is None or (exc.response.status_code not in {408, 429} and exc.response.status_code < 500):
+            raise
+    except (httpx.TransportError, InvalidCompletion):
+        if fallback is None:
+            raise
+    LOGGER.warning("VK text inference failed; using configured GenAPI fallback")
+    from .text_genapi import generate, GenApiTextError
+    try:
+        value = await generate(messages, fallback)
+        answer = _chat_text(value)
+        parse_json(answer)
+    except GenApiTextError as exc:
+        raise InvalidCompletion(str(exc)) from None
+    record_inference(fallback, settings)
+    return answer
+
+
+def _chat_text(value):
+    try:
+        if value["choices"][0].get("finish_reason") == "length":
+            raise InvalidCompletion("Ответ модели обрезан по лимиту токенов")
+        return message_text(value["choices"][0]["message"])
+    except (ValueError, KeyError, IndexError, AttributeError, TypeError):
+        raise InvalidCompletion("Ответ провайдера без содержимого") from None
+
+
+async def _ask_primary(messages, settings):
     payload = {
         "model": settings.model,
         "temperature": 0.2,
@@ -73,11 +109,10 @@ async def ask(messages):
         )
         response.raise_for_status()
         try:
-            if response.json()["choices"][0].get("finish_reason") == "length":
-                raise InvalidCompletion("Ответ модели обрезан по лимиту токенов")
-            return message_text(response.json()["choices"][0]["message"])
-        except (ValueError, KeyError, IndexError, AttributeError) as exc:
-            raise InvalidCompletion(f"Ответ провайдера без содержимого: {exc}") from exc
+            value = response.json()
+        except ValueError:
+            raise InvalidCompletion("Ответ провайдера не является JSON") from None
+        return _chat_text(value)
 
 def vision_provider():
     """Отдельная модель для проверки по картинке; по умолчанию — основная."""

@@ -42,7 +42,7 @@ from .pipeline import balance_outline, generate_outline, run_generation
 from .ai import image_available, provider, vision_available
 from .workflow import workflow
 from .sources import sources_for
-from .inference import llm_settings
+from .inference import llm_settings, inference_route, reset_inference_route
 from .layout import compose
 from .models import Brief, FixRequest, GenerateRequest, Outline, SlideEdit, PackAnalysisRequest, PresentationEdit
 from .parsing import PARSER_VERSION, parse_content, parse_template
@@ -564,6 +564,7 @@ def create_app(data_dir=None, seed_dir=None):
                 "mode": "deterministic_analytics" if sources[0].get("_analysis_results") else "provided_outline" if request.outline else "llm",
                 "model": llm_settings().model or None,
                 "provider": llm_settings().profile,
+                "actual_inference": inference_route(),
                 "purpose": request.purpose,
                 "language": request.language,
             },
@@ -588,6 +589,7 @@ def create_app(data_dir=None, seed_dir=None):
         return store.put("presentations", record)
 
     async def run_job(identifier, request, template, sources):
+        reset_inference_route()
         job = store.get("jobs", identifier)
         started = time.monotonic()
         try:
