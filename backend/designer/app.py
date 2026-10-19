@@ -39,6 +39,7 @@ from .exporting import (
     verify_pptx,
 )
 from .pipeline import balance_outline, generate_outline, run_generation
+from .inference_trace import new_trace, validated_content
 from .ai import image_available, provider, vision_available
 from .workflow import workflow
 from .sources import sources_for
@@ -586,6 +587,7 @@ def create_app(data_dir=None, seed_dir=None):
             for finding in contextual_findings:
                 report["counts"]["errors" if finding["severity"] == "error" else "warnings"] += 1
             report["contextual"] = {"status": "completed", "input": "structured_text"}
+        inference = copy.deepcopy(sources[0].get('_inference', new_trace()))
         record = {
             "id": identifier,
             "template_id": request.template_id,
@@ -597,9 +599,11 @@ def create_app(data_dir=None, seed_dir=None):
             "sources": sources,
             "workflow": workflow(),
             "generation": {
-                "mode": "deterministic_analytics" if sources[0].get("_analysis_results") else "provided_outline" if request.outline else "llm",
-                "model": llm_settings().model or None,
-                "provider": llm_settings().profile,
+                "mode": "llm" if validated_content(inference) else "deterministic_analytics" if sources[0].get("_analysis_results") else "provided_outline" if request.outline else "unconfirmed",
+                "model": inference.get('model'),
+                "provider": inference.get('provider'),
+                "inference": inference,
+                "editorial": copy.deepcopy(sources[0].get('_business_editorial', {}).get('before_after', [])),
                 "purpose": request.purpose,
                 "language": request.language,
             },
@@ -608,6 +612,9 @@ def create_app(data_dir=None, seed_dir=None):
             "content_pack_ids": list(request.content_pack_ids),
             "analysis": sources[0].get("_analysis_results", []),
             "business_request": copy.deepcopy(sources[0].get('business_request')) if sources[0].get('_business') else None,
+            "business_proof": {key: copy.deepcopy(sources[0]['_business']['analysis'][key])
+                               for key in ('period_settings', 'facts', 'source_scope', 'fingerprints')}
+                              if sources[0].get('_business') else None,
             "analysis_results": [r["contract"] for r in sources[0].get("_analysis_results", [])],
             "style": template.get("brandbook"),
             # То же для нарисованных моделью иллюстраций.
@@ -640,6 +647,10 @@ def create_app(data_dir=None, seed_dir=None):
                     async def render_variant(*args):
                         return await run_in_threadpool(generate_variant, *args)
 
+                    def inference_update(value):
+                        job['inference'] = value
+                        store.put('jobs', job)
+
                     await run_generation(
                         request, template, sources,
                         outline_factory=generate_outline, balance=balance_outline,
@@ -650,6 +661,7 @@ def create_app(data_dir=None, seed_dir=None):
                         label_assets=label_assets if vision_available() else None,
                         draw_illustrations=draw_illustrations,
                         contextual_check=contextual_audit,
+                        on_inference=inference_update,
                     )
                     job.update(status="completed", stage="completed", progress=100)
         except asyncio.CancelledError:
@@ -697,6 +709,7 @@ def create_app(data_dir=None, seed_dir=None):
                 "presentation_ids": [],
                 # То, о чём пользователь должен знать, но что не прерывает работу.
                 "warnings": [],
+                "inference": new_trace(),
                 "created_at": time.time(),
                 "workflow": workflow(),
             },

@@ -1,5 +1,6 @@
 """Native editable charts and KPI objects for the extended data contract."""
 import re
+import math
 from pptx.chart.data import CategoryChartData, XyChartData
 from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION, XL_LEGEND_POSITION, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION
 from pptx.enum.text import PP_ALIGN
@@ -27,6 +28,27 @@ def number_format(visual):
         return '0.00E+00'
     maximum = max(values, default=0)
     return '#,##0.0,,," млрд"' if maximum >= 1e9 else '#,##0.0,," млн"' if maximum >= 1e6 else '#,##0.0," тыс."' if maximum >= 1e4 else '#,##0.##'
+
+
+def readable_value_axis(axis, visual, horizontal=False):
+    """Leave room for signed labels without modifying native series values."""
+    values = [v for s in visual['series'] for v in s['values'] if v is not None]
+    if not values:
+        return
+    low, high = min(0, min(values)), max(0, max(values))
+    span = high-low
+    if not span:
+        return
+    # Four or five major intervals carry the scale. Explicit bounds also keep
+    # a negative endpoint's outside label away from the category-name gutter.
+    padding = .22 if horizontal else .13
+    raw = span * (1+padding*2) / 4
+    magnitude = 10 ** math.floor(math.log10(raw))
+    step = next(n*magnitude for n in (1, 2, 2.5, 5, 10) if n*magnitude >= raw)
+    pad = span * padding
+    axis.minimum_scale = math.floor((low-pad if low < 0 else 0)/step)*step
+    axis.maximum_scale = math.ceil((high+pad if high > 0 else 0)/step)*step
+    axis.major_unit = step
 
 
 def add_chart(slide, visual, box, font, palette, text_color):
@@ -122,6 +144,11 @@ def add_chart(slide, visual, box, font, palette, text_color):
                     p.font.color.rgb = RGBColor.from_string(text_color)
         if horizontal:
             chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+            skip = OxmlElement('c:tickLblSkip')
+            skip.set('val', '1')
+            chart.category_axis._element.append(skip)
+        if kind in {'bar', 'grouped_bar', 'histogram'}:
+            readable_value_axis(chart.value_axis, visual, horizontal)
         chart.value_axis.has_major_gridlines = True
         chart.value_axis.tick_labels.number_format = number_format(visual)
         grid = chart.value_axis.major_gridlines.format.line
@@ -138,25 +165,33 @@ def add_chart(slide, visual, box, font, palette, text_color):
         series.format.fill.solid()
         series.format.fill.fore_color.rgb = RGBColor.from_string(color)
         series.format.line.color.rgb = RGBColor.from_string(color)
+        if kind in {'bar', 'grouped_bar'} and len(visual['series']) == 1 and not any(v is not None and v < 0 for v in visual['series'][0]['values']):
+            values = visual['series'][i]['values']
+            meaningful = [(j, value) for j, value in enumerate(values) if value is not None]
+            if meaningful:
+                focus = max(meaningful, key=lambda item: item[1])[0]
+                background = '111111' if text_color == 'FFFFFF' else 'FFFFFF'
+                quiet = ''.join(f'{round(int(color[k:k+2],16)*.65+int(background[k:k+2],16)*.35):02X}' for k in (0, 2, 4))
+                for j, point in enumerate(series.points):
+                    point.format.fill.solid()
+                    point.format.fill.fore_color.rgb = RGBColor.from_string(color if j == focus else quiet)
+                    point.format.line.fill.background()
         if horizontal and plot.data_labels.show_value:
-            # Outside negative endpoints share the category-label area in Office
-            # and LibreOffice. Keep their values inside the bar, with contrast.
-            # Tiny bars cannot hold text: the numeric axis still carries scale.
-            scale = max((abs(v) for s in visual['series'] for v in s['values'] if v is not None), default=0)
+            # The padded value axis keeps signed endpoint labels on the canvas,
+            # including tiny negative bars that cannot contain a legible number.
             for j, value in enumerate(visual['series'][i]['values']):
                 if value is None:continue
                 label = series.points[j].data_label
-                label.position = XL_LABEL_POSITION.INSIDE_END if value < 0 else XL_LABEL_POSITION.OUTSIDE_END
-                label.font.name, label.font.size = font, Pt(10 if value < 0 and scale and abs(value) < .5*scale else 12)
-                r, g, b = (int(color[k:k+2], 16) for k in (0, 2, 4))
-                label.font.color.rgb = RGBColor.from_string(('FFFFFF' if .2126*r+.7152*g+.0722*b < 155 else '111827') if value < 0 else text_color)
+                label.position = XL_LABEL_POSITION.OUTSIDE_END
+                label.font.name, label.font.size = font, Pt(12)
+                label.font.color.rgb = RGBColor.from_string(text_color)
+                negatives = [v for v in visual['series'][i]['values'] if v is not None and v < 0]
+                label.font.bold = bool(negatives and value == min(negatives))
                 # LibreOffice does not inherit these settings once any point has
                 # an override: write format and visibility for every point.
                 node = label._get_or_add_dLbl()
                 fmt = OxmlElement('c:numFmt');fmt.set('formatCode', number_format(visual));fmt.set('sourceLinked','0');node.insert(1,fmt)
                 show = OxmlElement('c:showVal');show.set('val','1');node.append(show)
-                if value < 0 and scale and abs(value) < .15*scale:
-                    hidden = OxmlElement('c:delete');hidden.set('val','1');node.insert(1,hidden)
         if kind == 'line':
             series.format.line.width = Pt(2.5)
             series.marker.style = XL_MARKER_STYLE.CIRCLE if len(visual['categories']) <= 12 or any(v is None for v in visual['series'][i]['values']) else XL_MARKER_STYLE.NONE

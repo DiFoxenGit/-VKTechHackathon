@@ -1,99 +1,99 @@
-"""Probe the selected profile; optionally verify a running service's three decks.
+"""Probe the actual selected transport, then optionally the full business service.
 
-Reads process environment, never prints keys or provider response bodies.
+No secrets, headers or provider response bodies are printed. A profile/model name
+alone never counts as a successful model request. Service mode generates the
+12-slide business story and all three variants with actual per-job call evidence.
 """
-
 import argparse
 import asyncio
-import io
 import json
 import os
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 import httpx
 from fastapi import HTTPException
-from pptx import Presentation
+
+from acceptance_evidence import code_version, sanitized_inference, validate_inference
+from check_parallel_generation import parser as parallel_parser, run_scenario
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
-from designer.generation import InvalidCompletion, ask, parse_json  # noqa: E402
-from designer.inference import require_llm  # noqa: E402
 
 
-def check_service(base, template_id, settings):
-    headers = {"Authorization": "Bearer " + os.environ["DESIGNER_API_KEY"]} if os.getenv("DESIGNER_API_KEY") else {}
-    with httpx.Client(base_url=base.rstrip("/"), headers=headers, timeout=30) as client:
-        def call(method, path, **kwargs):
-            response = client.request(method, "/api/v1" + path, **kwargs)
-            response.raise_for_status()
-            return response
+def load_env(path):
+    if path:
+        for line in path.read_text(encoding="utf-8-sig").splitlines():
+            if line.strip() and not line.lstrip().startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
-        source = ROOT / "samples/source/материал-инициатива.md"
-        pack = call("POST", "/content-packs", files={"file": (source.name, source.read_bytes(), "text/markdown")}).json()
-        started = time.monotonic()
-        job = call("POST", "/generations", json={
-            "template_id": template_id, "brief": "Защита инициативы перед руководством: эффект пилота и решение о запуске на всю компанию.",
-            "purpose": "initiative", "language": "ru", "slide_count": 12,
-            "content_pack_ids": [pack["id"]],
-        }).json()
-        while True:
-            if time.monotonic() - started >= 300:
-                raise ValueError("Generation exceeded 300 seconds")
-            state = call("GET", "/jobs/" + job["id"]).json()
-            if state["status"] == "failed":
-                raise ValueError("Generation failed; inspect the service job")
-            if state["status"] == "completed":
-                break
-            time.sleep(2)
-        elapsed = time.monotonic() - started
-        if elapsed >= 300:
-            raise ValueError("Generation exceeded 300 seconds")
-        variants = []
-        for identifier in state["presentation_ids"]:
-            deck = call("GET", "/presentations/" + identifier).json()
-            if deck["generation"].get("model") != settings.model or deck["generation"].get("provider") != settings.profile:
-                raise ValueError("Service is using a different inference profile/model")
-            count = len(deck["deck"]["slides"])
-            if count != 12 or any(i["severity"] == "error" for i in deck["audit"]["issues"]):
-                raise ValueError("Unexpected slide count or audit errors")
-            pptx = call("GET", f"/presentations/{identifier}/export/pptx").content
-            if len(Presentation(io.BytesIO(pptx)).slides) != count:
-                raise ValueError("Exported PPTX slide count mismatch")
-            variants.append(deck["variant"])
-        if sorted(variants) != ["classic", "focus", "split"]:
-            raise ValueError("Expected all three layout variants")
-        return {"job_id": job["id"], "seconds": round(elapsed, 2), "variants": variants}
+
+def validate_probe(value):
+    if not isinstance(value, dict) or set(value) != {"ok"} or value["ok"] is not True:
+        raise ValueError("Probe response failed its schema")
+    return value
+
+
+async def run(args):
+    from designer.ai import complete_json
+    from designer.inference import require_llm
+    from designer.inference_trace import capture_inference
+    settings = require_llm()
+    output = args.output
+    output.parent.mkdir(parents=True, exist_ok=True)
+    report = {**code_version(ROOT), "status": "running", "profile": settings.profile,
+              "model": settings.model, "json_mode": settings.json_mode, "probe_scope": "actual HTTP plus JSON schema"}
+    trace = {}
+    started = time.monotonic()
+    try:
+        with capture_inference() as trace:
+            await complete_json([
+                {"role": "system", "content": "Return only a JSON object."},
+                {"role": "user", "content": 'Return {"ok": true}.'},
+            ], validate=validate_probe, agent="acceptance_probe", attempts=args.attempts)
+        report["inference"] = validate_inference(trace, live=True, variants=0,
+                                                  provider=settings.profile, model=settings.model)
+        report["probe_seconds"] = round(time.monotonic() - started, 3)
+        if args.service:
+            base = args.service.rstrip("/")
+            if not base.endswith("/api/v1"):
+                base += "/api/v1"
+            service_args = parallel_parser().parse_args(["--url", base, "--live", "--one-template",
+                "--template-id", args.template_id, "--provider", settings.profile, "--model", settings.model,
+                "--label", "inference-service", "--output", str(output.parent / "service")])
+            service = await run_scenario(service_args)
+            report["generation"] = {key: service[key] for key in
+                ("status", "validated_model_calls", "actual_attempts", "all_variants_ready_seconds", "jobs", "runs")}
+        report["status"] = "passed"
+    except Exception as exc:
+        report.update(status="failed", error_type=type(exc).__name__, inference=sanitized_inference(trace),
+                      probe_seconds=round(time.monotonic() - started, 3))
+        raise
+    finally:
+        output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
+        print(json.dumps(report, ensure_ascii=False, indent=2))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--service", help="Running designer service URL; creates a content pack and three decks")
+    parser.add_argument("--service", help="Running service; creates real business content and three decks")
     parser.add_argument("--template-id")
+    parser.add_argument("--env-file", type=Path)
+    parser.add_argument("--attempts", type=int, default=1, help="Probe retries (default one; full service has its own retry policy)")
+    parser.add_argument("--output", type=Path, default=ROOT / "output/live-qwen/inference.json")
     args = parser.parse_args()
     if bool(args.service) != bool(args.template_id):
         parser.error("--service and --template-id must be supplied together")
-    settings = require_llm()
-    started = time.monotonic()
-    answer = parse_json(asyncio.run(ask([
-        {"role": "system", "content": "Return only a JSON object."},
-        {"role": "user", "content": 'Return {"ok": true}.'},
-    ])))
-    if answer != {"ok": True}:
-        raise ValueError("Probe response failed JSON validation")
-    report = {"profile": settings.profile, "model": settings.model, "probe_seconds": round(time.monotonic() - started, 2)}
-    if args.service:
-        report["generation"] = check_service(args.service, args.template_id, settings)
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    if args.attempts < 1:
+        parser.error("--attempts must be positive")
+    load_env(args.env_file)
+    asyncio.run(run(args))
 
 
 if __name__ == "__main__":
     try:
         main()
-    except httpx.HTTPStatusError as exc:
-        print(f"HTTP {exc.response.status_code}; check provider/service settings and quotas", file=sys.stderr)
-        sys.exit(1)
-    except (httpx.HTTPError, HTTPException, InvalidCompletion, ValueError) as exc:
-        print(f"Inference check failed ({type(exc).__name__}); check settings and service job", file=sys.stderr)
-        sys.exit(1)
+    except (httpx.HTTPError, HTTPException, ValueError) as exc:
+        raise SystemExit("Inference check failed (" + type(exc).__name__ + "); see sanitized report") from None

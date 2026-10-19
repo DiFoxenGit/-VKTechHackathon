@@ -10,6 +10,7 @@ async (page) => {
   let failExport = false;
   let templateFailure = false;
   let uploadDelay = 0;
+  let savedRecord;
   const template = {id: 'test-tech', name: 'VK Tech', layouts: [{index: 0, name: 'Cover'}]};
   await page.route('**/api/v1/**', async route => {
     const url = new URL(route.request().url());
@@ -23,7 +24,14 @@ async (page) => {
       polls++;
       return json(jobStatus === 'completed' ? {id:'job-1',status:'completed',presentation_ids:['deck-1'],progress:100} : jobStatus === 'failed' ? {id:'job-1',status:'failed',error:'Не удалось оформить слайды'} : {id:'job-1',status:jobStatus,progress:jobStatus === 'running' ? 45 : 0,stage:'layout_and_audit'});
     }
-    if (url.pathname.endsWith('/presentations/deck-1')) return json({id:'deck-1',title:'Проверка UX',template_id:'test-tech',variant:'classic',revision:1,deck:{slides:[{content:{title:'Идея продукта',bullets:['Первый тезис']}},{content:{title:'Результаты',bullets:['Второй тезис']}},{content:{title:'Следующий шаг',bullets:['Третий тезис']}}]}});
+    if (url.pathname.endsWith('/presentations/deck-1')) {
+      const original={id:'deck-1',title:'Проверка UX',template_id:'test-tech',variant:'classic',revision:1,deck:{slides:[{content:{title:'Идея продукта',bullets:['Первый тезис']}},{content:{title:'Результаты',bullets:['Второй тезис']}},{content:{title:'Следующий шаг',bullets:['Третий тезис']}}]}};
+      if(route.request().method()==='PATCH') {
+        const edit=route.request().postDataJSON();
+        savedRecord={...original,title:edit.title,variant:edit.variant,revision:edit.revision+1,deck:{slides:edit.slides.map(content=>({content}))}};
+      }
+      return json(savedRecord||original);
+    }
     if (url.pathname.includes('/export/')) return failExport ? route.fulfill({status:503,json:{detail:'Экспорт временно недоступен'}}) : route.fulfill({contentType:'application/octet-stream',body:'UX export'});
     if (url.pathname.endsWith('/content-packs')) { await new Promise(r => setTimeout(r, uploadDelay)); return json({id:'pack-1',name:'notes.txt',text:'Материалы для презентации',sha256:'test'}); }
     return route.abort();
@@ -89,7 +97,7 @@ async (page) => {
   await page.getByRole('button',{name:'Новая презентация',exact:true}).click();
   check(await page.getByRole('textbox',{name:'Описание презентации'}).inputValue() === '', 'New presentation clears previous brief');
   await page.getByLabel('Загрузить материалы',{exact:true}).setInputFiles({name:'bad.exe',mimeType:'application/octet-stream',buffer:Buffer.from('invalid')});
-  await page.getByText('Поддерживаются TXT, MD, CSV, JSON, DOCX, PPTX и PDF.').waitFor();
+  await page.getByText('Поддерживаются TXT, MD, CSV, XLSX, JSON, DOCX, PPTX, PDF и ZIP.').waitFor();
   uploadDelay = 1200;
   await page.getByLabel('Загрузить материалы',{exact:true}).setInputFiles({name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('Материалы')});
   await page.getByRole('heading',{name:/Загружаем материалы|Читаем материалы/}).waitFor();

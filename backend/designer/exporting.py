@@ -188,6 +188,42 @@ def _clone_slide(
     return target
 
 
+def _materialize_footer(slide, layout, width, height):
+    """Make inherited logos explicit on a page containing only text boxes.
+
+    LibreOffice can omit layout artwork on these pages despite retaining its
+    relationships. Copy only small footer images/groups at their exact original
+    coordinates; keep their editable objects and original image bytes.
+    """
+    seen = {shape_key(shape, width, height) for shape in slide.shapes}
+    mapping = {}
+    for rel in layout.part.rels.values():
+        if rel.reltype.endswith(('/slideMaster', '/slideLayout')):
+            continue
+        mapping[rel.rId] = slide.part.relate_to(
+            rel.target_ref if rel.is_external else rel.target_part,
+            rel.reltype, is_external=rel.is_external,
+        )
+    identifier = slide.shapes._next_shape_id
+    for shape in layout.shapes:
+        key = shape_key(shape, width, height)
+        if key in seen or shape.shape_type not in (MSO_SHAPE_TYPE.GROUP, MSO_SHAPE_TYPE.PICTURE):
+            continue
+        if not (shape.top >= height*.8 and shape.width <= width*.45 and shape.height <= height*.15):
+            continue
+        element = copy.deepcopy(shape._element)
+        for node in element.iter():
+            if node.tag == qn('p:cNvPr'):
+                node.set('id', str(identifier))
+                identifier += 1
+                node.set('name', 'template-footer-' + node.get('name', ''))
+            for key_attr, value in list(node.attrib.items()):
+                if key_attr.startswith('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}') and value in mapping:
+                    node.set(key_attr, mapping[value])
+        slide.shapes._spTree.insert_element_before(element, 'p:extLst')
+        seen.add(key)
+
+
 def _mix(color, other, ratio):
     """Смесь двух цветов: ratio — доля первого."""
     a = [int(color[i : i + 2], 16) for i in (0, 2, 4)]
@@ -471,6 +507,8 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             orphans,
             slide_data.get("shape_fixes"),
         )
+        if not template.get('brandbook') and all(e['kind'] == 'text' for e in slide_data['elements']):
+            _materialize_footer(slide, source.slide_layout, deck.slide_width, deck.slide_height)
         if slide_data.get("analytic_layout") and not template.get("brandbook"):
             # Large empty layout placeholders can carry a white fill even after
             # their slide instances are removed (e.g. Education image slots).
@@ -616,7 +654,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
             elif kind == "table":
                 visual = element["data"]
                 rows = [visual["columns"], *visual["rows"]]
-                table_height=min(h - (Pt(24) if visual.get('source') else 0), Pt(38*len(rows))) if len(rows)<=3 else h - (Pt(24) if visual.get('source') else 0)
+                # Keep the source below the last row, including Office's text
+                # margins; the source textbox itself is 24 pt high.
+                table_height=min(h - (Pt(34) if visual.get('source') else 0), Pt(38*len(rows))) if len(rows)<=3 else h - (Pt(34) if visual.get('source') else 0)
                 table = slide.shapes.add_table(len(rows), len(rows[0]), x, y, w, table_height).table
                 def column_weight(c):
                     values=[str(row[c]) for row in rows]

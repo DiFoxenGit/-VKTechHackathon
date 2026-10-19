@@ -4,12 +4,16 @@ import base64
 import json
 import logging
 import os
+import time
+import hashlib
+import math
 import httpx
 from fastapi import HTTPException
 from .inference import llm_settings, require_llm
 from .workflow import PROMPTS, workflow
+from .inference_trace import current_trace, mark_validated, publish
 LOGGER = logging.getLogger("designer.ai")
-MAX_ATTEMPTS = max(1, int(os.getenv("DESIGNER_LLM_ATTEMPTS", "3")))
+MAX_ATTEMPTS = min(3, max(1, int(os.getenv("DESIGNER_LLM_ATTEMPTS", "3"))))
 RETRY_DELAY = max(0.0, float(os.getenv("DESIGNER_LLM_RETRY_DELAY", "0.4")))
 
 class InvalidCompletion(Exception):
@@ -43,6 +47,8 @@ def parse_json(text):
     """Accept the JSON a chat model returns: fenced blocks and stray prose around it."""
     value = text.strip()
     if value.startswith("```"):
+        if '\n' not in value:
+            raise InvalidCompletion('Незавершённый JSON-блок')
         value = value.split("\n", 1)[1].rsplit("```", 1)[0]
     try:
         return json.loads(value)
@@ -55,6 +61,21 @@ def parse_json(text):
         except ValueError as exc:
             raise InvalidCompletion(f"JSON не разобран: {exc}") from None
 
+
+def _usage(value, depth=0):
+    """Retain numeric token usage, including provider detail counters."""
+    if not isinstance(value, dict) or depth > 3:
+        return None
+    result = {}
+    for key, item in list(value.items())[:40]:
+        if isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item):
+            result[str(key)[:100]] = item
+        elif isinstance(item, dict):
+            nested = _usage(item, depth + 1)
+            if nested:
+                result[str(key)[:100]] = nested
+    return result
+
 async def ask(messages):
     settings = require_llm()
     payload = {
@@ -65,19 +86,66 @@ async def ask(messages):
     }
     if settings.json_mode:
         payload["response_format"] = {"type": "json_object"}
-    async with httpx.AsyncClient(timeout=httpx.Timeout(settings.timeout, connect=15)) as client:
-        response = await client.post(
-            settings.url + "/chat/completions",
-            headers={"Authorization": "Bearer " + settings.key, **({"Project-ID": settings.project_id} if settings.profile == "vk" else {})},
-            json=payload,
-        )
-        response.raise_for_status()
-        try:
-            if response.json()["choices"][0].get("finish_reason") == "length":
-                raise InvalidCompletion("Ответ модели обрезан по лимиту токенов")
-            return message_text(response.json()["choices"][0]["message"])
-        except (ValueError, KeyError, IndexError, AttributeError) as exc:
-            raise InvalidCompletion(f"Ответ провайдера без содержимого: {exc}") from exc
+    trace = current_trace()
+    call = None
+    started = time.monotonic()
+    if trace is not None:
+        call = dict(attempt=len(trace['calls']) + 1, status_code=None,
+                    duration_seconds=0.0, validation='not_run', error_code=None,
+                    response_id=None, usage=None)
+        trace['calls'].append(call)
+        trace.update(requested=True, attempted=True, status='running',
+                     provider=settings.profile, model=settings.model, attempts=len(trace['calls']))
+        publish()
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(settings.timeout, connect=15)) as client:
+            response = await client.post(
+                settings.url + "/chat/completions",
+                headers={"Authorization": "Bearer " + settings.key, **({"Project-ID": settings.project_id} if settings.profile == "vk" else {})},
+                json=payload,
+            )
+            if call is not None:
+                call['status_code'] = response.status_code
+            response.raise_for_status()
+            try:
+                body = response.json()
+                if call is not None:
+                    call['response_id'] = str(body['id'])[:200] if body.get('id') else None
+                    call['usage'] = _usage(body.get('usage'))
+                if body['choices'][0].get('finish_reason') == 'length':
+                    raise InvalidCompletion('Ответ модели обрезан по лимиту токенов')
+                answer = message_text(body['choices'][0]['message'])
+                if call is not None:
+                    call['response_sha256'] = hashlib.sha256(answer.encode()).hexdigest()
+                return answer
+            except (ValueError, KeyError, IndexError, AttributeError, TypeError) as exc:
+                raise InvalidCompletion('Ответ провайдера не соответствует формату chat completion') from exc
+    except (httpx.HTTPError, InvalidCompletion) as exc:
+        if call is not None:
+            code = inference_error_code(exc)
+            call.update(error_code=code, validation='failed')
+            trace.update(error_code=code, validation='failed')
+        raise
+    except asyncio.CancelledError:
+        if call is not None:
+            call.update(error_code='interrupted', validation='failed')
+            trace.update(error_code='interrupted', validation='failed', status='failed')
+        raise
+    finally:
+        if call is not None:
+            call['duration_seconds'] = round(time.monotonic() - started, 3)
+            trace['duration_seconds'] = round(sum(item['duration_seconds'] for item in trace['calls']), 3)
+            publish()
+
+
+def inference_error_code(exc):
+    if isinstance(exc, httpx.HTTPStatusError):
+        return {401: 'authorization', 403: 'authorization', 429: 'rate_limit'}.get(exc.response.status_code, 'provider_error')
+    if isinstance(exc, httpx.TimeoutException):
+        return 'timeout'
+    if isinstance(exc, httpx.HTTPError):
+        return 'connection'
+    return 'invalid_response'
 
 def vision_provider():
     """Отдельная модель для проверки по картинке; по умолчанию — основная."""
@@ -221,17 +289,43 @@ async def completion(agent, payload, validate=None):
         {"role": "system", "content": prompt},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
+    return await complete_json(messages, validate=validate, agent=agent)
+
+
+async def complete_json(messages, validate=None, agent='probe', attempts=None):
+    """Validated JSON over the shared transport, with a bounded retry budget."""
+    attempts = min(MAX_ATTEMPTS, max(1, attempts or MAX_ATTEMPTS))
     last = "LLM provider failed or returned invalid JSON"
-    for attempt in range(1, MAX_ATTEMPTS + 1):
+    last_code = 'invalid_response'
+    for attempt in range(1, attempts + 1):
         answer = None
+        trace = current_trace()
+        call_count = len(trace['calls']) if trace is not None else 0
         try:
             answer = await ask(messages)
             value = parse_json(answer)
-            return validate(value) if validate else value
+            result = validate(value) if validate else value
+            call = trace['calls'][-1] if trace is not None and len(trace['calls']) > call_count else None
+            mark_validated(call, True)
+            return result
         except httpx.HTTPError as exc:
             last = f"Провайдер недоступен: {exc.__class__.__name__}"
+            last_code = inference_error_code(exc)
+            if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code in {400, 401, 403, 404, 422}:
+                break
         except (InvalidCompletion, ValueError) as exc:
-            last = str(exc) or exc.__class__.__name__
+            last_code = 'invalid_response'
+            if hasattr(exc, 'errors'):
+                last = 'Проверка схемы: ' + '; '.join(
+                    '.'.join(map(str, error['loc'])) + ': ' + error['msg']
+                    for error in exc.errors(include_input=False))[:500]
+            else:
+                last = str(exc) or exc.__class__.__name__
+            if trace is not None and len(trace['calls']) > call_count:
+                call = trace['calls'][-1]
+                call['error_code'] = 'invalid_response'
+                trace['error_code'] = 'invalid_response'
+                mark_validated(call, False)
             if answer is not None:
                 # Show the model its own answer; repeating only the rule rarely helps.
                 messages = messages[:2] + [
@@ -244,8 +338,16 @@ async def completion(agent, payload, validate=None):
                         ),
                     },
                 ]
-        LOGGER.warning("Agent %s attempt %s/%s failed: %s", agent, attempt, MAX_ATTEMPTS, last)
-        if attempt < MAX_ATTEMPTS and RETRY_DELAY:
+        LOGGER.warning("Agent %s attempt %s/%s failed: %s", agent, attempt, attempts, last_code)
+        if attempt < attempts and RETRY_DELAY:
             await asyncio.sleep(RETRY_DELAY * attempt)
-    raise HTTPException(502, f"Модель не вернула корректный ответ: {last}")
+    trace = current_trace()
+    if trace is not None:
+        trace.update(status='failed', error_code=last_code, message='Модель не вернула проверенный ответ')
+        publish()
+    safe_reason = {'authorization': 'проверьте доступ к провайдеру',
+        'rate_limit': 'провайдер ограничил число запросов', 'timeout': 'истекло время ожидания',
+        'provider_error': 'ошибка провайдера', 'connection': 'нет соединения с провайдером',
+        'invalid_response': 'ответ не прошёл проверку формата или фактов'}[last_code]
+    raise HTTPException(502, f'Модель не вернула корректный ответ: {safe_reason}. Повторите запрос.')
 

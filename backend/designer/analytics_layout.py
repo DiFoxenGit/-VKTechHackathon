@@ -73,12 +73,18 @@ def compose_analytics(outline, template, variant, assets=None):
         caveats=bool(content["bullets"])
         kind=content.get("visual",{}).get("kind","none")
         has_visual=kind not in {"none", ""}
+        categories = content.get('visual', {}).get('categories', [])
+        # A regional comparison needs width for full category names, a zero
+        # baseline and signed endpoints. A narrow split pane makes all three
+        # collide. Keep its evidence full-width, as with a native table.
+        wide_evidence = kind in {'bar', 'grouped_bar', 'stacked_bar', 'histogram'} and (
+            len(categories) >= 4 or max(map(len, categories), default=0) > 22)
         usable=right-left
         title_box=[width*left,height*top,width*usable,height*.20]
         visual_box=[width*left,height*(top+.23),width*usable,height*(bottom-top-.23-(.16 if caveats else .025))]
         note_box=[width*left,height*(bottom-.15),width*usable,height*.14]
         title_align="left"
-        if variant == "split" and has_visual and kind != "table":
+        if variant == "split" and has_visual and kind != "table" and not wide_evidence:
             title_box=[width*left,height*(top+.06),width*usable*.31,height*.36]
             title_size=min(title_size,24)
             visual_box=[width*(left+usable*.35),height*(top+.04),width*usable*.65,height*(bottom-top-.07)]
@@ -87,7 +93,7 @@ def compose_analytics(outline, template, variant, assets=None):
             title_align="center"
             title_box=[width*left,height*top,width*usable,height*.16]
             visual_box=[width*left,height*(top+.18),width*usable,height*(bottom-top-.18-(.16 if caveats else .025))]
-        elif variant == "split" and kind == "table":
+        elif variant == "split" and (kind == "table" or wide_evidence):
             title_box=[width*left,height*top,width*usable,height*.16]
             visual_box[1]=height*(top+.185)
             visual_box[3]+=height*.045
@@ -113,13 +119,13 @@ def compose_analytics(outline, template, variant, assets=None):
                     side = height*(.09 if business_icon and kind != 'kpi' else .20)
                     icon_y = height*top if kind != 'kpi' else visual_box[1]+height*.09
                     icon_x = width*right-side
-                    if variant=='split' and kind!='kpi':
+                    if variant=='split' and kind!='kpi' and not wide_evidence:
                         icon_x=width*left
                         elements[0]['box'][1]=height*(top+.14)
                         elements[0]['box'][3]=height*.30
                     elements.append(dict(defaults,id='metric_icon',kind='image',role='icon',asset=asset_ref(icons[0]),fit='contain',box=[icon_x,icon_y,side,side]))
                     if kind == 'kpi':visual_box[2] -= side + width*.03
-                    elif variant!='split':elements[0]['box'][2] -= side + width*.02
+                    elif variant!='split' or wide_evidence:elements[0]['box'][2] -= side + width*.02
             elements.append(dict(defaults,id="visual",kind=kind,role="body",data=copy.deepcopy(content["visual"]),box=visual_box))
             if caveats:
                 elements.append(dict(defaults,id="caveats",kind="text",role="body",text="\n".join(content["bullets"]),font_size=12,box=note_box))

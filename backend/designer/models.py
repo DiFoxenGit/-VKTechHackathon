@@ -129,6 +129,7 @@ class PackAnalysisRequest(StrictModel):
 
 
 class GenerateRequest(Brief):
+    model_content_generation: bool | None = None
     generate_images: bool | None = None
     narrative: bool = False
     contextual_audit: bool = False

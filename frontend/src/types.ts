@@ -16,6 +16,7 @@ export type Layout = 'classic' | 'story' | 'focus';
 export type ImageGeneration = {status: 'not_requested' | 'ready' | 'unavailable' | 'failed'; message: string; count?: number};
 export type Brief = { business?: import('./business').BusinessRequest; generateImages?: boolean; narrative?: boolean; text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string; materialName?: string; contentPackIds?: string[]; materialFiles?: import('./analytics').Material[]; brandbook?: import('./analytics').Brandbook };
 export type Deck = {
+  inference?: import('./inference').ModelInference;
   imageGeneration?: ImageGeneration;
   id: string;
   title: string;

@@ -98,7 +98,8 @@ def test_negative_bar_sign_survives_pdf_render(tmp_path):
     chart=next(s.chart for s in slide.shapes if s.has_chart)
     assert chart.series[0].invert_if_negative is False
     from pptx.enum.chart import XL_LABEL_POSITION
-    assert chart.series[0].points[1].data_label.position == XL_LABEL_POSITION.INSIDE_END
+    assert chart.series[0].points[1].data_label.position == XL_LABEL_POSITION.OUTSIDE_END
+    assert chart.value_axis.minimum_scale < -4000000
     from pptx.oxml.ns import qn
     for point in chart.series[0].points:
         label=point.data_label._dLbl
@@ -108,7 +109,7 @@ def test_negative_bar_sign_survives_pdf_render(tmp_path):
     image=Image.open(BytesIO(render_slides(path.with_suffix('.pdf'),1000)[0])).convert('RGB')
     blue=[]
     for y in range(image.height):
-        xs=[x for x in range(image.width) if (lambda p:p[0]<40 and 80<p[1]<160 and p[2]>180)(image.getpixel((x,y)))]
+        xs=[x for x in range(image.width) if (lambda p:p[2]>180 and p[2]-p[0]>70 and p[1]>80)(image.getpixel((x,y)))]
         if len(xs)>30:blue.append((y,sum(xs)/len(xs)))
     groups=[]
     for y,x in blue:

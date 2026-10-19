@@ -1,10 +1,14 @@
 """Orchestrates deterministic algorithms, model calls and presentation assembly."""
 import logging
+import asyncio
 import os
 import re
+import time
+import httpx
 from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
 from . import ai
+from .inference_trace import new_trace, capture_inference, current_trace, publish, validated_content
 from .models import Outline
 from .workflow import narrative
 from .algorithms.context import select_context
@@ -45,13 +49,36 @@ async def balance_outline(outline, template, capacity=None, warnings=None):
                 "condense", payload,
                 validate=lambda result: apply_condensation(outline, result, payload))
     except HTTPException as exc:
-        LOGGER.warning("Condense agent unavailable: %s", exc.detail)
+        trace = current_trace()
+        if trace is not None:
+            trace.update(status='fallback', fallback_used=True,
+                         error_code=trace['error_code'] or 'not_configured',
+                         message='Текст сокращён алгоритмически; исходные формулировки сохранены')
+        LOGGER.warning('Condense agent unavailable')
         if warnings is not None:
             warnings.append("ИИ не сократил текст: применена алгоритмическая подгонка с сохранением исходника.")
     return finish_balance(outline, candidate, payload, warnings)
 
 
 async def run_generation(request, template, sources, *, outline_factory, balance,
+                         render_variant, variants, on_stage, on_outline,
+                         on_variant, warnings, label_assets=None,
+                         draw_illustrations=None, contextual_check=None, on_inference=None):
+    if not sources:
+        sources = [{'id': 'brief', 'text': request.brief}]
+    trace = new_trace()
+    sources[0]['_inference'] = trace
+    with capture_inference(trace, on_inference):
+        try:
+            return await _run_generation(request, template, sources, outline_factory=outline_factory,
+                balance=balance, render_variant=render_variant, variants=variants, on_stage=on_stage,
+                on_outline=on_outline, on_variant=on_variant, warnings=warnings, label_assets=label_assets,
+                draw_illustrations=draw_illustrations, contextual_check=contextual_check)
+        finally:
+            publish()
+
+
+async def _run_generation(request, template, sources, *, outline_factory, balance,
                          render_variant, variants, on_stage, on_outline,
                          on_variant, warnings, label_assets=None,
                          draw_illustrations=None, contextual_check=None):
@@ -71,21 +98,84 @@ async def run_generation(request, template, sources, *, outline_factory, balance
         sources[0]["_analysis_results"] = analysis_results
         if getattr(request, "narrative", False):
             sources[0]["_story"] = {"goal": request.brief}
+        if sources[0].get('_business'):
+            sources[0].pop('_business_editorial', None)
         outline = build_outline(analysis_results, sources, request.slide_count)
         for result in analysis_results:
             warnings.extend(result["warnings"])
+        if sources[0].get('_business'):
+            trace = current_trace()
+            requested = getattr(request, 'model_content_generation', None) is not False
+            trace['requested'] = requested
+            if requested:
+                started = time.monotonic()
+                on_stage('model_content', 10)
+                try:
+                    settings = ai.llm_settings()
+                    trace.update(provider=settings.profile, model=settings.model or None)
+                    if not settings.configured:
+                        raise HTTPException(503, 'Текстовая модель не настроена')
+                    from .business_editorial import edit_business
+                    # A generation always makes a fresh request; replay is only for
+                    # persisted revisions, never a cache for a new business story.
+                    sources[0].pop('_business_editorial', None)
+                    async with asyncio.timeout(240):
+                        outline = await edit_business(sources, outline, request.brief)
+                    trace['content_reused_for_variants'] = len(variants)
+                except (HTTPException, TimeoutError) as exc:
+                    if isinstance(exc, TimeoutError):
+                        trace.update(error_code='timeout', validation='failed')
+                        if trace['calls']:
+                            trace['calls'][-1].update(error_code='timeout', validation='failed')
+                    trace.update(status='unavailable' if not trace['attempted'] else 'fallback',
+                        fallback_used=True, completed=False,
+                        error_code=trace['error_code'] or 'not_configured',
+                        message='Модель не подготовила проверенный текст. Сохранён расчётный текст; повторите генерацию.')
+                    reason = {'authorization': 'Проверьте доступ к провайдеру.',
+                        'rate_limit': 'Провайдер ограничил число запросов; повторите позже.',
+                        'timeout': 'Провайдер не ответил вовремя.',
+                        'not_configured': 'Настройте текстовую модель.',
+                        'invalid_response': 'Ответ модели не прошёл проверку фактов или формата.'}.get(trace['error_code'], 'Провайдер временно недоступен.')
+                    trace['message'] = reason + ' ' + trace['message']
+                    warnings.append(trace['message'])
+                    LOGGER.warning('Business editorial unavailable: %s', trace['error_code'])
+                finally:
+                    trace['duration_seconds'] = round(time.monotonic() - started, 3)
+                    publish()
     else:
+        trace = current_trace()
+        trace['requested'] = request.outline is None
         outline = (request.outline.model_copy(deep=True) if request.outline
                else await outline_factory(request, sources, warnings))
     on_stage("balance", 12)
     if analysis_results:
         verify_outline(outline, analysis_results, sources)
     else:
-        outline = Outline.model_validate(await balance(outline.model_dump(), template, warnings=warnings))
+        content_trace = current_trace()
+        with capture_inference(new_trace()) as condense_trace:
+            try:
+                outline = Outline.model_validate(await balance(outline.model_dump(), template, warnings=warnings))
+            finally:
+                content_trace['condense'] = condense_trace
+        publish()
+    if validated_content(current_trace()):
+        current_trace()['content_reused_for_variants'] = len(variants)
+        publish()
     on_outline(outline.model_dump())
     if label_assets is not None:
         on_stage("assets", 14)
-        await label_assets(template, request.content_pack_ids)
+        content_trace = current_trace()
+        with capture_inference(new_trace()) as asset_trace:
+            try:
+                await label_assets(template, request.content_pack_ids)
+            except (HTTPException, ai.InvalidCompletion, httpx.HTTPError, ValueError, TimeoutError):
+                asset_trace.update(status='fallback', fallback_used=True,
+                    error_code=asset_trace['error_code'] or 'asset_tagging_failed')
+                warnings.append('Модель не подписала изображения; использована существующая библиотека.')
+                LOGGER.warning('Asset tagging unavailable')
+            finally:
+                content_trace['asset_tagging'] = asset_trace
+        publish()
     illustrations = None
     if draw_illustrations is not None:
         on_stage("illustrations", 15)
@@ -102,8 +192,15 @@ async def run_generation(request, template, sources, *, outline_factory, balance
     findings = None
     if request.contextual_audit and contextual_check is not None:
         on_stage("contextual_audit", 15)
-        findings = await contextual_check(
-            {"slides": [{"content": slide.model_dump()} for slide in outline.slides]}, sources)
+        content_trace = current_trace()
+        # A successful optional audit is not proof of model-authored content.
+        with capture_inference() as audit_trace:
+            try:
+                findings = await contextual_check(
+                    {"slides": [{"content": slide.model_dump()} for slide in outline.slides]}, sources)
+            finally:
+                content_trace['contextual_audit'] = audit_trace
+        publish()
     results = []
     for index, variant in enumerate(variants):
         if analysis_results:

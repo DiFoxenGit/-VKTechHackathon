@@ -196,3 +196,19 @@ body { min-width: 0; }
 .business-periods fieldset { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
 .business-conditions > fieldset { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .business-conditions > fieldset > label:last-child { grid-column: 1 / -1; }
+.model-generation-status { padding: 16px; margin-bottom: 18px; background: #eef7f2; border: 1px solid #cce3d6; border-radius: 10px; color: #21543d; font-size: 13px; line-height: 1.6; }
+.model-generation-status p { margin: 6px 0; }
+.model-generation-status.is-fallback { background: #fff5e7; border-color: #ecd6b6; color: #764b1b; }
+.model-generation-status button { margin: 10px 0; }
+.model-diagnostics { margin-top: 12px; color: #4c5e73; }
+.model-diagnostics summary { cursor: pointer; }
+.model-diagnostics dl { display: grid; gap: 8px; margin-bottom: 0; }
+.model-diagnostics dl > div { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(0, 1fr); gap: 12px; }
+.model-diagnostics dt, .model-diagnostics dd { margin: 0; overflow-wrap: anywhere; }
+.material-state { font-size: 12px; color: #326249; }
+.material-state.needs-review { color: #80511c; }
+.material-card .analysis-card-heading > div { min-width: 0; flex: 1; }
+.material-card .analysis-card-heading > button { flex-shrink: 0; }
+.business-controls .field-hint { margin: 0; font-size: 12px; color: #80511c; }
+.business-controls [aria-invalid=true] { border-color: #b67431; }
+@media (max-width: 520px) { .model-diagnostics dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }

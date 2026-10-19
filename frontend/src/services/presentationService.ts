@@ -1,4 +1,5 @@
 import { businessApiFields } from '../business';
+import { parseInference } from '../inference';
 import type { BusinessRequest } from '../business';
 import { templates as localTemplates } from '../data/templates';
 import { toBackendOutline } from '../algorithms/outline';
@@ -43,6 +44,7 @@ export const materialSourceUrl = (id: string) => `${API_BASE}/content-packs/${en
 type ContentPack = Material & {sha256: string; datasets?: {rows: unknown[]; sheet: string}[]};
 
 type Job = {
+  inference?: unknown;
   id: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
   progress?: number;
@@ -53,6 +55,7 @@ type Job = {
 };
 
 type BackendPresentation = {
+  generation?: { inference?: unknown };
   business_request?: BusinessRequest | null;
   image_generation?: import('../types').ImageGeneration;
   id: string;
@@ -192,6 +195,8 @@ function upload<T>(path: string, file: File, options: ServiceOptions): Promise<T
 
 function jobProgress(job: Job): ServiceProgress {
   const messages: Record<string, string> = {
+    analytics: 'Проверяем факты и рассчитываем показатели',
+    model_content: 'Текстовая модель формулирует выводы по проверенным фактам',
     outline: 'Собираем структуру презентации',
     balance: 'Распределяем содержание по слайдам',
     assets: 'Подбираем материалы шаблона',
@@ -282,6 +287,7 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
     serverIssues,
     analysis: record.analysis,
     imageGeneration: record.image_generation,
+    inference: parseInference(record.generation?.inference),
   };
 }
 

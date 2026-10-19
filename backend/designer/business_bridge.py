@@ -218,4 +218,6 @@ def business_outline(sources, limit):
             'display_selection': selection, 'context_excerpt': page['context_evidence']['text'][:1500]}, ensure_ascii=False)
         slides.append({'title': _title(page,analysis,story), 'bullets': bullets, 'notes': notes, 'source_refs': refs,
                        'visual': visual, 'analysis_id': f'business:{page["id"]}:{token}'})
-    return Outline.model_validate({'title': f'Развитие B2B-продуктов • итоги {_period_label(analysis["period_settings"]["current"])}', 'slides': slides})
+    outline = Outline.model_validate({'title': f'Развитие B2B-продуктов • итоги {_period_label(analysis["period_settings"]["current"])}', 'slides': slides})
+    from .business_editorial import replay_editorial
+    return replay_editorial(sources, outline)
