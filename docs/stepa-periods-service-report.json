@@ -1,0 +1,309 @@
+{
+  "synthetic": true,
+  "image_provider_live": false,
+  "runs": [
+    {
+      "version": "baseline",
+      "template": "Шаблон презентации VK Education",
+      "variant": "classic",
+      "id": "b2659ac774d84b7496511ae7ff14997c",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 10
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "b04f5e9df49b92fd6958af8288608cccc295b0a178a4d0c7b3ebe5a470294021",
+      "pdf_sha256": "14f9a15f3f4c52336f7d7e0da30f4a4f27e2369d368d0a37f8822eab986cacd6"
+    },
+    {
+      "version": "baseline",
+      "template": "Шаблон презентации VK Education",
+      "variant": "split",
+      "id": "31f7a2a1d0ca4939a3ef192f050b7275",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 13
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "f4066742fdf8c3467bfaa8e367985cfe7519cc99fa4894c30a20b64559eda1be",
+      "pdf_sha256": "7aa79bd2fd3f714bdf4761b7679918e79839fd136ec00eb201b6ce78bd0229c1"
+    },
+    {
+      "version": "baseline",
+      "template": "Шаблон презентации VK Education",
+      "variant": "focus",
+      "id": "49291dcdadab43f7ad5f694eefc7a8b0",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 10
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "2bc85fac7a8a41a40b2d99deb98b9744ec5509a21150db87e398511d3ddd9613",
+      "pdf_sha256": "00095585b30dc2fc0d171005460fdf7dfdf0795c3d663fd86b0368a2d24029b2"
+    },
+    {
+      "version": "baseline",
+      "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+      "variant": "classic",
+      "id": "d6d20db3dde9473d8ef8ced82f2a1a84",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 16
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "cc14fdb8e521beb053fe0a4df1af187a156e7cd25e3497f978d16209aff40ff7",
+      "pdf_sha256": "a68295a52f51c36962ac0ec1d1644be4f9299a42ea9cc0109dc6c42faf14ab69"
+    },
+    {
+      "version": "baseline",
+      "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+      "variant": "split",
+      "id": "cd5c5fc236f7465d9e57d7d17ce9f46a",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 22
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "bd6d99e314019b863fda82c9d87f99a683b858b085ede9f586b4b1f2130819f0",
+      "pdf_sha256": "92d27c713bde739ec17897e49c2107e396d5ffd69447981915217ad31bc4ca0d"
+    },
+    {
+      "version": "baseline",
+      "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+      "variant": "focus",
+      "id": "e6a87799b82e481fb953bc502e192d4d",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 17
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "6ac396776b9a4d78a4318f9eb0350dac1764ccb6f25ca1de12f351e3bbf7e4e9",
+      "pdf_sha256": "54e1eaf9ff1faf5c996fe3aabf7612bd638d9353c10cc8c7787380ebaff0bd7b"
+    },
+    {
+      "version": "baseline",
+      "template": "VK Tech шаблон",
+      "variant": "classic",
+      "id": "bdce85f695884914add3a172354f38d6",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 24
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "b4677f0bb6cae887589730e4c35ad0c04308f6cc0c6f20c964b621128a22d139",
+      "pdf_sha256": "e4cc8c897669083a56d61c4827f7de4f2b605d730cf2faa2f60fe5640302ef62"
+    },
+    {
+      "version": "baseline",
+      "template": "VK Tech шаблон",
+      "variant": "split",
+      "id": "6196c56fa3bd46d39ce02fea63e3d772",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 21
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "7308f74b78148d0b3ac2fa65775c2c713a606072168794cb193d90b2811dc4c7",
+      "pdf_sha256": "49a5d13bcacf3112df076c299e8f086d993e36640e1e5c3d05c949c92315faf6"
+    },
+    {
+      "version": "baseline",
+      "template": "VK Tech шаблон",
+      "variant": "focus",
+      "id": "96c11ef6b24b436cbaa9484d90fd5577",
+      "net_rub": "93563698",
+      "profit_rub": "30580684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 24
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "15cf5027a8df8212f39f612c2633a3a0372cabb9ded6c2632420f3ca9cabcf5b",
+      "pdf_sha256": "293132281c99091777af36e317e30daab0b7fd134a6e399173b0a232a37dc732"
+    },
+    {
+      "version": "version-b",
+      "template": "VK Tech шаблон",
+      "variant": "classic",
+      "id": "94decde2e8844f2091b5fb9aaaa1e5ed",
+      "net_rub": "94823698",
+      "profit_rub": "31570684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 24
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "bc778343ceff3dab4cbb6fdbb9d9b721d890b31d40d1d336a0d6f17d0434c7fe",
+      "pdf_sha256": "b778d7a4e1b8a2d8c94886622d17069563b2aee1f7f51759450c7cacce07a6dc"
+    },
+    {
+      "version": "version-b",
+      "template": "VK Tech шаблон",
+      "variant": "split",
+      "id": "65fd600407bc43819b228f5d081f2e01",
+      "net_rub": "94823698",
+      "profit_rub": "31570684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 21
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "570049bb80b8fad31f9447245a6e5f16e503ef67252ab41955b1d96c299dbf82",
+      "pdf_sha256": "3055da406c9c54b38547de85fb16aaeaed8b11ea377a9fb52f249ed2460e2f87"
+    },
+    {
+      "version": "version-b",
+      "template": "VK Tech шаблон",
+      "variant": "focus",
+      "id": "1ce67cba66e94a7c8db544903270d153",
+      "net_rub": "94823698",
+      "profit_rub": "31570684",
+      "excluded_sales_rows": 216,
+      "slides": 12,
+      "native_charts": 5,
+      "native_tables": 2,
+      "revision": 2,
+      "preview": true,
+      "tampering_rejected": true,
+      "audit": {
+        "errors": 0,
+        "warnings": 24
+      },
+      "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+      "final_native_values_verified": true,
+      "pptx_sha256": "dfa20e9e200f034a602e948a845e3078b441eaf003e03703ddf26a1d41f0e26c",
+      "pdf_sha256": "94abbe74396b86a5687eef080c9baf96f4716da5bca054d80d02648314180b19"
+    }
+  ],
+  "final_exporter_sha256": "20182c4abf8023835cd5b0464d72faaa3ba1e8b7e05e467d4fa4fcc87faad21e",
+  "final_visual_export": "Re-rendered from verified saved revision 2 with the final exporter; numbers checked against the saved native visual contract.",
+  "date": "2026-10-19",
+  "base_commit": "0676b245d6b4f34d80b4fe7c4c43ed1887decc94",
+  "backend_tests": {
+    "passed": 433,
+    "skipped": 9
+  },
+  "targeted_backend_tests": {
+    "passed": 43
+  },
+  "final_negative_label_regression": {
+    "passed": 1
+  },
+  "frontend_checks": true,
+  "frontend_build": true,
+  "browser_viewports": [
+    [
+      1440,
+      900
+    ],
+    [
+      1920,
+      1080
+    ]
+  ],
+  "production_deployed": false
+}

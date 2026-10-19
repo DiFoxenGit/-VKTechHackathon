@@ -1,0 +1,90 @@
+{
+  "synthetic": true,
+  "version": "period-context-1",
+  "files": {
+    "baseline/analysis.json": {
+      "sha256": "16785f7713f6ea06122084cec96013bd0408817c8203697f1e51e8be7151cb2a",
+      "bytes": 420784
+    },
+    "baseline/changes.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "baseline/conditions.json": {
+      "sha256": "efc2264e9de41c6ad55da3dda3e9d82d5559d1945381bb7d471a7c9932142dd6",
+      "bytes": 15788
+    },
+    "baseline/context.txt": {
+      "sha256": "014eff4a51645d70f4c8c5d2d6f32a31ab19c3c670c03d32160927b188b7fbde",
+      "bytes": 14071
+    },
+    "baseline/expected-results.json": {
+      "sha256": "0bb7efdb3e955588cd564e7beab60198ba55c7090d4294be5bc66014f252f221",
+      "bytes": 58604
+    },
+    "baseline/plan.csv": {
+      "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+      "bytes": 9562
+    },
+    "baseline/sales.csv": {
+      "sha256": "966ef7ece55e6f38801f130d912c3af5efdb6eb05fc64695821eb7a556ccc83c",
+      "bytes": 81668
+    },
+    "baseline/story.json": {
+      "sha256": "94972bbcc9498d79824ee555551ceec6578729fa572bf9c3329fcb0594429797",
+      "bytes": 345448
+    },
+    "conditions.schema.json": {
+      "sha256": "9de5efbf4c6d2e50d43ee88a2c63c74d7483855ac4142f768a576b77b43f5de0",
+      "bytes": 2760
+    },
+    "context-controls.json": {
+      "sha256": "3d80ffc7fce626375487982f97142cdd41a9fd2ae6a50eab0ea8b1879f5b119d",
+      "bytes": 399
+    },
+    "periods.schema.json": {
+      "sha256": "63163522755408ac73dbddbdb52aed4ae214aab88186a4abd8890e99bb65e95e",
+      "bytes": 1636
+    },
+    "settings.json": {
+      "sha256": "de90d6b32d2a80dea3e22b9fbfd493b4d5c2cc4961ee7eca7384292d342d0ef2",
+      "bytes": 247
+    },
+    "version-b/analysis.json": {
+      "sha256": "f79d7c67c56ab12020435bdf72e207ff3bc6de0debcb414e53f95854c320af69",
+      "bytes": 421124
+    },
+    "version-b/changes.json": {
+      "sha256": "573bb6a91425f94339d1d6bc23d3790dfb7490450f249adb3496334c8e15ccc5",
+      "bytes": 3567
+    },
+    "version-b/conditions.json": {
+      "sha256": "bb2ef3df841ca1e7b87fdc0a28990bc935e4ba18a38691168244db53fa88d06d",
+      "bytes": 15756
+    },
+    "version-b/context.txt": {
+      "sha256": "cdfb50f6b236a5417dae4e1ded9718a6e86664fe8f7b5178e951e9e2f47a1f8a",
+      "bytes": 14055
+    },
+    "version-b/expected-results.json": {
+      "sha256": "98c360b0e6d29948499f324b0e1d026d4909361026c32f27643257a75ccbd8e7",
+      "bytes": 58604
+    },
+    "version-b/plan.csv": {
+      "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+      "bytes": 9562
+    },
+    "version-b/sales.csv": {
+      "sha256": "3efc679315b33c34680f349a02e1c04d52e2f248b12e528996a80893e30bbb5d",
+      "bytes": 81668
+    },
+    "version-b/story.json": {
+      "sha256": "a579ce5c520a8e5d4e5e54e55805cd699c5b9190cf3d83689fccca5681d1e5ff",
+      "bytes": 345352
+    }
+  },
+  "dictionary_sources": {
+    "products": "704a6e96179aa866769161fa531b91402625cb9054ff66fe26182e06c7de1ced",
+    "regions": "d41a512323c57a75689ec7a6ee80cb7828f895483ae381c9d40394e7dd64cf97"
+  }
+}

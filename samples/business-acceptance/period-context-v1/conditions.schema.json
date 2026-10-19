@@ -1,0 +1,136 @@
+{
+  "$defs": {
+    "NumberCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "maximum": 1000000000000,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        },
+        "quote": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "NumberCondition",
+      "type": "object"
+    },
+    "PeriodCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value",
+          "type": "array"
+        },
+        "quote": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "PeriodCondition",
+      "type": "object"
+    },
+    "TextCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 3000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "quote"
+      ],
+      "title": "TextCondition",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "sections": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Sections",
+      "type": "object"
+    },
+    "budget": {
+      "additionalProperties": {
+        "$ref": "#/$defs/NumberCondition"
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "capacity": {
+      "additionalProperties": {
+        "$ref": "#/$defs/NumberCondition"
+      },
+      "title": "Capacity",
+      "type": "object"
+    },
+    "owners": {
+      "additionalProperties": {
+        "$ref": "#/$defs/TextCondition"
+      },
+      "title": "Owners",
+      "type": "object"
+    },
+    "channel_event": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Channel Event"
+    },
+    "reporting_period": {
+      "$ref": "#/$defs/PeriodCondition"
+    }
+  },
+  "required": [
+    "sections",
+    "budget",
+    "capacity",
+    "owners",
+    "reporting_period"
+  ],
+  "title": "ContextConditions",
+  "type": "object"
+}

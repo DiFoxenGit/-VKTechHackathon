@@ -1,0 +1,97 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "current": {
+      "default": [
+        "2026-07",
+        "2026-09"
+      ],
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Current",
+      "type": "array"
+    },
+    "previous": {
+      "default": [
+        "2026-04",
+        "2026-06"
+      ],
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Previous",
+      "type": "array"
+    },
+    "year_ago": {
+      "default": [
+        "2025-07",
+        "2025-09"
+      ],
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Year Ago",
+      "type": "array"
+    },
+    "history": {
+      "default": [
+        "2025-01",
+        "2026-09"
+      ],
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "History",
+      "type": "array"
+    },
+    "plan": {
+      "default": [
+        "2026-01",
+        "2026-12"
+      ],
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Plan",
+      "type": "array"
+    }
+  },
+  "title": "BusinessPeriods",
+  "type": "object"
+}

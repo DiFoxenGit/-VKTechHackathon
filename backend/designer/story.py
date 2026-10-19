@@ -1,5 +1,6 @@
 """Source-grounded narrative around canonical analytical slides, without LLM arithmetic."""
 import re
+import textwrap
 from .models import SlideContent
 
 
@@ -13,11 +14,13 @@ def add_story(slides, sources, limit):
             continue
         paragraphs = [re.sub(r'^#+\s*', '', p.strip()) for p in re.split(r'\n\s*\n', source.get('text', '')) if p.strip()]
         for paragraph in paragraphs:
-            for start in range(0, len(paragraph), 420):
-                context.append((paragraph[start:start+420], source['id']))
+            for part in textwrap.wrap(paragraph, width=420, break_long_words=False, break_on_hyphens=False, replace_whitespace=False):
+                context.append((part, source['id']))
     goal = sources[0]['_story'].get('goal', '').strip()
     intro = SlideContent(title='Задача анализа', bullets=[goal[:420]] if goal else [], source_refs=['brief'])
     opening = [intro.model_dump()]
+    actions = [(p, ref) for p,ref in context if re.match(r'(?:следующий шаг|действие|рекомендация)\s*:',p,re.I)]
+    context = [(p, ref) for p,ref in context if (p,ref) not in actions]
     for start in range(0, len(context), 3):
         part = context[start:start+3]
         opening.append(SlideContent(title='Контекст и условия' + (f' · {start//3+1}' if len(context)>3 else ''),
@@ -28,7 +31,6 @@ def add_story(slides, sources, limit):
     for start in range(0,len(findings),4):
         closing.append(SlideContent(title='Выводы по данным', bullets=findings[start:start+4],
             source_refs=list(dict.fromkeys(ref for s in slides for ref in s['source_refs']))).model_dump())
-    actions = [(p, ref) for p,ref in context if re.match(r'(?:следующий шаг|действие|рекомендация)\s*:',p,re.I)]
     if actions:
         closing.append(SlideContent(title='Следующие действия',bullets=[p for p,_ in actions[:4]],source_refs=list(dict.fromkeys(ref for _,ref in actions[:4]))).model_dump())
     result = opening + slides + closing

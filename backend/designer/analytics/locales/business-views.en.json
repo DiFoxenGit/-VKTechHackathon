@@ -1,0 +1,13 @@
+{
+  "monthly_trend": "Lines show {history_count} closed months. Revenue and profit are in RUB excluding VAT; missing periods are not replaced by zeros.",
+  "product_contribution": "Bars show each product contribution to the net revenue change versus {previous_period}, in RUB. These are absolute differences, not growth rates.",
+  "region_contribution": "Bars show regional contributions to period net revenue change in RUB. These are not plan deviations.",
+  "channel_economics": "Bars compare {current_period} channel net revenue in RUB. Review profit and weighted margin as well to assess economics.",
+  "region_plan_gap": "Bars show {current_period} actual minus plan by region in RUB. A negative bar indicates underperformance.",
+  "channel_profitability": "The table compares channel net revenue, profit and margin. Money columns are RUB; margin is a percentage calculated as a ratio of totals.",
+  "plan_actual": "Paired bars compare {current_period} actual and plan revenue and profit in RUB. Each month-region-product plan key is counted once.",
+  "product_structure": "Product shares use total {current_period} net revenue as denominator across all products. A nonpositive base cannot support a percentage conclusion.",
+  "refunds": "The table shows refunds and gross revenue in RUB. Refund share is their percentage ratio; discounts are not deducted from the denominator.",
+  "priorities": "The table shows product net revenue and profit totals in RUB. This is financial detail; actions and spending limits are in the separate decision table.",
+  "quarter_kpi": "KPIs show {current_period} net revenue and profit in RUB. The semantic margin metric is a ratio of totals, not an average of percentages."
+}

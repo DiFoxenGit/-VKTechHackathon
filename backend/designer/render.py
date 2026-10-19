@@ -8,10 +8,24 @@ pypdfium2 (Apache-2.0 / BSD-3-Clause, внутри — PDFium от Google) и Pi
 from __future__ import annotations
 
 import io
+import threading
+from functools import wraps
 from pathlib import Path
 
 # Точек PDF в дюйме: размер страницы PDF задаётся в пунктах.
 POINTS_PER_INCH = 72
+
+# PDFium has process-wide native state. Different API routes and acceptance
+# workers can enter this module concurrently, even with independent documents.
+_PDFIUM_LOCK = threading.RLock()
+
+
+def _serialized_pdfium(function):
+    @wraps(function)
+    def locked(*args, **kwargs):
+        with _PDFIUM_LOCK:
+            return function(*args, **kwargs)
+    return locked
 
 
 def _document(pdf_path: Path):
@@ -27,6 +41,7 @@ def png(image) -> bytes:
     return buffer.getvalue()
 
 
+@_serialized_pdfium
 def page_count(pdf_path: Path) -> int:
     document = _document(pdf_path)
     try:
@@ -35,6 +50,7 @@ def page_count(pdf_path: Path) -> int:
         document.close()
 
 
+@_serialized_pdfium
 def page_size(pdf_path: Path, index: int) -> tuple[float, float]:
     """Размер страницы в пунктах PDF."""
     document = _document(pdf_path)
@@ -44,6 +60,7 @@ def page_size(pdf_path: Path, index: int) -> tuple[float, float]:
         document.close()
 
 
+@_serialized_pdfium
 def page_images(pdf_path: Path, width: int | None = None, dpi: float | None = None):
     """Страницы как картинки Pillow (RGB): по ширине в пикселях или по dpi."""
     document = _document(pdf_path)
@@ -60,6 +77,7 @@ def page_images(pdf_path: Path, width: int | None = None, dpi: float | None = No
     return images
 
 
+@_serialized_pdfium
 def render_page(pdf_path: Path, index: int, width: int = 1280) -> bytes:
     """Одна страница PDF — PNG заданной ширины, без рендера остальных."""
     document = _document(pdf_path)
@@ -78,6 +96,7 @@ def render_pages(pdf_path: Path, width: int = 1280) -> list[bytes]:
     return [png(image) for image in page_images(pdf_path, width=width)]
 
 
+@_serialized_pdfium
 def text_runs(pdf_path: Path, index: int) -> list[dict]:
     """Строки текста страницы с положением — для выделяемого слоя поверх растра.
 

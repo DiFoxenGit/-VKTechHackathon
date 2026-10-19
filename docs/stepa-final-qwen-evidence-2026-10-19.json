@@ -1,0 +1,1015 @@
+{
+  "date_moscow": "2026-10-19",
+  "status": "implementation_and_deterministic_checks_passed_live_acceptance_blocked",
+  "live_acceptance_passed": false,
+  "reason": "Live checks postponed while team configures its own API fallback; image generation postponed at user request",
+  "base_commit": "ff9712d8d1ce47c8195a9fe6d76bd5527edd151a",
+  "validation": {
+    "full_backend": "516 passed in 786.80s, no skips; collected before final focused fixes",
+    "final_focused_backend": "103 passed in 24.07s after final period/numeral/auxiliary-scope fixes; overlaps full suite",
+    "frontend": "npm run check and npm run build passed",
+    "browser_controlled": "19 UX checks plus 4 model retry checks passed",
+    "real_ui": "baseline 1440x900 and B 1920x1080 uploaded, analysed, generated with actual HTTP 500, edited, saved, reopened and exported; saved-state continuation after autosave wait fix"
+  },
+  "transport": {
+    "date_utc": "2026-10-19T11:02:34.557892+00:00",
+    "code": "ff9712d8d1ce47c8195a9fe6d76bd5527edd151a",
+    "dirty_worktree": true,
+    "scenario": "full-business-baseline-period-context",
+    "periods": {
+      "current": [
+        "2026-04",
+        "2026-06"
+      ],
+      "previous": [
+        "2026-01",
+        "2026-03"
+      ],
+      "year_ago": [
+        "2025-04",
+        "2025-06"
+      ],
+      "history": [
+        "2025-01",
+        "2026-06"
+      ],
+      "plan": [
+        "2026-01",
+        "2026-12"
+      ]
+    },
+    "live_success": false,
+    "inference": {
+      "requested": true,
+      "attempted": true,
+      "completed": false,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "attempts": 1,
+      "successful_calls": 0,
+      "duration_seconds": 1.547,
+      "validation": "failed",
+      "fallback_used": false,
+      "status": "failed",
+      "error_code": "provider_error",
+      "message": "",
+      "response_id": null,
+      "response_sha256": null,
+      "usage": null,
+      "calls": [
+        {
+          "attempt": 1,
+          "status_code": 500,
+          "duration_seconds": 1.547,
+          "validation": "failed",
+          "error_code": "provider_error",
+          "response_id": null,
+          "usage": null
+        }
+      ],
+      "content_reused_for_variants": 0,
+      "probe_error": "HTTPException"
+    }
+  },
+  "transport_differential": {
+    "json_mode_off": {
+      "commit": "ff9712d8d1ce47c8195a9fe6d76bd5527edd151a",
+      "branch": "codex/stepa-final-qwen",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "8c03d329232a2d811b9a00fc56ec8fd515e927c469ad19f4c75656d78131ea60",
+      "started_at_utc": "2026-10-19T11:10:46.379461+00:00",
+      "status": "failed",
+      "profile": "vk",
+      "model": "qwen38-27b-fp8",
+      "json_mode": false,
+      "probe_scope": "actual HTTP plus JSON schema",
+      "error_type": "HTTPException",
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": false,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 0,
+        "duration_seconds": 0.969,
+        "validation": "failed",
+        "fallback_used": false,
+        "status": "failed",
+        "error_code": "provider_error",
+        "response_id": null,
+        "response_sha256": null,
+        "usage": null,
+        "content_reused_for_variants": 0,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 500,
+            "duration_seconds": 0.969,
+            "validation": "failed",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "error_code": "provider_error"
+          }
+        ]
+      },
+      "probe_seconds": 0.969
+    },
+    "token_budget_2048": {
+      "commit": "ff9712d8d1ce47c8195a9fe6d76bd5527edd151a",
+      "branch": "codex/stepa-final-qwen",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "680e459f7395935a88e53a21968c42af042117f96d13e8effe82bd52f14b5b26",
+      "started_at_utc": "2026-10-19T11:12:38.391316+00:00",
+      "status": "failed",
+      "profile": "vk",
+      "model": "qwen38-27b-fp8",
+      "json_mode": true,
+      "probe_scope": "actual HTTP plus JSON schema",
+      "error_type": "HTTPException",
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": false,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 0,
+        "duration_seconds": 1.281,
+        "validation": "failed",
+        "fallback_used": false,
+        "status": "failed",
+        "error_code": "provider_error",
+        "response_id": null,
+        "response_sha256": null,
+        "usage": null,
+        "content_reused_for_variants": 0,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 500,
+            "duration_seconds": 1.281,
+            "validation": "failed",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "error_code": "provider_error"
+          }
+        ]
+      },
+      "probe_seconds": 1.281
+    }
+  },
+  "ui": {
+    "status": "passed",
+    "scope": "real API/UI, live provider failed; saved-state continuation after QA autosave timing fix",
+    "runs": [
+      {
+        "label": "baseline",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "id": "d6efeeeb7d4741e9ba72c7f4573aa3a1",
+        "slides": 12,
+        "revision": 3,
+        "net": 93563698,
+        "inference": {
+          "requested": true,
+          "attempted": true,
+          "completed": false,
+          "provider": "vk",
+          "model": "qwen38-27b-fp8",
+          "attempts": 2,
+          "successful_calls": 0,
+          "duration_seconds": 2.107,
+          "validation": "failed",
+          "fallback_used": true,
+          "status": "fallback",
+          "error_code": "provider_error",
+          "message": "Провайдер временно недоступен. Модель не подготовила проверенный текст. Сохранён расчётный текст; повторите генерацию.",
+          "response_id": null,
+          "response_sha256": null,
+          "usage": null,
+          "calls": [
+            {
+              "attempt": 1,
+              "status_code": 500,
+              "duration_seconds": 1.057,
+              "validation": "failed",
+              "error_code": "provider_error",
+              "response_id": null,
+              "usage": null
+            },
+            {
+              "attempt": 2,
+              "status_code": 500,
+              "duration_seconds": 0.619,
+              "validation": "failed",
+              "error_code": "provider_error",
+              "response_id": null,
+              "usage": null
+            }
+          ],
+          "content_reused_for_variants": 0
+        },
+        "edited_saved_reopened": true,
+        "pptx": "qwen-baseline.pptx",
+        "pdf": "qwen-baseline.pdf",
+        "office_checks": {
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "d65453575c930fa9ed6ea0cb806bb5a4b557351a0e49f9a24e18dadabad960a5",
+          "pdf_sha256": "5c3ef8efa87f5c2b45935c0c07c72fc602b148213e1905af05c101e5aa07314e"
+        },
+        "pptx_sha256": "d65453575c930fa9ed6ea0cb806bb5a4b557351a0e49f9a24e18dadabad960a5",
+        "pdf_sha256": "5c3ef8efa87f5c2b45935c0c07c72fc602b148213e1905af05c101e5aa07314e"
+      },
+      {
+        "label": "version-b",
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "id": "f2bdd5fd63844c8b8dd62d5db15f98b5",
+        "slides": 12,
+        "revision": 3,
+        "net": 94823698,
+        "inference": {
+          "requested": true,
+          "attempted": true,
+          "completed": false,
+          "provider": "vk",
+          "model": "qwen38-27b-fp8",
+          "attempts": 2,
+          "successful_calls": 0,
+          "duration_seconds": 2.291,
+          "validation": "failed",
+          "fallback_used": true,
+          "status": "fallback",
+          "error_code": "provider_error",
+          "message": "Провайдер временно недоступен. Модель не подготовила проверенный текст. Сохранён расчётный текст; повторите генерацию.",
+          "response_id": null,
+          "response_sha256": null,
+          "usage": null,
+          "calls": [
+            {
+              "attempt": 1,
+              "status_code": 500,
+              "duration_seconds": 1.37,
+              "validation": "failed",
+              "error_code": "provider_error",
+              "response_id": null,
+              "usage": null
+            },
+            {
+              "attempt": 2,
+              "status_code": 500,
+              "duration_seconds": 0.481,
+              "validation": "failed",
+              "error_code": "provider_error",
+              "response_id": null,
+              "usage": null
+            }
+          ],
+          "content_reused_for_variants": 0
+        },
+        "edited_saved_reopened": true,
+        "pptx": "qwen-version-b.pptx",
+        "pdf": "qwen-version-b.pdf",
+        "office_checks": {
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "9d462a99685a214578463adccf69a79a0cab483d22b51424ae221ae5dc1f4a36",
+          "pdf_sha256": "327cbff75a4148ad005646b6a90711ad12ffd85492a0615b3bafdde1013b68d2"
+        },
+        "pptx_sha256": "9d462a99685a214578463adccf69a79a0cab483d22b51424ae221ae5dc1f4a36",
+        "pdf_sha256": "327cbff75a4148ad005646b6a90711ad12ffd85492a0615b3bafdde1013b68d2"
+      }
+    ]
+  },
+  "deterministic_matrices": [
+    {
+      "scenario": "business",
+      "status": "passed",
+      "source_tree_sha256": "c45e0fde6dd5a3545006c745d3468e87c903c5bb7fae68418df8c85c182ba697",
+      "all_variants_ready_seconds": 17.107,
+      "pdf_export_total_seconds": 155.02,
+      "actual_attempts": 0,
+      "validated_model_calls": 0,
+      "source_report": "output/final-qwen/deterministic-business/report.json",
+      "source_report_sha256": "04f16a075a8e00893492ac72695b82af50b7de6c4bf8b399adadb013b5a3ca2a",
+      "decks": 9,
+      "export_index": "docs/stepa-acceptance-results-2026-10-19.json"
+    },
+    {
+      "scenario": "seven-types",
+      "status": "passed",
+      "source_tree_sha256": "680e459f7395935a88e53a21968c42af042117f96d13e8effe82bd52f14b5b26",
+      "all_variants_ready_seconds": 35.616,
+      "pdf_export_total_seconds": 202.129,
+      "actual_attempts": 0,
+      "validated_model_calls": 0,
+      "source_report": "output/final-qwen/deterministic-seven-types/report.json",
+      "source_report_sha256": "2cfcfd3e149d53f82da95003d632d418c97150ad12fafc8f9c260e3523ca42b9",
+      "decks": 9,
+      "export_index": "docs/stepa-acceptance-results-2026-10-19.json"
+    }
+  ],
+  "visual_proof": {
+    "date": "2026-10-19T11:15:12.474959+00:00",
+    "purpose": "Deterministic rendering regression, not live Qwen acceptance",
+    "text_model_requested": false,
+    "number_of_decks": 9,
+    "slides_per_deck": 12,
+    "git_revision": "ff9712d8d1ce47c8195a9fe6d76bd5527edd151a",
+    "working_tree_modified": true,
+    "source_sha256": {
+      "backend/designer/layout.py": "9af4466dd355189100da855275910c150b0af1902b6febde7052ba9c13438bd6",
+      "backend/designer/analytic_export.py": "c884cdc17521852f29c9d0a59fb4fde1fcf5c76487e62054dc913cef8249bcd6",
+      "backend/designer/analytics_layout.py": "5dd19be3221a106a0889a34239cfd816bf7500a95df9e187f120fc148e0532e5",
+      "backend/designer/exporting.py": "430f2629a034432e0270030b6b4737ddaebecafc4256d6b28c2364891e1a9089"
+    },
+    "key_renders": [
+      "tech-split-02.png",
+      "tech-split-06.png",
+      "tech-split-10.png",
+      "tech-split-11.png",
+      "tech-split-12.png",
+      "workspace-split-01.png"
+    ],
+    "validation": {
+      "final_polish_tests": "26 passed",
+      "export_cover_and_polish_after_footer_change": "45 passed",
+      "extended_analytics_business_before_footer_change": "70 passed, 1 skipped (unconfigured external fixture)",
+      "slot_cases": 36,
+      "native_charts_per_deck": 5,
+      "native_tables_per_deck": 2,
+      "all_native_series_match_canonical": true,
+      "all_decks_convert_to_pdf": true
+    },
+    "source_report": "output/final-polish/report.json",
+    "source_report_sha256": "eae1574499ae34b00d9f32b311484105a2e30d2225f801cbe262ba4ce9a30bb0",
+    "slot_cases": 36,
+    "decks": [
+      {
+        "name": "tech-focus",
+        "template": "VK Tech шаблон.pptx",
+        "variant": "focus",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 90,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "fb4159661e8bf7f36f40813b598da61c38e96ef0b8b3810677a84715a11479bd",
+        "pdf_sha256": "3dd4f8131f6b8eef799a0a82e049c79829f5d5ed09f634f770e0b82336d6a50b",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "tech-split",
+        "template": "VK Tech шаблон.pptx",
+        "variant": "split",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 86,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "55be828cbed5d63de8334689c5f2946f57365e6cacabbb00cca82b8f598913dd",
+        "pdf_sha256": "258ca531f52a5bc382e0abb83d1c458815959d2b5eeb7feddb2903686306c020",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "tech-classic",
+        "template": "VK Tech шаблон.pptx",
+        "variant": "classic",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 80,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "149312c747de274229a9a58329612505c167d860b23bdd99e29592f620d15df5",
+        "pdf_sha256": "e29f006e00ab5d5e9e5f66c6f7c842cd9aca33e5fde742dc11ab64ee88388d1e",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "workspace-classic",
+        "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03.pptx",
+        "variant": "classic",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 50,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "552741b20dd88875046f826740c8880eb60c50ae45a37892135c44682aae595f",
+        "pdf_sha256": "ee5de66485ebb4330d990dd06b36fbe77f7dc24f787398696e73cb18ef725c84",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "workspace-split",
+        "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03.pptx",
+        "variant": "split",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 46,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "2b19ea6f248b639b285fbc47c9725417d253e1ef6353796834cc3e20c17a9db7",
+        "pdf_sha256": "a65862281da99aeadddc0bb8d9e902116b1d6705769be8a7c44c615f2ce23138",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "workspace-focus",
+        "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03.pptx",
+        "variant": "focus",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 48,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "b3189d1493f8b48c58bd7af16b30b27a8a0eed59e2de1be6a10e52e04c1add14",
+        "pdf_sha256": "aa6c7072648a95135bda56c4067d97f7b98f75ec14203e8ce2abea36826da811",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "education-split",
+        "template": "Шаблон презентации VK Education.pptx",
+        "variant": "split",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 47,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "b0944e749d01451eab95ddbaba3af24d454bb0b58eb3a21b24a6d749da261466",
+        "pdf_sha256": "21e231a8811860da970de437ef2fa0c129c74599109bb6f052308dd812054dae",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "education-classic",
+        "template": "Шаблон презентации VK Education.pptx",
+        "variant": "classic",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 49,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "988d69b59d77e1fec28ec318405b17da83a7754f53103a3aa7050dbbc5af9bf4",
+        "pdf_sha256": "9505b373b0b011ca002cd0672fe362f50f5b53c3879affcb101177131bbccc08",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      },
+      {
+        "name": "education-focus",
+        "template": "Шаблон презентации VK Education.pptx",
+        "variant": "focus",
+        "native": {
+          "opens": true,
+          "slides": 12,
+          "native_objects": 50,
+          "raster_slides": [],
+          "charts": [
+            {
+              "slide": 2,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 65
+            },
+            {
+              "slide": 3,
+              "series": 2,
+              "legend": true,
+              "axis_title": true,
+              "value_labels": false,
+              "type": 51
+            },
+            {
+              "slide": 4,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 51
+            },
+            {
+              "slide": 5,
+              "series": 1,
+              "legend": false,
+              "axis_title": true,
+              "value_labels": true,
+              "type": 57
+            },
+            {
+              "slide": 7,
+              "series": 1,
+              "legend": true,
+              "axis_title": false,
+              "value_labels": true,
+              "type": 5
+            }
+          ],
+          "moved_branding": []
+        },
+        "charts": 5,
+        "tables": 2,
+        "pptx_sha256": "60262514b2bba6000c6d99f48053bda950050dcbd9ee3ff67dc1f3e286955888",
+        "pdf_sha256": "9d054fd1df23177563c2ec62212356b5fe53d77a4b33833033bb2658006497b1",
+        "visual_review": "Reviewed all 12 slides in PDF contact sheet; key narrative, native chart and table slides also at 1600px"
+      }
+    ]
+  },
+  "final_validation_tree": {
+    "commit": "ff9712d8d1ce47c8195a9fe6d76bd5527edd151a",
+    "branch": "codex/stepa-final-qwen",
+    "working_tree_dirty": true,
+    "source_tree_sha256": "34a15f3a68cc762332a25824b5007e87d12716c0191649be881e7ee90ba7861e",
+    "started_at_utc": "2026-10-19T11:27:05.653610+00:00"
+  },
+  "implementation_commit": "b8b9372f8790072e441ac4c87f70bed0a6dd25ab",
+  "followup_review": {
+    "commit": "f694f832febebc2ffab5736843f4d6856baf6b5f",
+    "branch": "codex/stepa-final-qwen",
+    "working_tree_dirty": true,
+    "source_tree_sha256": "ee331a3e5f30155019ccef5c71eaf7e6c65c09cedb547eb81cdcd4b8d0bf2c06",
+    "started_at_utc": "2026-10-19T12:49:14.970659+00:00",
+    "scope": "Repeat independent audit and bounded editorial correction",
+    "latest_user_scope": "Complete work without model calls while the team configures its own API fallback",
+    "model_calls_during_offline_checks": 0,
+    "live_acceptance_passed": false,
+    "images_requested": false,
+    "image_reason": "User requested postponement because of cost",
+    "changes": [
+      "Observation/caveat and next step use current-page protected tokens",
+      "Free explanations require explicit hypothesis prefix",
+      "Directed titles require matching signed change and reject opposite directions",
+      "Legacy editorial responses require regeneration rather than silent migration"
+    ],
+    "frontend": "npm run check and npm run build passed",
+    "visual_review": {
+      "reviewed_at_utc": "2026-10-19T11:44:24.746449+00:00",
+      "scope": "Existing deterministic exports, independent visual and slot review",
+      "model_requested": false,
+      "live_acceptance_passed": false,
+      "decks_reviewed": 9,
+      "total_pages_in_contact_sheets": 108,
+      "slot_cases_verified": 36,
+      "slot_case_matrix": "1/2/3/4 blocks x classic/focus/split x three original templates",
+      "large_pngs_refreshed_from_pdf": 63,
+      "contact_sheets_refreshed_from_pdf": 9,
+      "pdf_pptx_modified": false,
+      "result": "No empty cards, clipped rows or overlapping labels found in reviewed current PDFs",
+      "key_renders": [
+        "tech-classic-02",
+        "tech-classic-10",
+        "tech-split-05",
+        "tech-split-06",
+        "tech-split-11",
+        "tech-split-12",
+        "tech-focus-11",
+        "tech-focus-12",
+        "workspace-classic-01",
+        "workspace-focus-12",
+        "workspace-split-06",
+        "education-split-06",
+        "education-split-11"
+      ],
+      "frontend_validation": "npm run check passed; existing 1440/1920 UI evidence reviewed; no new live browser run",
+      "targeted_backend_validation": "test_final_polish.py: 26 passed"
+    },
+    "historical_transport_before_offline_instruction": {
+      "commit": "f694f832febebc2ffab5736843f4d6856baf6b5f",
+      "branch": "codex/stepa-final-qwen",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "ee331a3e5f30155019ccef5c71eaf7e6c65c09cedb547eb81cdcd4b8d0bf2c06",
+      "started_at_utc": "2026-10-19T11:46:33.998997+00:00",
+      "status": "failed",
+      "profile": "vk",
+      "model": "qwen38-27b-fp8",
+      "json_mode": true,
+      "probe_scope": "actual HTTP plus JSON schema",
+      "error_type": "HTTPException",
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": false,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 0,
+        "duration_seconds": 1.482,
+        "validation": "failed",
+        "fallback_used": false,
+        "status": "failed",
+        "error_code": "provider_error",
+        "response_id": null,
+        "response_sha256": null,
+        "usage": null,
+        "content_reused_for_variants": 0,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 500,
+            "duration_seconds": 1.482,
+            "validation": "failed",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "error_code": "provider_error"
+          }
+        ]
+      },
+      "probe_seconds": 1.482
+    },
+    "artifact_integrity": {
+      "checked_at_utc": "2026-10-19T12:43:06.385593+00:00",
+      "mode": "read-only local files",
+      "model_calls": 0,
+      "image_calls": 0,
+      "status": "passed",
+      "decks": 27,
+      "export_files": 54,
+      "report": "output/final-qwen/followup-artifact-integrity.json",
+      "report_sha256": "0e58f3560ba99022258cfe4bdd66450fd8a30036d8377808e44dff504e5abe11"
+    },
+    "backend_validation_log": "output/final-qwen/followup-tests.log",
+    "backend_validation_summary": "Offline follow-up validation: 2026-10-19T12:48:51.644133+00:00\nNo new live model or image provider requests were made during these offline checks.\n\nFresh editorial and acceptance checks:\n........................................................................ [ 63%]\n..........................................                               [100%]\n114 passed in 19.37s\n\n\nIndependent dependent service/period/completion/pipeline run before interruption: 284 passed, 3 skipped in 142.28s. The three skips were due to missing LibreOffice in the test PATH.\n\nThose three PDF/thumbnail/negative-geometry cases rerun with LibreOffice and their own synthetic fixtures (no bulk original-template preload):\n...                                                                      [100%]\n3 passed in 91.02s (0:01:31)\n\n\nIndependent final-polish suite: 26 passed; 36 original-template slot cases verified.\n\nFrontend: npm run check and npm run build passed. Local artifact integrity: 27 decks / 54 PPTX/PDF verified with no model calls.\n"
+  }
+}

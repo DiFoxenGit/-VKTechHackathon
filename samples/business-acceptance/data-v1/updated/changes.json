@@ -1,0 +1,344 @@
+[
+  {
+    "source_row": 1303,
+    "key": [
+      "2026-07",
+      "R1",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        874307,
+        944307
+      ],
+      "cogs_rub": [
+        532453,
+        547453
+      ]
+    }
+  },
+  {
+    "source_row": 1315,
+    "key": [
+      "2026-07",
+      "R2",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        780693,
+        850693
+      ],
+      "cogs_rub": [
+        491837,
+        506837
+      ]
+    }
+  },
+  {
+    "source_row": 1327,
+    "key": [
+      "2026-07",
+      "R3",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        841545,
+        911545
+      ],
+      "cogs_rub": [
+        524283,
+        539283
+      ]
+    }
+  },
+  {
+    "source_row": 1339,
+    "key": [
+      "2026-07",
+      "R4",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        896639,
+        966639
+      ],
+      "cogs_rub": [
+        552330,
+        567330
+      ]
+    }
+  },
+  {
+    "source_row": 1351,
+    "key": [
+      "2026-07",
+      "R5",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        955177,
+        1025177
+      ],
+      "cogs_rub": [
+        581703,
+        596703
+      ]
+    }
+  },
+  {
+    "source_row": 1363,
+    "key": [
+      "2026-07",
+      "R6",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1010387,
+        1080387
+      ],
+      "cogs_rub": [
+        663825,
+        678825
+      ]
+    }
+  },
+  {
+    "source_row": 1375,
+    "key": [
+      "2026-08",
+      "R1",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        927556,
+        997556
+      ],
+      "cogs_rub": [
+        584360,
+        599360
+      ]
+    }
+  },
+  {
+    "source_row": 1387,
+    "key": [
+      "2026-08",
+      "R2",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        834051,
+        904051
+      ],
+      "cogs_rub": [
+        519614,
+        534614
+      ]
+    }
+  },
+  {
+    "source_row": 1399,
+    "key": [
+      "2026-08",
+      "R3",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        876842,
+        946842
+      ],
+      "cogs_rub": [
+        540135,
+        555135
+      ]
+    }
+  },
+  {
+    "source_row": 1411,
+    "key": [
+      "2026-08",
+      "R4",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        945859,
+        1015859
+      ],
+      "cogs_rub": [
+        576028,
+        591028
+      ]
+    }
+  },
+  {
+    "source_row": 1423,
+    "key": [
+      "2026-08",
+      "R5",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1003110,
+        1073110
+      ],
+      "cogs_rub": [
+        631960,
+        646960
+      ]
+    }
+  },
+  {
+    "source_row": 1435,
+    "key": [
+      "2026-08",
+      "R6",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1063229,
+        1133229
+      ],
+      "cogs_rub": [
+        690780,
+        705780
+      ]
+    }
+  },
+  {
+    "source_row": 1447,
+    "key": [
+      "2026-09",
+      "R1",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1048883,
+        1118883
+      ],
+      "cogs_rub": [
+        653454,
+        668454
+      ]
+    }
+  },
+  {
+    "source_row": 1459,
+    "key": [
+      "2026-09",
+      "R2",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        936159,
+        1006159
+      ],
+      "cogs_rub": [
+        576674,
+        591674
+      ]
+    }
+  },
+  {
+    "source_row": 1471,
+    "key": [
+      "2026-09",
+      "R3",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1015143,
+        1085143
+      ],
+      "cogs_rub": [
+        618223,
+        633223
+      ]
+    }
+  },
+  {
+    "source_row": 1483,
+    "key": [
+      "2026-09",
+      "R4",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1075069,
+        1145069
+      ],
+      "cogs_rub": [
+        677294,
+        692294
+      ]
+    }
+  },
+  {
+    "source_row": 1495,
+    "key": [
+      "2026-09",
+      "R5",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1148832,
+        1218832
+      ],
+      "cogs_rub": [
+        715723,
+        730723
+      ]
+    }
+  },
+  {
+    "source_row": 1507,
+    "key": [
+      "2026-09",
+      "R6",
+      "P2",
+      "partners"
+    ],
+    "changes": {
+      "gross_revenue_rub": [
+        1213979,
+        1283979
+      ],
+      "cogs_rub": [
+        779860,
+        794860
+      ]
+    }
+  }
+]

@@ -2,9 +2,47 @@
 
 import math
 import os
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 
 from fastapi import HTTPException
+
+_route = ContextVar("text_inference_route", default=None)
+
+
+def inference_route():
+    return _route.get()
+
+
+def reset_inference_route():
+    _route.set(None)
+
+
+def record_inference(settings, primary):
+    _route.set({"primary": primary.profile, "provider": settings.profile,
+                "model": settings.model, "fallback_used": settings.profile != primary.profile})
+
+
+def fallback_settings():
+    """Explicit opt-in; never reuse primary or image credentials implicitly."""
+    profile = os.getenv("DESIGNER_FALLBACK_PROVIDER", "").strip().lower()
+    if not profile:
+        return None
+    if profile != "genapi":
+        raise HTTPException(503, "DESIGNER_FALLBACK_PROVIDER must be genapi")
+    model = os.getenv("DESIGNER_FALLBACK_MODEL", "").strip()
+    key = os.getenv("DESIGNER_FALLBACK_API_KEY", "").strip()
+    if model not in {"gemma-4-31b", "gemma-4-26b"} or not key:
+        raise HTTPException(503, "Configure a supported GenAPI fallback model and its separate API key")
+    try:
+        tokens = int(os.getenv("DESIGNER_FALLBACK_MAX_TOKENS", "14000"))
+        timeout = float(os.getenv("DESIGNER_FALLBACK_TIMEOUT", "150"))
+        if tokens <= 1024 or not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError
+    except ValueError:
+        raise HTTPException(503, "Invalid GenAPI fallback token limit or timeout") from None
+    return Inference(profile="genapi", url="https://api.gen-api.ru/api/v1",
+                     model=model, key=key, max_tokens=tokens, timeout=timeout)
 
 
 @dataclass(frozen=True)

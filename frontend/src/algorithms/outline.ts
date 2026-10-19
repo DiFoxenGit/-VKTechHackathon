@@ -1,11 +1,14 @@
 import type { Brief, Deck, Slide } from '../types';
 import { cleanText, hash } from './text';
+import { slideCountIssue } from './slideCount';
 
 export type OutlineSlide = { id: string; title: string; bullets: string[]; kind: Slide['kind']; sourceRefs: string[] };
 export type Outline = { title: string; slides: OutlineSlide[] };
 type SourceUnit = { text: string; source: string };
 
 export function normalizeBrief(brief: Brief): Brief {
+  const countIssue = slideCountIssue(brief.text, brief.slideCount);
+  if (countIssue) throw new Error(countIssue);
   if (!Number.isInteger(brief.slideCount) || brief.slideCount < 1 || brief.slideCount > 30) throw new Error('Выберите от 1 до 30 слайдов.');
   const text = cleanText(brief.text);
   if (!text) throw new Error('Добавьте тему или текст презентации.');

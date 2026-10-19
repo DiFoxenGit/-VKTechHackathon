@@ -1,0 +1,492 @@
+{
+  "reviewed_commit": "fd3539233fa908e96962c139fd2ec01c0801729a",
+  "date": "2026-10-19",
+  "backend_tests_passed": 446,
+  "targeted_tests_passed": 36,
+  "frontend_check": "passed",
+  "frontend_build": "passed",
+  "production_commit": "d244bbd6fb0397341c0fb74f5b46a82367e25e85",
+  "final_visual_acceptance": false,
+  "live_image_provider_verified": false,
+  "video_recorded": false,
+  "parallel_checks": {
+    "business": {
+      "scenario": "business",
+      "commit": "fd3539233fa908e96962c139fd2ec01c0801729a",
+      "environment": "local",
+      "image_generation_requested": false,
+      "model_content_generation": false,
+      "analysis_preflight_outside_clock": true,
+      "repeated_analysis_and_queue_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "checks": [],
+      "runs": [
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "classic",
+          "id": "1eddd9441b924bb19f1006f731617071",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "ebaa8662d54988e6f65b4aeec4d4e5ba106083e6ca82daa235f42d2f7195c323",
+          "pptx_sha256": "c724e7ccacfd1e5a12442b7a17418acc5e5c89c2f907c69bb4c12e2981e762c4",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 10
+          }
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "split",
+          "id": "8f9a82025d6a4727b449b19d3708ede1",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "9131d36524a5ce098fa30a7e8b11a4d6f0c409485eeb118cf09ecc79f0a76721",
+          "pptx_sha256": "fd88ea866643dbbeeabade0269198f680f03bef74ac59125c8da3e62c42a1dd4",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 13
+          }
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "focus",
+          "id": "c047a6a7f4e64e52be549d61819e27f2",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "faff97e1b33e5177dad2ae5fcec7001e855cf11a9b89da9b77b5a2bb3020728f",
+          "pptx_sha256": "a33c70d9832d20b859d00a6c7f4924f18c6a7ccf532019b35b17502f4e834b21",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 10
+          }
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "classic",
+          "id": "41c41b27d83a46eaacce3d5e511e6f42",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "e17fe18c39fbc7931817166d9d794578684610f38066c18b6b3ddbc741febdc8",
+          "pptx_sha256": "f1552cf115ffc9017c11c60ba17b880281311d49751e6350cb44d44f5d5f879c",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 16
+          }
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "split",
+          "id": "b2e1b8a89c5d4d2998de95aa2dc670ed",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "95a287f7b6d45df1c2a9d47c12084967753ccf1d50c8f51042e9c4ded1c243ce",
+          "pptx_sha256": "ad6a7c1b2a2540f2226d9dbdfca0344258918f1b136a588d71805b2720f99b5b",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 22
+          }
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "focus",
+          "id": "49b025c79a5d48b6a8fa26a68f5c7811",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "23db7b4b8798f4a210132a57bb51c1b6dd930a42b5597cb54eece9827c268f66",
+          "pptx_sha256": "057f425c2e552a298d98372f16a06427b3a31cb376fed07dd7f311efe06f69b2",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 17
+          }
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "classic",
+          "id": "b7b95e63159146c8b6c7963d589c2b73",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "54cafc658882744387d23d747ecd9d47ac1b528e587c7c764dbadeba771e70a9",
+          "pptx_sha256": "1580dc13a5c4b5e5f4f2d08707c31f5cca35f52d6672cc9dffa6dd3c436ab986",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 24
+          }
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "split",
+          "id": "1cc18949158940b8a1741e5dc3f2ebb7",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "39fb6708efedd6e18ea8a8b5f38cc42f52604e5bc6fa50c633de1b7385dae1d0",
+          "pptx_sha256": "3f9a31b17f18e33d4ee36adbc59b4636d902140f14c13e1d0d810da2659777ea",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 21
+          }
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "focus",
+          "id": "c9d97ab0a4d54464bcd9c2bc8a699bb2",
+          "slides": 12,
+          "visual_types": [
+            "bar",
+            "grouped_bar",
+            "kpi",
+            "line",
+            "none",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "79e92cb33bcb8881c7697705a2f1c6486684cb733920b98dce20e3014746e11e",
+          "pptx_sha256": "9f415a8f562648b7abb533b35f5d46be964716670464c66d1d533166ae41ca9d",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 24
+          }
+        }
+      ],
+      "all_nine_ready_seconds": 8.18,
+      "within_five_minutes": true,
+      "jobs": [
+        {
+          "template": "Шаблон презентации VK Education",
+          "job_id": "1a6ae5f5308341c89239aa9e68d38423",
+          "ready_since_shared_start_seconds": 4.627
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "job_id": "ed33d4fe5a164e6bb4da899b55bebbc1",
+          "ready_since_shared_start_seconds": 3.526
+        },
+        {
+          "template": "VK Tech шаблон",
+          "job_id": "115bf2098a58413abb8c50c9f3149061",
+          "ready_since_shared_start_seconds": 8.18
+        }
+      ]
+    },
+    "seven-types": {
+      "scenario": "seven-types",
+      "commit": "fd3539233fa908e96962c139fd2ec01c0801729a",
+      "environment": "local",
+      "image_generation_requested": false,
+      "model_content_generation": false,
+      "analysis_preflight_outside_clock": true,
+      "repeated_analysis_and_queue_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "checks": [
+        {
+          "dataset": "01-sales",
+          "rows": 12,
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "02-regions",
+          "rows": 3,
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "03-channels",
+          "rows": 3,
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "04-orders",
+          "rows": 60,
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "05-catalog",
+          "rows": 240,
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "06-missing",
+          "rows": 6,
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "07-report",
+          "rows": 3,
+          "exact_contract_match": true
+        }
+      ],
+      "runs": [
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "classic",
+          "id": "abc0cb237b364617887e6e7a75aa1575",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "b8b98784b7a838f1f17e5633c4a3ede83b9161a9d386617c63f0a991b85a3416",
+          "pptx_sha256": "fce718bece5acb376315f916a669a56811ba090e6ccd64b3ee48d9e8344396a9",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          }
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "split",
+          "id": "219eb5dfb9954330ace6453226c00e63",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "6afad244779534b6e10591c882aa227870499bf5dbd352a987309c16e6f68bf4",
+          "pptx_sha256": "40f253a8b8b2c4495c52c51ae63f7cb26e4285fb75ff33a3c5d451b7af0a6cd9",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 57
+          }
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "focus",
+          "id": "97cc2f9bf6d1435c8b811901509a69c9",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "65fd34ebe9a8b19ef2ccfe8ceb7bb2c14d1ff25ac7e04e57aba2534feda28fa7",
+          "pptx_sha256": "126daaa4c1cb3a6f6396c49db3d8a24fe92e7b3c889ebbe284e81ed67d1d9b3a",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          }
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "classic",
+          "id": "925af986af4f4c379c482daf41b21b83",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "5578e1bb6b421f58c0e5da7da464fe54eccd7fff7781efd801ce8a1a8e4db344",
+          "pptx_sha256": "5c3dab6c02d5fad0042b94b9ac4e6b2999c67bb062c0c6bf5bc1803650a18f8c",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          }
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "split",
+          "id": "e6555e31c3ad45dba2df2c4ef57e692c",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "e16073feef8787c8fcb32276cf1aab71e18aefc401df7bbe9f847bfc0ea2eeed",
+          "pptx_sha256": "99ed41b0d368bd11859bae198829e8fedd961751679feb6d121ac487d1e00932",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 68
+          }
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "focus",
+          "id": "a168a334fb4742949bfb4474529d8edf",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "95889b380b2ce3b728c9162f34d8d2e58480b18ecd0ec63b1e37f8ec63255918",
+          "pptx_sha256": "e0153a6d475b1278d467e87790d8de4f6fe00d67e363c16e2042b35ad5bf7f09",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          }
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "classic",
+          "id": "ef140b2ea5634c05a269c6168e258026",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "73dbe32aff3936ab5590b292ab0cf21508476932947e32ab85080083fa0bd9b3",
+          "pptx_sha256": "79d2812673d9a9f5d736dd13ab20bcf768c473f387e0765281d376b9adfc3604",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 110
+          }
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "split",
+          "id": "929d70dda9374798871ca802a80f8884",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "4b572dbc0a493a687eed24b1153ccb8f8c7eaf44b80fb677f8a04b621ed8e1b9",
+          "pptx_sha256": "5df59c2d61d39575f7d6eecfc96d332109bd1b5dbac6439c23c9a18f54efd026",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 114
+          }
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "focus",
+          "id": "f816c3a4d0704cb2b2526cb8cd579e73",
+          "slides": 30,
+          "visual_types": [
+            "bar",
+            "histogram",
+            "line",
+            "pie",
+            "table"
+          ],
+          "pdf_sha256": "2bd87607335465a2f204268862fc55d85ba2e1f70ef2715ce58469e625dd77d3",
+          "pptx_sha256": "c3b9c3330494da8fae409d3c269fd80d7d545b790b3187156db60383af16b14c",
+          "native_values_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 110
+          }
+        }
+      ],
+      "all_nine_ready_seconds": 11.983,
+      "within_five_minutes": true,
+      "jobs": [
+        {
+          "template": "Шаблон презентации VK Education",
+          "job_id": "e547202ee0ab4bb3a3aa66c7312adb7b",
+          "ready_since_shared_start_seconds": 7.564
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "job_id": "1812892899a645aebdef765ab3cba739",
+          "ready_since_shared_start_seconds": 6.03
+        },
+        {
+          "template": "VK Tech шаблон",
+          "job_id": "bc33cdfe4f63416aa3b2d9e7942dab84",
+          "ready_since_shared_start_seconds": 11.983
+        }
+      ]
+    }
+  }
+}

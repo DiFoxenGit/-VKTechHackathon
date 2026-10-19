@@ -19,6 +19,7 @@ Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратны
 | POST | `/api/v1/content-packs` | multipart `file`, 201, `{id,name,text,assets,asset_counts,sha256}`. Текст (txt, md, csv, json, pdf, docx, pptx), картинка (svg, png, jpg) или zip из них |
 | GET | `/api/v1/content-packs/{id}` | Извлечённый текст и метаданные картинок |
 | GET | `/api/v1/content-packs/{id}/assets` | Картинки пакета со ссылками на файлы |
+| POST | `/api/v1/analysis` | Совместная проверка выбранных материалов, `{items, business}`; принимает параметры `GenerateRequest` |
 | POST | `/api/v1/outlines` | Бриф → Outline; синхронно, до 150 секунд ожидания модели |
 | POST | `/api/v1/generations` | 202, задача генерации трёх вариантов |
 | GET | `/api/v1/jobs/{id}` | Статус, progress 0–100, presentation_ids, error |
@@ -33,6 +34,12 @@ Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратны
 
 Индексы слайдов начинаются с 0. Идентификаторы ресурсов — непрозрачные строки.
 Максимальная загрузка — 50 MB, распакованный ZIP — 300 MB. Сканированный PDF без текстового слоя не поддерживается.
+
+### Периоды и условия бизнес-анализа
+
+`POST /analysis`, `/outlines` и `/generations` принимают `business_settings` (пять диапазонов месяцев: `current`, `previous`, `year_ago`, `history`, `plan`), `business_conditions` (объект условий с цитатами) и `business_context_id` (ID выбранного материала контекста). Условия и ID контекста передаются вместе. Для нового периода требуется соответствующий контекст. Полный пример, правила проверки и сценарий UI: [stepa-periods-ui.md](stepa-periods-ui.md).
+
+Сохранённая презентация возвращает отдельный `business_request: {settings, conditions, context_source_id}`. PATCH редактора не заменяет этот запрос; после изменения периодов, контекста или условий создаётся новая колода из источников. Старые защищённые бизнес-колоды нужно пересоздать после обновления адаптера.
 
 ## Визуальный контент-пакет
 
