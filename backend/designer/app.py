@@ -607,6 +607,7 @@ def create_app(data_dir=None, seed_dir=None):
             # Пакеты с картинками нужны снова при правке слайда и исправлениях.
             "content_pack_ids": list(request.content_pack_ids),
             "analysis": sources[0].get("_analysis_results", []),
+            "business_request": copy.deepcopy(sources[0].get('business_request')) if sources[0].get('_business') else None,
             "analysis_results": [r["contract"] for r in sources[0].get("_analysis_results", [])],
             "style": template.get("brandbook"),
             # То же для нарисованных моделью иллюстраций.

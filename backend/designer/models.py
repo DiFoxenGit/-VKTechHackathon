@@ -1,7 +1,9 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 from .analytics.models import AnalysisRequest
+from .analytics.business_periods import BusinessPeriods
+from .analytics.business_conditions import ContextConditions
 
 
 class StrictModel(BaseModel):
@@ -100,6 +102,25 @@ class Brief(StrictModel):
     language: str = Field(default="ru", min_length=2, max_length=30)
     slide_count: int = Field(default=12, ge=1, le=30)
     content_pack_ids: list[str] = Field(default_factory=list, max_length=10)
+    business_settings: BusinessPeriods | None = None
+    business_conditions: ContextConditions | None = None
+    business_context_id: str | None = Field(default=None, max_length=100)
+
+    @field_validator('business_settings', mode='before')
+    @classmethod
+    def periods_are_comparable(cls, value):
+        if value is None:return None
+        try:return BusinessPeriods.model_validate(value)
+        except ValueError as exc:
+            raise ValueError('Проверьте периоды: закрытые месяцы ГГГГ-ММ; сравнения одинаковой длины, прошлогодние месяцы сдвинуты на год. История заканчивается отчётным месяцем и покрывает все сравнения; план покрывает отчётный и сравнительный периоды.') from exc
+
+    @model_validator(mode="after")
+    def business_context(self):
+        if (self.business_conditions is None) != (self.business_context_id is None):
+            raise ValueError('Укажите файл делового контекста и подтверждённые условия вместе.')
+        if self.business_context_id is not None and self.business_context_id not in self.content_pack_ids:
+            raise ValueError('Файл делового контекста должен входить в выбранные материалы.')
+        return self
 
 
 class PackAnalysisRequest(StrictModel):

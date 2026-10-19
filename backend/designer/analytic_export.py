@@ -138,6 +138,25 @@ def add_chart(slide, visual, box, font, palette, text_color):
         series.format.fill.solid()
         series.format.fill.fore_color.rgb = RGBColor.from_string(color)
         series.format.line.color.rgb = RGBColor.from_string(color)
+        if horizontal and plot.data_labels.show_value:
+            # Outside negative endpoints share the category-label area in Office
+            # and LibreOffice. Keep their values inside the bar, with contrast.
+            # Tiny bars cannot hold text: the numeric axis still carries scale.
+            scale = max((abs(v) for s in visual['series'] for v in s['values'] if v is not None), default=0)
+            for j, value in enumerate(visual['series'][i]['values']):
+                if value is None:continue
+                label = series.points[j].data_label
+                label.position = XL_LABEL_POSITION.INSIDE_END if value < 0 else XL_LABEL_POSITION.OUTSIDE_END
+                label.font.name, label.font.size = font, Pt(12)
+                r, g, b = (int(color[k:k+2], 16) for k in (0, 2, 4))
+                label.font.color.rgb = RGBColor.from_string(('FFFFFF' if .2126*r+.7152*g+.0722*b < 155 else '111827') if value < 0 else text_color)
+                # LibreOffice does not inherit these settings once any point has
+                # an override: write format and visibility for every point.
+                node = label._get_or_add_dLbl()
+                fmt = OxmlElement('c:numFmt');fmt.set('formatCode', number_format(visual));fmt.set('sourceLinked','0');node.insert(1,fmt)
+                show = OxmlElement('c:showVal');show.set('val','1');node.append(show)
+                if value < 0 and scale and abs(value) < .15*scale:
+                    hidden = OxmlElement('c:delete');hidden.set('val','1');node.insert(1,hidden)
         if kind == 'line':
             series.format.line.width = Pt(2.5)
             series.marker.style = XL_MARKER_STYLE.CIRCLE if len(visual['categories']) <= 12 or any(v is None for v in visual['series'][i]['values']) else XL_MARKER_STYLE.NONE

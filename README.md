@@ -217,6 +217,7 @@ docs/               API.md, openapi.json, gap-analysis.md
 | [MODELS.md](MODELS.md) | модели, лицензии, требования, ограничения |
 | [AUDIT.md](AUDIT.md) | проверки и их покрытие тестами |
 | [docs/API.md](docs/API.md) | контракт HTTP API и сценарий работы |
+| [docs/stepa-periods-ui.md](docs/stepa-periods-ui.md) | явные периоды и условия бизнес-анализа: API/UI, хранение, пересчёт, проверки и ограничения |
 | [docs/deploy.md](docs/deploy.md) | развёртывание на сервере, переменные окружения, домен |
 | [docs/autosell.md](docs/autosell.md) | текущая установка на auto-sell.site, интерфейс H10MS, автодеплой и откат |
 | [docs/gap-analysis.md](docs/gap-analysis.md) | что закрыто по ТЗ и что осталось |

@@ -1,3 +1,5 @@
+import { businessApiFields } from '../business';
+import type { BusinessRequest } from '../business';
 import { templates as localTemplates } from '../data/templates';
 import { toBackendOutline } from '../algorithms/outline';
 import type { Outline } from '../algorithms/outline';
@@ -51,6 +53,7 @@ type Job = {
 };
 
 type BackendPresentation = {
+  business_request?: BusinessRequest | null;
   image_generation?: import('../types').ImageGeneration;
   id: string;
   title: string;
@@ -272,7 +275,7 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
     templateId: record.template_id,
     layout: record.variant === 'focus' ? 'focus' : record.variant === 'split' ? 'story' : 'classic',
     updatedAt: record.created_at ? new Date(record.created_at * 1000).toISOString() : new Date().toISOString(),
-    brief: { ...brief },
+    brief: { ...brief, ...(record.business_request ? {business:record.business_request} : {}) },
     remote: true,
     revision: record.revision,
     exports: record.exports,
@@ -313,6 +316,7 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       narrative: brief.narrative !== false,
       ...(brief.generateImages !== undefined ? {generate_images:brief.generateImages} : {}),
       analysis_goal: [brief.text,brief.goal].filter(Boolean).join('\n').slice(0,1000),
+      ...businessApiFields(brief.business),
       analysis_requests: Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
       analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
       ...(brief.brandbook ? {brandbook_id: brief.brandbook.id} : {}),
@@ -383,6 +387,7 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
       return request<{items: AnalysisResult[]}>('/analysis', {method:'POST',signal:options.signal,body:JSON.stringify({
         brief:brief.text, template_id:brief.templateId || 'analysis', slide_count:brief.slideCount,
         content_pack_ids:brief.contentPackIds || [], analysis_goal:brief.text.slice(0,1000),
+        ...businessApiFields(brief.business),
         analysis_requests:Object.assign({},...(brief.materialFiles || []).map(f=>f.analysisRequests || {})),
         analysis_goals:Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
       })});

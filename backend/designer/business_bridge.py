@@ -8,6 +8,7 @@ from .analytics import AnalysisRequest, AnalysisResult
 from .analytics.business import build_business_analysis, explain_business, BusinessInputError
 from .analytics.business_contract import BusinessResult
 from .analytics.business_story import build_business_story
+from .analytics.business_periods import resolve_periods, months
 
 REQUIRED = {
     'sales': {'month', 'region_id', 'product_id', 'channel', 'gross_revenue_rub', 'discount_rub', 'refund_rub', 'cogs_rub', 'orders_count'},
@@ -21,9 +22,16 @@ NAMES = {'net_revenue_rub': 'Чистая выручка', 'gross_profit_rub': '
     'channel': 'Канал', 'period': 'Период', 'gross_revenue_rub': 'До корректировок, ₽',
     'refund_rub': 'Возвраты, ₽', 'refund_share_pct': 'Возвраты, %',
     'direct': 'Прямые продажи', 'online': 'Онлайн', 'partners': 'Партнёры'}
+CONDITION_LABELS = {'reporting_period':'отчётный период', 'sections':'разделы контекста', 'channel_event':'событие канала',
+    'capacity.engineers':'инженеры внедрения', 'capacity.analysts':'аналитики',
+    'capacity.max_parallel_implementations':'параллельные внедрения',
+    'budget.total':'общий бюджет', 'budget.partners':'бюджет партнёрского направления',
+    'budget.implementation':'бюджет внедрения', 'budget.regions':'бюджет регионального анализа', 'budget.reserve':'резерв',
+    'owners.partners':'владелец партнёрского направления', 'owners.implementation':'владелец внедрения',
+    'owners.regions':'владелец регионального анализа'}
 
 
-def _inputs(sources):
+def _inputs(sources, context_id=None):
     from .analytics_bridge import _dataset
     matches = {role: [] for role in REQUIRED}
     for source in sources[1:]:
@@ -38,21 +46,26 @@ def _inputs(sources):
     for role, items in matches.items():
         if len(items) != 1:
             raise ValueError(f'Бизнес-анализ: нужна ровно одна таблица «{role}», найдено {len(items)}. Загрузите продажи, план и справочники; не дублируйте CSV и эквивалентный XLSX.')
-    contexts = [s for s in sources[1:] if re.search(r'(?m)^1\. ', s.get('text', '')) and re.search(r'(?m)^8\. ', s.get('text', ''))]
+    contexts = ([s for s in sources[1:] if s['id'] == context_id] if context_id is not None else
+        [s for s in sources[1:] if re.search(r'(?m)^1\. ', s.get('text', '')) and re.search(r'(?m)^8\. ', s.get('text', ''))])
     if len(contexts) != 1:
-        raise ValueError('Бизнес-анализ: нужен один полный деловой контекст с восемью разделами согласованного контракта.')
+        raise ValueError('Бизнес-анализ: выберите один файл делового контекста и подтвердите его восемь разделов в условиях анализа. Исходный контекст с разделами 1–8 поддерживается без отдельного контракта.')
     return matches, contexts[0]
 
 
 def _calculate(sources):
-    matches, context = _inputs(sources)
+    request = sources[0]['business_request']
+    settings = resolve_periods(request['settings'])
+    matches, context = _inputs(sources, request['context_source_id'])
     try:
-        analysis = build_business_analysis(*(matches[role][0][0] for role in REQUIRED))
+        analysis = build_business_analysis(*(matches[role][0][0] for role in REQUIRED), settings=settings)
         BusinessResult.model_validate(analysis)
-        story = build_business_story(analysis, context['text'])
+        story = build_business_story(analysis, context['text'], conditions=request['conditions'])
     except BusinessInputError as exc:
-        raise ValueError(explain_business(exc.code, exc.params)) from exc
-    return {'version': 'business-service-1', 'analysis': analysis, 'story': story,
+        params = dict(exc.params)
+        if 'field' in params:params['field'] = CONDITION_LABELS.get(params['field'], params['field'])
+        raise ValueError(explain_business(exc.code, params)) from exc
+    return {'version': 'business-service-2', 'analysis': analysis, 'story': story,
         'sources': {role: matches[role][0][1] for role in REQUIRED}, 'context_source_id': context['id']}
 
 
@@ -67,24 +80,33 @@ def _results(payload):
         item['sheet'] = name
         item['title'] = explanation
         item['packId'] = payload['sources']['sales']['source_id']
+        settings = resolve_periods(payload['analysis']['period_settings'])
+        excluded = len(payload['analysis']['source_scope']['excluded_sales_rows'])
         item['business_explanation'] = dict(metric=explanation, formula='Чистая выручка = до корректировок − скидки − возвраты. Прибыль = чистая выручка − себестоимость. Маржа = сумма прибыли / сумма чистой выручки. План учитывается один раз по месяцу, региону и продукту.',
-            period='III квартал 2026; сравнение со II кварталом 2026 и III кварталом 2025',
+            period=f'{settings.label()}; сравнение: {" – ".join(settings.previous)}; год назад: {" – ".join(settings.year_ago)}',
             unit='Рубли без НДС; доли и маржа — проценты; изменение маржи — процентные пункты',
-            source=item['source_file'], exclusions='Проверены все строки полного набора; пропуски и несопоставимые ключи не заменяются нулями.',
-            filters='Полные закрытые кварталы; динамика хранит 21 месяц')
+            source=item['source_file'], exclusions=f'Вне выбранной истории: {excluded} строк продаж. Они сохранены в исходнике и исключены из расчёта. Пропуски и несопоставимые ключи не заменяются нулями.',
+            filters=f'Закрытые месяцы; история {" – ".join(settings.history)} ({len(months(settings.history))} мес.); план {" – ".join(settings.plan)}')
+        if excluded:item['warnings'].append(f'{excluded} строк продаж вне выбранной истории сохранены, но не включены в расчёт.')
         result.append(item)
     return result
 
 
 def prepare_business(sources, brief):
+    if not sources:return None
     columns = {c for s in sources for t in s.get('datasets', []) for c in t['columns']}
-    if 'gross_revenue_rub' not in columns or not DERIVED.search(brief):return None
+    explicit = sources[0].get('business_request', {})
+    if not any(explicit.values()) and ('gross_revenue_rub' not in columns or not DERIVED.search(brief)):return None
+    request = sources[0].setdefault('business_request', {'settings': None, 'conditions': None, 'context_source_id': None})
+    request['settings'] = resolve_periods(request['settings']).model_dump(mode='json')
     payload = _calculate(sources)
     sources[0]['_business'] = payload
     return _results(payload)
 
 
 def verify_business(sources, results):
+    if sources[0].get('_business', {}).get('version') != 'business-service-2' or not sources[0].get('business_request', {}).get('settings'):
+        raise ValueError('Эта бизнес-презентация создана до обновления параметров. Пересоздайте её из исходников и согласованных условий.')
     expected = _calculate(sources)
     if expected != sources[0].get('_business') or _results(expected) != results:
         raise ValueError('Проверка бизнес-аналитики: изменены исходники, расчёты, история или доказательства. Пересоздайте презентацию.')
@@ -102,15 +124,25 @@ def _compact(fact):
     return f"{value.quantize(Decimal('.01'),rounding=ROUND_HALF_UP):,}".replace(',', ' ').replace('.', ',')+suffix
 
 
+def _period_label(bounds):
+    start, end = bounds
+    first, last = int(start[5:]), int(end[5:])
+    if start[:4] == end[:4] and first in (1, 4, 7, 10) and last == first + 2:
+        return f'{("I", "II", "III", "IV")[(first-1)//3]} кв. {start[:4]}'
+    if start == end:return f'{start[5:]}.{start[:4]}'
+    return f'{start[5:]}.{start[:4]}–{end[5:]}.{end[:4]}'
+
+
 def _title(page, analysis, story):
     facts=analysis['facts'];metric=lambda key:_compact(facts[key])
     product=analysis['entities']['product_id'][facts['best_product_contribution']['category']]
     region=analysis['entities']['region_id'][facts['worst_region_plan_gap']['category']]
     top=analysis['entities']['product_id'][facts['top_product_revenue_share']['category']]
+    periods=resolve_periods(analysis['period_settings']);previous=_period_label(periods.previous)
     return {
-        'decision':f"Выручка к II кварталу: {metric('qoq_net_growth')}; маржа: {metric('qoq_margin_change')}",
-        'kpi':f"III квартал: {metric('q3_net')} выручки; маржа {metric('q3_margin')}",
-        'trend':f"Изменение выручки: {metric('qoq_net_growth')} к II кварталу, {metric('yoy_net_growth')} за год",
+        'decision':f"Выручка к {previous}: {metric('qoq_net_growth')}; маржа: {metric('qoq_margin_change')}",
+        'kpi':f"{_period_label(periods.current)}: {metric('q3_net')} выручки; маржа {metric('q3_margin')}",
+        'trend':f"Изменение выручки: {metric('qoq_net_growth')} к {previous}, {metric('yoy_net_growth')} за год",
         'plan':f"Выполнение плана: выручка {metric('q3_net_plan_attainment')}, прибыль {metric('q3_profit_plan_attainment')}",
         'products':f"{product}: вклад {metric('best_product_contribution')} в изменение выручки",
         'regions':f"{region}: {metric('worst_region_plan_gap')} к плану",
@@ -119,7 +151,7 @@ def _title(page, analysis, story):
         'returns':f"Возвраты: {metric('q3_refund_share')} выручки до корректировок",
         'priorities':f"Три действия в пределах бюджета {story['budget']['total']:,} ₽".replace(',', ' '),
         'risks':'Перед расширением проверить экономику и ограничения внедрения',
-        'actions':'План на 90 дней: владельцы, сроки и критерии',
+        'actions':f"План действий до {max(a['deadline'] for a in story['actions'])}: владельцы и критерии",
     }[page['id']]
 
 
@@ -129,7 +161,7 @@ def business_outline(sources, limit):
     payload = sources[0]['_business']
     story, analysis = payload['story'], payload['analysis']
     if limit < len(story['slides']):raise ValueError(f'Для бизнес-брифа нужно {len(story["slides"])} слайдов, выбран лимит {limit}.')
-    token = hashlib.sha256(json.dumps([analysis['fingerprints'], story['context_sha256']], sort_keys=True).encode()).hexdigest()[:16]
+    token = hashlib.sha256(json.dumps([analysis['fingerprints'], story['context_sha256'], sources[0]['business_request']], sort_keys=True).encode()).hexdigest()[:16]
     refs = list(dict.fromkeys([v['source_id'] for v in payload['sources'].values()] + [payload['context_source_id']]))
     slides = []
     for page in story['slides']:
@@ -148,7 +180,7 @@ def business_outline(sources, limit):
                 data = contract.data;visual = copy.deepcopy(visuals[0])
                 visual['categories'] = data.categories[-12:]
                 visual['series'] = [{'name': s.name, 'values': s.values[-12:]} for s in data.series]
-                selection = 'График: последние 12 закрытых месяцев; сравнения рассчитаны по полным кварталам.'
+                selection = f'График: последние {len(visual["categories"])} закрытых месяцев выбранной истории; сравнения рассчитаны по полным выбранным периодам.'
             elif view_id == 'refunds':
                 visual={'kind':'kpi','unit':'%','categories':['Доля возвратов'],
                     'series':[{'name':'От выручки до скидок и возвратов','values':[analysis['facts']['q3_refund_share']['value']]}]}
@@ -158,7 +190,7 @@ def business_outline(sources, limit):
             else:
                 if len(visuals) != 1:raise ValueError('Нужна согласованная пагинация бизнес-представления: ' + view_id)
                 visual = copy.deepcopy(visuals[0])
-            visual['source'] = ('Продажи и план • III квартал 2026; синтетический набор' if view_id == 'plan_actual'
+            visual['source'] = (f'Продажи и план • {_period_label(analysis["period_settings"]["current"])}; синтетический набор' if view_id == 'plan_actual'
                 else 'Деловой контекст • бюджет и предлагаемые действия' if view_id == 'decision_table' else 'Продажи • синтетический набор')
             for series in visual.get('series', []):series['name'] = NAMES.get(series['name'], series['name'])
             if view_id == 'plan_actual':visual['categories'] = ['Чистая выручка', 'Валовая прибыль']
@@ -186,4 +218,4 @@ def business_outline(sources, limit):
             'display_selection': selection, 'context_excerpt': page['context_evidence']['text'][:1500]}, ensure_ascii=False)
         slides.append({'title': _title(page,analysis,story), 'bullets': bullets, 'notes': notes, 'source_refs': refs,
                        'visual': visual, 'analysis_id': f'business:{page["id"]}:{token}'})
-    return Outline.model_validate({'title': 'Развитие B2B-продуктов • решение на IV квартал 2026', 'slides': slides})
+    return Outline.model_validate({'title': f'Развитие B2B-продуктов • итоги {_period_label(analysis["period_settings"]["current"])}', 'slides': slides})

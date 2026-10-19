@@ -97,6 +97,13 @@ def test_negative_bar_sign_survives_pdf_render(tmp_path):
     add_chart(slide,visual,[Inches(.5),Inches(.5),Inches(9),Inches(5)],'Arial',['0077FF'],'000000')
     chart=next(s.chart for s in slide.shapes if s.has_chart)
     assert chart.series[0].invert_if_negative is False
+    from pptx.enum.chart import XL_LABEL_POSITION
+    assert chart.series[0].points[1].data_label.position == XL_LABEL_POSITION.INSIDE_END
+    from pptx.oxml.ns import qn
+    for point in chart.series[0].points:
+        label=point.data_label._dLbl
+        assert label.find(qn('c:numFmt')).get('sourceLinked')=='0'
+        assert label.find(qn('c:showVal')).get('val')=='1'
     path=tmp_path/'negative.pptx';prs.save(path);convert_pdf(path,path.with_suffix('.pdf'))
     image=Image.open(BytesIO(render_slides(path.with_suffix('.pdf'),1000)[0])).convert('RGB')
     blue=[]

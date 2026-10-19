@@ -1,5 +1,6 @@
 import type { AuditIssue, Brief, Deck, Layout, Slide, Template } from './types';
 import { parseVisual } from './analytics';
+import { restoreBusinessRequest } from './business';
 import type { AnalysisRequest, AnalysisResult } from './analytics';
 
 export type Saved = { brief: Brief; decks: Deck[]; customTemplates: Template[] };
@@ -18,6 +19,7 @@ function normalizeBrief(value: unknown, fallback: Brief = DEFAULT_BRIEF): Brief 
   const source = isRecord(value) ? value : {};
   return {
     ...(typeof source.generateImages === 'boolean' ? {generateImages:source.generateImages} : {}),
+    ...(restoreBusinessRequest(source.business) ? {business:restoreBusinessRequest(source.business)} : {}),
     narrative: typeof source.narrative === "boolean" ? source.narrative : true,
     text: text(source.text, fallback.text),
     audience: text(source.audience, fallback.audience),
