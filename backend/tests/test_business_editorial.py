@@ -15,7 +15,7 @@ from designer import ai
 from designer.analytics_bridge import build_outline, verify_outline
 from designer.app import create_app
 from designer.business_bridge import prepare_business
-from designer.business_editorial import editor_payload, validate_editorial
+from designer.business_editorial import EDITORIAL_VERSION, editor_payload, replay_editorial, validate_editorial
 from designer.inference_trace import capture_inference, validated_content
 from test_business_period_service import inputs, upload
 
@@ -37,9 +37,9 @@ def response_for(payload):
         key = page['fact_ids'][0]
         name = page['id']
         pages.append(dict(id=name, title=f'Приоритет {name}: {{{{fact:{key}}}}}',
-            interpretation=f'Сопоставляем проверенные показатели по направлению «{name}» перед решением.',
+            interpretation=f'{{{{interpretation:{name}}}}}',
             interpretation_kind='observation',
-            next_step=f'Проверить ограничения по направлению «{name}» перед расширением.',
+            next_step=f'{{{{next_step:{name}}}}}',
             fact_ids=page['fact_ids'], context_refs=page['context_refs'], action_ref=page['action_ref']))
     return dict(input_sha256=payload['input_sha256'], pages=pages)
 
@@ -116,7 +116,7 @@ def test_editorial_replays_and_preserves_numeric_data():
     sources, results, outline = prepared()
     response = response_for(editor_payload(sources, outline, sources[0]['text']))
     edited, saved = validate_editorial(response, sources, outline)
-    sources[0]['_business_editorial'] = dict(version='business-editorial-1', response=saved)
+    sources[0]['_business_editorial'] = dict(version=EDITORIAL_VERSION, response=saved)
     assert all(old.visual == new.visual and old.source_refs == new.source_refs and old.analysis_id == new.analysis_id
                for old, new in zip(outline.slides, edited.slides))
     assert all(len(old.bullets) == len(new.bullets) for old, new in zip(outline.slides, edited.slides))
@@ -128,6 +128,137 @@ def test_editorial_replays_and_preserves_numeric_data():
     updated = inputs('version-b'); updated_results = prepare_business(updated, updated[0]['text'])
     updated[0]['_business_editorial'] = copy.deepcopy(sources[0]['_business_editorial'])
     with pytest.raises(ValueError): build_outline(updated_results, updated, 12)
+
+
+def test_protected_narrative_preserves_current_verified_text_and_card_count():
+    sources, _, outline = prepared()
+    payload = editor_payload(sources, outline, sources[0]['text'])
+    response = response_for(payload)
+    for page in payload['pages']:
+        assert page['allowed_tokens']['interpretation:' + page['id']] == page['verified_interpretation']
+        assert page['allowed_tokens']['next_step:' + page['id']] == page['verified_next_step']
+    edited, _ = validate_editorial(response, sources, outline)
+    assert [slide.bullets for slide in edited.slides] == [slide.bullets for slide in outline.slides]
+    assert all('{{' not in slide.title for slide in edited.slides)
+
+
+@pytest.mark.parametrize('kind', ['observation', 'caveat'])
+@pytest.mark.parametrize('text', [
+    'Причина роста установлена: клиенты массово перешли от конкурентов к нам.',
+    '{{interpretation:decision}} Это гарантирует повышение прибыли компании.',
+    '{{interpretation:channels}}',
+])
+def test_unprotected_observations_and_caveats_cannot_claim_validated_provenance(kind, text):
+    sources, _, outline = prepared()
+    response = response_for(editor_payload(sources, outline, sources[0]['text']))
+    response['pages'][0].update(interpretation_kind=kind, interpretation=text)
+    with pytest.raises(ValueError, match='защищённую интерпретацию'):
+        validate_editorial(response, sources, outline)
+
+
+@pytest.mark.parametrize('text', [
+    'Уволить команду региональных продаж для гарантированного повышения прибыли.',
+    '{{next_step:decision}} Затем закрыть региональные продажи.',
+    '{{next_step:channels}}',
+    '{{action:partners}}',
+])
+def test_next_step_cannot_add_actions_or_rebind_another_page(text):
+    sources, _, outline = prepared()
+    response = response_for(editor_payload(sources, outline, sources[0]['text']))
+    response['pages'][0]['next_step'] = text
+    with pytest.raises(ValueError, match='защищённый токен'):
+        validate_editorial(response, sources, outline)
+
+
+def test_new_explanation_requires_explicit_hypothesis_and_keeps_verified_next_step():
+    sources, _, outline = prepared()
+    response = response_for(editor_payload(sources, outline, sources[0]['text']))
+    text = 'Гипотеза (не доказана): изменение спроса могло повлиять на динамику продаж.'
+    response['pages'][0].update(interpretation_kind='hypothesis', interpretation=text)
+    edited, _ = validate_editorial(response, sources, outline)
+    assert edited.slides[0].bullets[1] == text
+    assert edited.slides[0].bullets[2] == outline.slides[0].bullets[2]
+    response['pages'][0]['interpretation'] = text.removeprefix('Гипотеза (не доказана): ')
+    with pytest.raises(ValueError, match='Гипотезе нужна явная оговорка'):
+        validate_editorial(response, sources, outline)
+
+
+@pytest.mark.parametrize('title', [
+    'Причина роста установлена: {{fact:qoq_net_growth}}',
+    'Рост выручки объясняется рекламой: {{fact:qoq_net_growth}}',
+    'Выручка — следствие рекламы: {{fact:qoq_net_growth}}',
+])
+def test_title_cannot_turn_unproven_cause_into_a_verified_fact(title):
+    sources, _, outline = prepared()
+    response = response_for(editor_payload(sources, outline, sources[0]['text']))
+    response['pages'][0]['title'] = title
+    with pytest.raises(ValueError, match='Неподтверждённая причина'):
+        validate_editorial(response, sources, outline)
+
+
+@pytest.mark.parametrize('direction', ['снизилась', 'падает', 'упала', 'уменьшилась', 'сократилась', 'ниже'])
+def test_positive_growth_cannot_be_described_as_decline(direction):
+    sources, _, outline = prepared()
+    response = response_for(editor_payload(sources, outline, sources[0]['text']))
+    response['pages'][0]['title'] = 'Выручка ' + direction + ': {{fact:qoq_net_growth}}'
+    with pytest.raises(ValueError, match='Направление изменения'):
+        validate_editorial(response, sources, outline)
+
+
+@pytest.mark.parametrize('value,direction', [
+    ('-2', 'выросла'), ('-2', 'растёт'), ('-2', 'увеличилась'), ('-2', 'повысилась'),
+    ('0', 'выросла'), ('0', 'снизилась'), ('2', 'снизилась'),
+])
+def test_signed_margin_changes_reject_opposite_or_zero_direction(value, direction):
+    from designer.business_editorial import _validate_directions
+    with pytest.raises(ValueError, match='Направление изменения'):
+        _validate_directions('Маржа ' + direction + ': {{fact:qoq_margin_change}}',
+                             {'qoq_margin_change': {'exact': value}})
+
+
+def test_direction_guard_binds_each_metric_and_excludes_absolute_values_and_attainment():
+    from designer.business_editorial import _validate_directions
+    facts = {'qoq_net_growth': {'exact': '24'}, 'qoq_margin_change': {'exact': '-0.4'},
+             'q3_net': {'exact': '93563698'}, 'q3_net_plan_attainment': {'exact': '94'},
+             'worst_region_plan_gap': {'exact': '-100'}}
+    for text in (
+        'Выручка выросла {{fact:qoq_net_growth}}, маржа снизилась {{fact:qoq_margin_change}}',
+        'Рост выручки {{fact:qoq_net_growth}} при снижении маржи {{fact:qoq_margin_change}}',
+        'Чистая выручка: {{fact:q3_net}}',
+        'Выполнение плана: {{fact:q3_net_plan_attainment}}',
+        'Отклонение от плана: {{fact:worst_region_plan_gap}}',
+    ):
+        _validate_directions(text, facts)
+
+
+@pytest.mark.parametrize('title', [
+    'Выручка снизилась до {{fact:q3_net}}',
+    'Маржа снизилась: {{fact:qoq_net_growth}}',
+    'Прибыль выросла: {{fact:qoq_net_growth}}',
+    'План вырос: {{fact:qoq_net_growth}}',
+    'Выполнение повысилось: {{fact:qoq_net_growth}}',
+    'Выполнение плана повысилось до {{fact:q3_net_plan_attainment}}',
+    'Рост выручки; значение {{fact:qoq_net_growth}}',
+])
+def test_directional_title_requires_matching_signed_change_in_same_clause(title):
+    from designer.business_editorial import _validate_directions
+    facts = {'qoq_net_growth': {'exact': '24'}, 'q3_net': {'exact': '93563698'},
+             'q3_net_plan_attainment': {'exact': '94'}}
+    with pytest.raises(ValueError, match='нужен факт изменения той же метрики'):
+        _validate_directions(title, facts)
+
+
+def test_unavailable_change_cannot_support_directional_claim():
+    from designer.business_editorial import _validate_directions
+    with pytest.raises(ValueError, match='нет рассчитанного значения'):
+        _validate_directions('Рост выручки: {{fact:qoq_net_growth}}', {'qoq_net_growth': {'exact': None}})
+
+
+def test_legacy_saved_editorial_requires_regeneration_instead_of_silent_migration():
+    sources, _, outline = prepared()
+    sources[0]['_business_editorial'] = dict(version='business-editorial-1', response={})
+    with pytest.raises(ValueError, match='создайте презентацию заново из исходников'):
+        replay_editorial(sources, outline)
 
 
 @pytest.mark.parametrize('period', ['current', 'previous', 'year_ago'])
