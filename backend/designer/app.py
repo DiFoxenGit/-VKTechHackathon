@@ -789,14 +789,10 @@ def create_app(data_dir=None, seed_dir=None):
     def presentations(
         offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100)
     ):
-        records = store.list("presentations")
-        return {
-            "total": len(records),
-            "items": [
-                {k: v for k, v in p.items() if k not in ("deck", "sources", "audit")}
-                for p in records[offset : offset + limit]
-            ],
-        }
+        # Full analytics and source lineage belong to GET /presentations/{id}.
+        # Listing a single page must not decode every saved business dataset.
+        return store.page('presentations', offset=offset, limit=limit,
+                          exclude=('deck', 'sources', 'audit', 'analysis', 'analysis_results', 'business_proof'))
 
     def public_presentation(record):
         return {

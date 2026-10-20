@@ -6,6 +6,33 @@ import re
 import sqlite3
 import sys
 import tempfile
+import time
+import urllib.request
+
+
+def diagnostic_snapshot(database):
+    """Bounded pre-restart evidence; never print data, headers or credentials."""
+    result = {'api': []}
+    try:
+        with sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True, timeout=3) as conn:
+            result['records'] = [dict(kind=kind, count=count, bytes=size) for kind, count, size in
+                conn.execute('SELECT kind,count(*),sum(length(CAST(data AS BLOB))) FROM records GROUP BY kind')]
+    except (sqlite3.Error, OSError):
+        result['database_status'] = 'unavailable'
+    key = os.getenv('DESIGNER_API_KEY', '')
+    headers = {'Authorization': 'Bearer ' + key} if key else {}
+    for path in ('/health', '/api/v1/workflow', '/api/v1/templates'):
+        started = time.monotonic()
+        item = {'path': path}
+        try:
+            request = urllib.request.Request('http://127.0.0.1:8000' + path, headers=headers)
+            with urllib.request.urlopen(request, timeout=3) as response:
+                item['http'] = response.status
+        except Exception as exc:
+            item['error_type'] = type(exc).__name__
+        item['seconds'] = round(time.monotonic() - started, 3)
+        result['api'].append(item)
+    return result
 
 
 def backup(database, sha):
@@ -25,6 +52,7 @@ def backup(database, sha):
 
 
 if __name__ == '__main__':
+    print('Pre-deploy diagnostics: ' + json.dumps(diagnostic_snapshot(Path('/data/designer.sqlite3'))), flush=True)
     try:
         backup(Path('/data/designer.sqlite3'), sys.argv[1])
     except (ValueError, sqlite3.Error, OSError, IndexError):

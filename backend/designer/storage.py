@@ -66,6 +66,23 @@ class Store:
             ).fetchall()
         return [json.loads(r[0]) for r in rows]
 
+    def page(self, kind, *, offset, limit, exclude=()):
+        """Bound rows and strip heavy fields in SQL, before decoding any JSON."""
+        if offset < 0 or not 1 <= limit <= 100:
+            raise ValueError('Invalid page bounds')
+        if any(not re.fullmatch(r'[a-z_]+', field) for field in exclude):
+            raise ValueError('Invalid projection field')
+        expression = 'data'
+        paths = tuple('$.' + field for field in exclude)
+        if paths:
+            expression = 'json_remove(data,' + ','.join('?' for _ in paths) + ')'
+        with self.connection() as conn:
+            conn.execute('BEGIN')
+            total = conn.execute('SELECT count(*) FROM records WHERE kind=?', (kind,)).fetchone()[0]
+            rows = conn.execute('SELECT ' + expression + ' FROM records WHERE kind=? '
+                                'ORDER BY rowid DESC LIMIT ? OFFSET ?', (*paths, kind, limit, offset)).fetchall()
+        return {'total': total, 'items': [json.loads(row[0]) for row in rows]}
+
     def recover(self):
         for job in self.list("jobs"):
             if job["status"] in ("queued", "running"):

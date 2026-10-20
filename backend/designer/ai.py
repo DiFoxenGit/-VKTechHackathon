@@ -10,7 +10,7 @@ import math
 import httpx
 from fastapi import HTTPException
 from .inference import (llm_settings, require_llm, fallback_settings,
-                        record_inference)
+                        record_inference, inference_route)
 from .workflow import PROMPTS, workflow
 from .inference_trace import current_trace, mark_validated, publish
 LOGGER = logging.getLogger("designer.ai")
@@ -81,10 +81,17 @@ def _usage(value, depth=0):
                 result[str(key)[:100]] = nested
     return result
 
-async def ask(messages):
+async def ask(messages, *, force_fallback=False):
     settings = require_llm()
     global _vk_unavailable_until
     fallback = fallback_settings() if settings.profile == "vk" else None
+    if force_fallback:
+        if fallback is None:
+            raise HTTPException(503, 'No configured text fallback')
+        trace = current_trace()
+        if trace is not None:
+            trace['provider_fallback_reason'] = 'invalid_response'
+        return await _ask_fallback(messages, settings, fallback)
     skipped = fallback is not None and time.monotonic() < _vk_unavailable_until
     if not skipped:
         try:
@@ -107,7 +114,13 @@ async def ask(messages):
         LOGGER.warning("VK text inference failed; using configured GenAPI fallback")
     else:
         LOGGER.info("VK marked unavailable; using configured GenAPI fallback directly")
+    return await _ask_fallback(messages, settings, fallback, skipped=skipped)
+
+
+async def _ask_fallback(messages, settings, fallback, *, skipped=False):
+    """One paid submission; both its output and the primary use the same validator."""
     from .text_genapi import generate, GenApiTextError
+    record_inference(fallback, settings)
     trace = current_trace()
     started = time.monotonic()
     call = None
@@ -150,7 +163,6 @@ async def ask(messages):
             call['duration_seconds'] = round(time.monotonic() - started, 3)
             trace['duration_seconds'] = round(sum(item['duration_seconds'] for item in trace['calls']), 3)
             publish()
-    record_inference(fallback, settings)
     return answer
 
 
@@ -415,7 +427,12 @@ async def complete_json(messages, validate=None, agent='probe', attempts=None):
                          retry_reason=last_code if attempt > 1 else None)
             publish()
         try:
-            answer = await ask(messages)
+            # Keep VK primary. Give its corrected reply a chance, then spend the
+            # final attempt on the reserve instead of repeating the same defect.
+            route = inference_route() or {}
+            use_reserve = (attempt > 1 and attempt == attempts and last_code == 'invalid_response'
+                           and route.get('provider') == 'vk' and fallback_settings() is not None)
+            answer = await ask(messages, force_fallback=True) if use_reserve else await ask(messages)
             value = parse_json(answer)
             result = validate(value) if validate else value
             call = trace['calls'][-1] if trace is not None and len(trace['calls']) > call_count else None
@@ -441,6 +458,9 @@ async def complete_json(messages, validate=None, agent='probe', attempts=None):
                 call['validation_error'] = last[:300]
                 trace['error_code'] = 'invalid_response'
                 mark_validated(call, False)
+            if (inference_route() or {}).get('provider') == 'genapi':
+                # Invalid paid content is not a reason to submit another charge.
+                break
             if answer is not None:
                 # Show the model its own answer; repeating only the rule rarely helps.
                 messages = messages[:2] + [
