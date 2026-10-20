@@ -70,4 +70,4 @@ async def plan_illustrations(brief, slides, limit, requested=None, language='ru'
     return await complete_json([{'role': 'system', 'content': prompt},
                                 {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}],
                                validate=lambda v: validate_plan(v, slides, limit),
-                               agent='illustration_plan', attempts=1)
+                               agent='illustration_plan', attempts=2)

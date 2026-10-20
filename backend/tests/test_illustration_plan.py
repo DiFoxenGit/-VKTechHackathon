@@ -62,7 +62,7 @@ def test_planner_receives_brief_budget_and_eligibility_once(monkeypatch):
     assert len(plan.images) == 1 and len(calls) == 1
     payload, kwargs = calls[0]
     assert payload['brief'].startswith('One photo') and payload['slides'][0]['eligible']
-    assert payload['max_images'] == 2 and kwargs['attempts'] == 1
+    assert payload['max_images'] == 2 and kwargs['attempts'] == 2
     assert payload['response_schema']['$defs']['Illustration']['properties']['style']['enum'] == ['illustration', 'photo']
 
 
@@ -146,7 +146,7 @@ def test_service_plans_once_shares_images_and_exports(client, monkeypatch, mode,
                    slide_count=3, outline=dict(title='Test', slides=[content('Cover'), content('Middle'), content('Closing')]))
     if mode is not None: request['generate_images'] = mode
     job = wait_job(client, client.post('/api/v1/generations', json=request).json()['id'])
-    assert len(calls) == (0 if mode is False else 1)
+    assert len(calls) == (0 if mode is False else 2 if invalid else 1)
     assert len(draws) == expected
     for identifier in job['presentation_ids']:
         record = client.get('/api/v1/presentations/' + identifier).json()
@@ -170,3 +170,18 @@ def test_image_prompts_describe_palette_without_literal_codes():
     result=without_color_codes('matte shapes in #1F497D and #F5A700 on #111111')
     assert '#' not in result and '1F497D' not in result
     assert 'blue' in result and 'amber' in result and 'black' in result
+
+
+def test_verbose_reason_is_retried_with_schema_feedback(monkeypatch):
+    from designer import ai
+    calls=[]
+    async def ask(messages):
+        calls.append(copy.deepcopy(messages))
+        return json.dumps({'images':[image()], 'reason':'x'*601 if len(calls)==1 else 'The user requested this scene.'})
+    monkeypatch.setattr(ai,'ask',ask)
+    monkeypatch.setattr(ai,'MAX_ATTEMPTS',2)
+    monkeypatch.setattr(ai,'RETRY_DELAY',0)
+    plan=asyncio.run(plan_illustrations('One scene on the first eligible slide',[content()],2,True))
+    assert len(calls)==2 and len(plan.images)==1
+    assert 'reason' in calls[1][-1]['content'] and '600' in calls[1][-1]['content']
+    assert plan.reason=='The user requested this scene.'
