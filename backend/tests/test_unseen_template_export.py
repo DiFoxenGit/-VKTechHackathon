@@ -51,3 +51,38 @@ def test_theme_background_reference_honours_master_color_map():
     ref=OxmlElement('p:bgRef');ref.set('idx','1001')
     color=OxmlElement('a:schemeClr');color.set('val','bg1');ref.append(color);bg.append(ref)
     assert background_info(s,{'lt1':'FFFFFF','dk1':'0A1828'})=={'color':'0A1828','kind':'solid'}
+
+
+def test_divider_follows_title_without_striking_new_picture():
+    p=Presentation();s=p.slides.add_slide(p.slide_layouts[6]);layout=s.slide_layout
+    rule=s.shapes.add_shape(MSO_SHAPE.RECTANGLE,Pt(40),Pt(300),Pt(600),Pt(1))
+    rule.name='Divider';layout.shapes._spTree.insert_element_before(rule._element,'p:extLst')
+    elements=[{'role':'title','kind':'text','text':'A short title','box':[40,40,600,50],'font_size':24},
+              {'role':'picture','kind':'image','box':[400,140,200,200]}]
+    _adapt_inherited_layout(s,elements,p.slide_width,p.slide_height)
+    out=io.BytesIO();p.save(out);out.seek(0);saved=Presentation(out)
+    moved=next(x for x in saved.slides[0].slide_layout.shapes if x.name=='Divider')
+    assert 70 < moved.top/12700 < 140
+    original=next(x for x in layout.shapes if x.name=='Divider')
+    assert original.top==Pt(300)
+
+
+def test_picture_stage_keeps_usable_height_around_specimen_rule():
+    from designer.parsing import parse_template
+    from designer.models import Outline
+    from designer.layout import compose
+    from designer.illustration_plan import target_key
+    from tests.test_pipeline import template_bytes
+    t=parse_template(template_bytes(),'unseen.pptx')
+    for pattern in t['patterns']:
+        pattern['role']='content'
+        pattern['reserved'].append({'x':.04,'y':.65,'w':.9,'h':.003,'layout':True})
+    content=Outline.model_validate({'title':'Test','slides':[{'role':'content','title':'A decision supported by evidence',
+        'bullets':['A verified result from the selected period.','A limitation of the available data.','An action to verify the assumption.']}]}).model_dump()
+    asset={'source':'generated','kind':'illustration','id':'picture','ref':'generated:'+('a'*32)+':picture.png',
+           'format':'png','ratio':1,'target_key':target_key(content['slides'][0]),'placement':'right','tags':[],'label':[]}
+    for variant in ['classic','split','focus']:
+        deck=compose(content,t,variant,assets=[asset])
+        picture=next(e for e in deck['slides'][0]['elements'] if e.get('role')=='picture')
+        assert picture['box'][3]>=deck['height']*.35
+        assert picture['box'][1]<deck['height']*.5
