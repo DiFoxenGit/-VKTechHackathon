@@ -6,7 +6,7 @@ from .assets import (illustration_targets, illustration_prompt, inspect_image,
                      words, tag_roots, save_assets, contact_sheet, TAG_BATCH)
 LOGGER = logging.getLogger("designer.ai_assets")
 
-async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, size=None):
+async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, size=None, plan=None):
     """Нарисовать иллюстрации к слайдам и сохранить их как ассеты колоды.
 
     Возвращает метаданные в том же виде, в каком их отдаёт библиотека: вёрстка
@@ -20,14 +20,22 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
 
     if not image_available():
         return []
-    targets = illustration_targets(slides, limit)
+    from .illustration_plan import target_key, validate_plan
+    checked = validate_plan(plan, slides, limit) if plan is not None else None
+    targets = ([(item.slide - 1, slides[item.slide - 1], item) for item in checked.images]
+               if checked is not None else [(i, c, None) for i, c in illustration_targets(slides, limit)])
     if not targets:
         return []
 
-    async def one(index, content):
-        prompt = illustration_prompt(content.get("title"), content.get("bullets"), palette)
+    concurrency = asyncio.Semaphore(2)
+
+    async def one(index, content, item):
+        prompt = (f'{item.prompt}. Visual style: {item.style}. Palette: {palette}. Keep the entire subject inside the frame. '
+                  'No text, letters, numbers, logos or watermarks.' if item else
+                  illustration_prompt(content.get("title"), content.get("bullets"), palette))
         try:
-            blob = await draw_image(prompt, size)
+            async with concurrency:
+                blob = await draw_image(prompt, size)
             info = inspect_image(blob)
         except Exception as exc:  # noqa: BLE001 - без картинки слайд собирается как раньше
             LOGGER.warning("Illustration for slide %s failed (%s)", index, type(exc).__name__)
@@ -45,6 +53,8 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
                 "color": info.get("color"),
                 "slide": index,
                 "target_title": content.get('title', ''),
+                **({'target_key': target_key(content), 'placement': item.placement,
+                    'planned_style': item.style} if item else {}),
                 "label": label,
                 "tags": tag_roots(label),
                 "prompt": prompt,
@@ -52,7 +62,7 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
             blob,
         )
 
-    drawn = await asyncio.gather(*(one(index, content) for index, content in targets))
+    drawn = await asyncio.gather(*(one(index, content, item) for index, content, item in targets))
     harvested = [item for item in drawn if item]
     if not harvested:
         return []

@@ -1,6 +1,6 @@
 {
   "version": "1.12.0",
-  "agents": {"outline": "outline.v5.txt", "audit": "audit.v3.txt", "audit_image": "audit.image.v2.txt", "condense": "condense.v1.txt", "assets": "assets.v1.txt", "image_check": "image.check.v1.txt"},
+  "agents": {"outline": "outline.v5.txt", "audit": "audit.v3.txt", "audit_image": "audit.image.v2.txt", "condense": "condense.v1.txt", "assets": "assets.v1.txt", "image_check": "image.check.v1.txt", "illustration_plan": "illustrations.plan.v1.txt"},
   "narratives": "narratives.v1.json",
   "variants": [
     {"id": "classic", "description": "Вертикальный рассказ: текст сверху, визуализация снизу"},

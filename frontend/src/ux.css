@@ -213,3 +213,5 @@ body { min-width: 0; }
 .business-controls .field-hint { margin: 0; font-size: 12px; color: #80511c; }
 .business-controls [aria-invalid=true] { border-color: #b67431; }
 @media (max-width: 520px) { .model-diagnostics dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+.image-options{display:grid;gap:8px;margin:14px 0;font-size:13px;max-width:100%}.image-options select{font:inherit;padding:10px;max-width:100%;border:1px solid #c7d3e2;border-radius:7px;background:#fff;color:#172b46}.image-options select:focus-visible{outline:2px solid #1478f4;outline-offset:2px}.image-options small{line-height:1.5;color:#59677b}
+.image-generation-status.partial{background:#fff5e7;color:#80511c}.image-generation-status details{margin-top:10px}.image-generation-status li{margin:8px 0;overflow-wrap:anywhere}

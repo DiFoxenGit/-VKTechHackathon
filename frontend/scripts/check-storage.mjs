@@ -14,6 +14,12 @@ const deck = {
 };
 const template = { id: 'custom', name: 'Мой шаблон', description: 'Фирменный стиль', color: '#0077FF', secondary: '#FF3885', font: 'Play', layoutCount: 4, slideCount: 10, tag: 'Шаблон', custom: true };
 const valid = { brief, decks: [deck], customTemplates: [template] };
+const imageGeneration = {status: 'partial', message: 'One of two created', count: 1, requested_count: 2,
+  plan: {reason: 'Two requested scenes', images: [{slide: 2, prompt: 'An office in the forest', placement: 'left', style: 'photo'}]}};
+assert.deepEqual(load({...valid, decks: [{...deck, imageGeneration: {...imageGeneration, api_key: 'must-not-persist'}}]}).decks[0].imageGeneration, imageGeneration);
+assert.equal(load({...valid, brief: {...brief, generateImages: false}}).brief.generateImages, false);
+assert.equal(load({...valid, brief: {...brief, generateImages: true}}).brief.generateImages, true);
+assert.equal(load(valid).brief.generateImages, undefined);
 assert.deepEqual(load(valid), valid, 'Valid saved projects must survive without losing metadata');
 assert.equal(load({ brief: { text: null }, decks: [], customTemplates: [] }).brief.text, '');
 assert.equal(load({ brief: { slideCount: Infinity, contentPackIds: [null, 'pack', 'pack'] } }).brief.slideCount, 10);

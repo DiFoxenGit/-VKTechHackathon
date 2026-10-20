@@ -2723,6 +2723,11 @@ def png_photo(width=400, height=300):
 def test_drawn_illustration_reaches_the_slide(client, monkeypatch):
     """Задача со звёздочкой целиком: нарисовали, проверили, поставили на слайд."""
     import designer.ai as generation
+    from designer import illustration_plan
+    async def plan(brief, slides, limit, requested, language):
+        return illustration_plan.validate_plan(dict(images=[dict(slide=2, placement='right',
+            style='illustration', prompt=slides[1]['title'] + ', detailed illustration')], reason='Requested scene'), slides, limit)
+    monkeypatch.setattr(illustration_plan, 'plan_illustrations', plan)
 
     prompts = []
 
@@ -2841,11 +2846,14 @@ def test_generated_illustration_is_saved_and_picked_for_its_slide(tmp_path, monk
     assert (folder / meta["file"]).exists()
     assert assets.resolve(meta["ref"], tmp_path) == folder / meta["file"]
 
-    # Теги — слова самого слайда, поэтому подбор ставит картинку туда же.
+    # Explicitly generated assets must not leak into unrelated slides by tags.
     chosen = assets.pick_picture(
         "Доставка за час", [meta], title="Мобильное приложение для курьеров"
     )
-    assert chosen and chosen["id"] == meta["id"]
+    assert chosen is None
+    from designer.layout import slide_mode
+    assert slide_mode({**slides[1], 'visual': {'kind': 'none'}}, 'classic', 1, 3,
+                      [meta], {'pictures': set(), 'icons': set()})['asset']['id'] == meta['id']
 
 
 def test_illustration_with_letters_is_dropped(tmp_path, monkeypatch):

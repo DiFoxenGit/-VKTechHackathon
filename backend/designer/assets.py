@@ -1062,7 +1062,8 @@ def pick_icons(labels, assets, used=()):
 
 def pick_picture(text, assets, kinds=("illustration", "photo"), used=(), title=""):
     """Иллюстрация или фото к слайду: заголовок весит больше тезисов."""
-    candidates = [a for a in assets if a["kind"] in kinds]
+    # Generated assets have explicit destinations; never recycle them by tags.
+    candidates = [a for a in assets if a["kind"] in kinds and a.get('source') != 'generated']
     scored = []
     for asset in candidates:
         score = match_score(asset.get("tags"), title, 1.5) + match_score(

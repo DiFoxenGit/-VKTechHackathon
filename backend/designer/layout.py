@@ -335,6 +335,13 @@ def slide_mode(content, variant, position, total, assets, used):
     финал не трогаем: там композицию задаёт страница шаблона.
     """
     bullets = content["bullets"]
+    from .illustration_plan import target_key
+    generated = [a for a in assets if a.get('source') == 'generated' and (
+        a.get('target_key') == target_key(content) if a.get('target_key') else
+        a.get('target_title') == content['title'] or (not a.get('target_title') and a.get('slide') == position))]
+    if generated and content['visual']['kind'] == 'none' and len(bullets) <= 4 and sum(map(len, bullets)) <= 800:
+        return {'kind': 'picture', 'asset': generated[0], 'assets': generated[:2],
+                'placement': generated[0].get('placement', 'right')}
     if (
         content["visual"]["kind"] != "none"
         or not bullets
@@ -342,9 +349,6 @@ def slide_mode(content, variant, position, total, assets, used):
         or (total > 2 and position == total - 1)
     ):
         return None
-    generated = next((a for a in assets if a.get('source') == 'generated' and (a.get('target_title') == content['title'] or (not a.get('target_title') and a.get('slide') == position))), None)
-    if generated and len(bullets) <= 4 and sum(map(len, bullets)) <= 800:
-        return {'kind': 'picture', 'asset': generated}
     values = stat_plan(bullets)
     if values:
         return {"kind": "stats", "values": values}
@@ -1035,13 +1039,15 @@ def swap_icons(elements, slots, assets, used, width, height):
 
 def align_to_picture(elements):
     """Текст рядом с картинкой — по её вертикальному центру, а не прибитым к верху."""
-    picture = next((e for e in elements if e["id"] == "picture"), None)
+    pictures = [e for e in elements if e.get('role') == 'picture']
     texts = [e for e in elements if e["kind"] == "text" and e.get("role") != "title"]
-    if not picture or not texts:
+    if not pictures or not texts:
         return elements
     top = min(e["box"][1] for e in texts)
     bottom = max(e["box"][1] + min(e["box"][3], estimated_text_height(e)) for e in texts)
-    shift = picture["box"][1] + picture["box"][3] / 2 - (top + bottom) / 2
+    picture_top = min(e['box'][1] for e in pictures)
+    picture_bottom = max(e['box'][1] + e['box'][3] for e in pictures)
+    shift = (picture_top + picture_bottom - top - bottom) / 2
     # Двигаем только вниз: вверху текст упирается в заголовок.
     if shift > 0:
         for element in texts:
@@ -1201,7 +1207,7 @@ def compose(outline, template, variant, assets=None):
             and not (staged and stage_clutter(b, branding))
         ]
         special_region = None
-        if pattern.get('role') in ('cover', 'closing') and (has_visual or len(content['bullets']) > 1):
+        if pattern.get('role') in ('cover', 'closing') and (has_visual or mode or len(content['bullets']) > 1):
             special_region = special_page_region(
                 reserved, width * safe['x'], height * safe['y'], right,
                 height * min(1.0, safe['y'] + safe['h']), width, height,
@@ -1375,25 +1381,25 @@ def compose(outline, template, variant, assets=None):
             # Текст слева, картинка справа: колонка текста шире, чтобы тезисы
             # не ломались на короткие строки.
             column = (w - gap) * (0.52 if variant == "focus" else 0.56)
+            image_width = w - column - gap
+            image_x = margin + column + gap
+            text_x = margin
+            if mode.get('placement') == 'left':
+                image_x = margin
+                text_x = margin + image_width + gap
             if variant == "focus":
-                text_box("lead", bullets[:1], [margin, top, column, h * (0.55 if len(bullets) > 1 else 1.0)])
-                text_box("body", bullets[1:], [margin, top + h * 0.6, column, h * 0.4])
+                text_box("lead", bullets[:1], [text_x, top, column, h * (0.55 if len(bullets) > 1 else 1.0)])
+                text_box("body", bullets[1:], [text_x, top + h * 0.6, column, h * 0.4])
             else:
-                text_box("body", bullets, [margin, top, column, h])
-            asset = mode["asset"]
-            elements.append(
-                {
-                    "id": "picture",
-                    "kind": "image",
-                    "role": "picture",
-                    "box": picture_box(asset, [margin + column + gap, top, w - column - gap, h])
-                    if asset["kind"] != "photo"
-                    else [margin + column + gap, top, w - column - gap, h],
-                    "asset": asset_ref(asset),
-                    "fit": "cover" if asset["kind"] == "photo" else "contain",
-                }
-            )
-            used["pictures"].add(asset["id"])
+                text_box("body", bullets, [text_x, top, column, h])
+            pictures = mode.get('assets') or [mode['asset']]
+            cell_height = (h - gap * (len(pictures) - 1)) / len(pictures)
+            for n, asset in enumerate(pictures):
+                box = [image_x, top + n * (cell_height + gap), image_width, cell_height]
+                elements.append(dict(id='picture' if n == 0 else f'picture_{n}', kind='image',
+                                     role='picture', box=picture_box(asset, box),
+                                     asset=asset_ref(asset), fit='contain'))
+                used['pictures'].add(asset['id'])
         elif cards:
             # Each independent block owns one filled template card, in every variant.
             groups = [[b] for b in bullets]
@@ -1522,7 +1528,7 @@ def compose(outline, template, variant, assets=None):
         # A sparse opening slide follows the cover's own title/subtitle frames,
         # including titles below the middle of the page. Content geometry must
         # not lift it into the logo band or stretch it across the brand artwork.
-        if i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1:
+        if i == 0 and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1:
             cover_box = pattern.get('title_box')
             if cover_box:
                 cx = max(width * margins['x'], width * cover_box['x'])
@@ -1597,7 +1603,7 @@ def compose(outline, template, variant, assets=None):
                 element["font_size"] = size
         if variant == "focus":
             focus_accent(elements, scale)
-        if i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1:
+        if i == 0 and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1:
             # На обложке подзаголовок подчинён заголовку: рост кегля и акцент
             # focus не должны сделать его крупнее названия колоды.
             title_size = elements[0]["font_size"]
@@ -1661,7 +1667,7 @@ def compose(outline, template, variant, assets=None):
             # Фон не измерен: о его светлоте ничего не известно, поэтому под
             # текст кладётся светлая подложка — самый безопасный вариант.
             background = tokens["theme"].get("lt1", "FFFFFF")
-        native_cover = not outline.get('content_pages') and i == 0 and pattern.get('role') == 'cover' and not has_visual and len(bullets) <= 1
+        native_cover = not outline.get('content_pages') and i == 0 and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1
         if native_cover:
             sampled = pattern.get('title_background')
             if sampled:
