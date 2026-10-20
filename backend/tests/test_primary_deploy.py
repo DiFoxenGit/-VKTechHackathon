@@ -29,6 +29,10 @@ def deployment(tmp_path):
         folder.mkdir()
     (app / 'deploy').mkdir()
     shutil.copy(ROOT / 'deploy/primary-deploy.sh', app / 'deploy/primary-deploy.sh')
+    shutil.copy(ROOT / 'deploy/runtime_profile.py', app / 'deploy/runtime_profile.py')
+    (app / 'deploy/autosell-nginx.conf').write_text('new nginx')
+    (app / '.env.autosell').write_text('DESIGNER_LLM_PROVIDER=openai\nDESIGNER_LLM_API_KEY=old-value\n')
+    (app / 'nginx.conf').write_text('old nginx')
     (app / '.env').write_text('existing setting\n')
     (runtime / 'genapi.compose.json').write_text('{"private":"preserved"}\n')
     log = tmp_path / 'commands'
@@ -38,7 +42,7 @@ echo "git $*" >> "$COMMAND_LOG"
 case "$1" in
  status) [ "${{DIRTY:-0}}" = 0 ] || echo ' M tracked';;
  rev-parse) echo {PREVIOUS};;
- merge-base) [ "${{4:-}}" = refs/remotes/github/main ] && [ "${{FOREIGN:-0}}" = 0 ];;
+ merge-base) [[ "${{4:-}}" = refs/remotes/github/main || "${{4:-}}" = origin/main ]] && [ "${{FOREIGN:-0}}" = 0 ];;
 esac
 ''',
         'docker': '''#!/bin/bash
@@ -52,16 +56,18 @@ case "$*" in
 esac
 ''',
         'curl': '#!/bin/bash\necho "curl $*" >> "$COMMAND_LOG"\n[ "${FAIL_HEALTH:-0}" = 0 ]\n',
+        'nginx': '#!/bin/bash\nexit 0\n',
     }
     for name, text in scripts.items():
         script = bins / name
         script.write_text(text)
         script.chmod(0o755)
     env = {**os.environ, 'PATH': str(bins) + os.pathsep + os.environ['PATH'],
-           'APP_DIR': str(app), 'RUNTIME_DIR': str(runtime), 'COMMAND_LOG': str(log)}
+           'APP_DIR': str(app), 'RUNTIME_DIR': str(runtime), 'COMMAND_LOG': str(log),
+           'NGINX_SNIPPET': str(app / 'nginx.conf')}
 
-    def run(**settings):
-        result = subprocess.run(['bash', str(ROOT / 'deploy/primary-deploy.sh'), SHA],
+    def run(script='primary-deploy.sh', input_text='', **settings):
+        result = subprocess.run(['bash', str(ROOT / 'deploy' / script), SHA], input=input_text,
                                 env={**env, **settings}, capture_output=True, text=True, timeout=10)
         return result, log.read_text() if log.exists() else ''
     return run, app, runtime
@@ -107,3 +113,23 @@ def test_failed_health_restores_running_images_and_checkout(deployment):
     assert f'vk-designer-backend:before-{SHA} vk-designer-backend:latest' in log
     assert log.count('up -d') == 2
     assert not (runtime / 'deployed-main.sha').exists()
+
+
+@pytest.mark.parametrize('failed', [False, True])
+def test_autosell_applies_profile_and_restores_original_env_on_failure(deployment, failed):
+    run, app, _ = deployment
+    original = (app / '.env.autosell').read_bytes()
+    result, _ = run(script='autosell-deploy.sh',
+                    input_text='{"DESIGNER_LLM_PROVIDER":"vk","DESIGNER_VK_API_KEY":"new-private-value"}',
+                    FAIL_HEALTH='1' if failed else '0')
+    assert (result.returncode != 0) is failed, result.stderr
+    if failed:
+        assert (app / '.env.autosell').read_bytes() == original
+        assert (app / 'nginx.conf').read_text() == 'old nginx'
+    else:
+        assert "DESIGNER_LLM_PROVIDER='vk'" in (app / '.env.autosell').read_text()
+        assert 'DESIGNER_LLM_API_KEY=old-value' in (app / '.env.autosell').read_text()
+    assert 'new-private-value' not in result.stdout + result.stderr
+    backup = next((app / 'tmp/deploy-backups').glob('*/server.env'))
+    assert backup.read_bytes() == original
+    assert backup.stat().st_mode & 0o777 == 0o600

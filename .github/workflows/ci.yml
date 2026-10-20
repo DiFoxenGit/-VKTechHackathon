@@ -44,11 +44,12 @@ jobs:
         env:
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
           DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          RUNTIME_PROFILE: ${{ secrets.DESIGNER_RUNTIME_PROFILE }}
         # Сервер сам забирает коммит из репозитория и пересобирает стек.
         run: |
-          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+          printf '%s' "$RUNTIME_PROFILE" | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
               -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
-              "$DEPLOY_USER@$DEPLOY_HOST" "deploy $GITHUB_SHA" </dev/null
+              "$DEPLOY_USER@$DEPLOY_HOST" "deploy $GITHUB_SHA"
       - name: Check public health
         env:
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
