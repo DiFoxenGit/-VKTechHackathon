@@ -150,3 +150,24 @@ assert.equal(progress.find(event=>event.serverStage==='model_content').modelAtte
 assert.match(progress.find(event=>event.serverStage==='model_content').retryReason,/проверку фактов или формата/);
 assert.equal(fallbackDeck.inference.completed,false,'A configured provider must not become a successful model result');
 console.log('PASS: real model stage and fallback evidence reach the editor');
+
+// Interleaved batch polling must retain stable job identities and completed rows.
+const counters = [0,0,0];
+progress=[];
+globalThis.fetch=async url=>{
+ if(url.endsWith('/generation-batches'))return response({jobs:[0,1,2].map(i=>({id:`batch-${i}`,status:'queued',progress:0}))});
+ const match=url.match(/\/jobs\/batch-(\d)$/);
+ if(match){const i=Number(match[1]),n=++counters[i];return response(n<=2?{id:`batch-${i}`,status:'running',stage:'model_content',progress:n===1?60-i*10:20}:{id:`batch-${i}`,status:'completed',presentation_ids:[0,1,2].map(v=>`deck-${i}-${v}`)});}
+ return response({...record,id:url.split('/').pop()});
+};
+const batchResult=await service.generateBatch(brief,['education','workspace','tech'],{templateNames:{education:'VK Education',workspace:'VK WorkSpace',tech:'VK Tech'},onProgress:e=>progress.push(e)});
+assert.equal(batchResult.decks.length,9);
+const previous=[0,0,0],finished=new Set();
+for(const event of progress){
+ assert.deepEqual(event.jobs.map(j=>j.name),['VK Education','VK WorkSpace','VK Tech']);
+ assert.equal(event.progress,undefined,'No shared percentage may be overwritten by individual jobs');
+ event.jobs.forEach((j,i)=>{assert(j.progress>=previous[i]);previous[i]=j.progress;if(finished.has(i))assert.equal(j.status,'completed');if(j.status==='completed')finished.add(i);});
+}
+assert.equal(finished.size,3);
+assert.equal(progress.at(-1).stage,'fetching');
+console.log('PASS: independent batch rows, monotonic progress, persistent completion and stable labels');

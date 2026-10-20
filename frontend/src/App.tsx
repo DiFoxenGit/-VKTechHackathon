@@ -10,6 +10,7 @@ import { templates, EXAMPLE_BRIEF } from './data/templates';
 import { auditDeck } from './algorithms/audit';
 import { getSlideTypography } from './algorithms/typography';
 import { exportHtml, exportPptx, exportPrint } from './rendering/export';
+import { preparePreview } from './services/previewReady';
 import { presentationService } from './services/presentationService';
 import type { ServiceProgress } from './services/presentationService';
 import { OperationProgress } from './components/OperationProgress';
@@ -342,11 +343,12 @@ export default function App() {
     if (!controller) return;
     const briefContext = briefContextRef.current;
     setBriefError(''); setReadyDeck(null);
+    let resultsSaved = false;
     try {
       let generated: Deck[];
       if (batch) {
         const ids = batchTemplateIds ?? allTemplates.slice(0,3).map(t=>t.id);
-        const response = await presentationService.generateBatch(brief,ids,operationOptions(controller));
+        const response = await presentationService.generateBatch(brief,ids,{...operationOptions(controller),templateNames:Object.fromEntries(allTemplates.map(t=>[t.id,t.name]))});
         generated = response.decks;
         const images = generated.filter(d=>d.imageGeneration?.status==='ready').length;
         setBatchSummary(`${generated.length} презентаций готовы за ${response.seconds.toFixed(2)} с общего времени. Изображения: ${brief.generateImages===false ? 'не запрашивались' : `${images} из ${generated.length} колод имеют готовые изображения; проверьте план и экспорт`}. PDF-конвертация в этот замер не входит.`);
@@ -356,9 +358,13 @@ export default function App() {
       if (controller.signal.aborted) return;
       const result = generated[0];
       setDecks(prev => [...generated, ...prev.filter(d => !generated.some(item=>item.id===d.id))]);
+      resultsSaved = true;
+      setProgress(previous => ({stage:'fetching',message:'Готовим обложку. Редактор откроется, когда она будет готова.',jobs:previous.jobs}));
+      await preparePreview(result.slides[0]?.previewUrl, controller.signal);
+      if (controller.signal.aborted) return;
       if (screenRef.current === 'create' && briefContextRef.current === briefContext) { setDeck(result); setActiveSlide(0); navigate('editor'); setToast('Презентация готова. Можно редактировать и скачивать.'); }
       else setReadyDeck(result);
-    } catch (e) { if (!controller.signal.aborted) { setError(`${e instanceof Error ? e.message : 'Не удалось создать презентацию.'} Ваш бриф сохранён — попробуйте ещё раз.`); setGenerationRetry('create'); } }
+    } catch (e) { if (!controller.signal.aborted) { setError(resultsSaved ? `${e instanceof Error ? e.message : 'Обложка недоступна.'} Презентации сохранены в «Мои презентации»; повторная генерация не нужна.` : `${e instanceof Error ? e.message : 'Не удалось создать презентацию.'} Ваш бриф сохранён — попробуйте ещё раз.`); if (!resultsSaved) setGenerationRetry('create'); } }
     finally { finishOperation(controller); }
   }
   async function retryModel() {

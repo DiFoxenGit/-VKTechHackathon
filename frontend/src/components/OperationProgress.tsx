@@ -87,7 +87,8 @@ export function OperationProgress({ kind, progress, startedAt, onCancel, compact
   const time = `${Math.floor(elapsed / 60).toString().padStart(2, '0')}:${(elapsed % 60).toString().padStart(2, '0')}`;
   const upload = kind === 'material' || kind === 'template';
   const copy = operationCopy(kind, progress.stage);
-  const title = kind === 'generation' && progress.stage === 'generating'
+  const batch = kind === 'generation' && Boolean(progress.jobs?.length);
+  const title = batch ? (progress.stage === 'fetching' ? 'Подготавливаем просмотр' : 'Создаём девять презентаций') : kind === 'generation' && progress.stage === 'generating'
     ? generationTitles[progress.serverStage ?? ''] ?? copy.title
     : copy.title;
   const detail = progress.message?.trim() || copy.detail;
@@ -120,7 +121,7 @@ export function OperationProgress({ kind, progress, startedAt, onCancel, compact
       </div>
     </div>
 
-    <div className="operation-progress-label" aria-hidden="true">
+    {!batch && <><div className="operation-progress-label" aria-hidden="true">
       <span>{complete ? 'Готово' : transferSize ? `${formatBytes(progress.loaded ?? 0)} из ${formatBytes(progress.total ?? 0)}` : percentage !== undefined ? 'Прогресс генерации от сервиса' : 'Выполняется'}</span>
       {percentage !== undefined && <strong>{percentage}%</strong>}
     </div>
@@ -135,6 +136,17 @@ export function OperationProgress({ kind, progress, startedAt, onCancel, compact
     >
       <span style={percentage !== undefined || complete ? { width: `${complete ? 100 : percentage}%` } : undefined} />
     </div>
+
+    </>}
+    {batch && <div className="batch-job-progress" aria-label="Задания генерации">
+      {progress.jobs!.map(job => <section className="batch-job-row" key={job.id} aria-label={job.name}>
+        <div className="batch-job-heading"><strong>{job.name}</strong><span>{job.status === 'completed' ? 'Готово' : job.status === 'failed' ? 'Ошибка' : job.progress === undefined ? 'В работе' : `${job.progress}%`}</span></div>
+        <p>{job.message}</p>
+        <div className={`operation-track${job.progress === undefined && job.status !== 'completed' ? ' operation-track--indeterminate' : ''}`} role="progressbar" aria-label={job.name} aria-valuemin={0} aria-valuemax={100} aria-valuenow={job.progress}>
+          <span style={job.progress === undefined ? undefined : {width:`${job.progress}%`}} />
+        </div>
+      </section>)}
+    </div>}
 
     {kind === 'generation' && !compact && <ol className="operation-steps" aria-label="Этапы создания">
       {['Подготовка', 'Очередь', 'Создание', 'Открытие'].map((step, index) => {

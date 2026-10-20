@@ -27,11 +27,13 @@ export type ServiceProgress = {
   modelAttempt?: number;
   modelMaxAttempts?: number;
   retryReason?: string;
+  jobs?: Array<{ id: string; name: string; status: Job['status']; progress?: number; message: string }>;
 };
 
 export type ServiceOptions = {
   /** Cancels browser requests and polling; an accepted server job may still finish. */
   signal?: AbortSignal;
+  templateNames?: Record<string, string>;
   onProgress?: (event: ServiceProgress) => void;
 };
 
@@ -462,18 +464,37 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
         method:'POST',signal:options.signal,
         body:JSON.stringify({requests:templateIds.map(id=>generationPayload(brief,id))}),
       });
-      const jobs = await Promise.all(batch.jobs.map(async original => {
+      const rows: NonNullable<ServiceProgress['jobs']> = batch.jobs.map((job, index) => ({
+        id: job.id, name: options.templateNames?.[templateIds[index]] || `Шаблон ${index + 1}`,
+        status: job.status, progress: job.status === 'completed' ? 100 : jobProgress(job).progress,
+        message: job.status === 'completed' ? 'Три оформления готовы' : jobProgress(job).message || 'В очереди',
+      }));
+      const publish = (stage: ServiceProgress['stage'] = 'generating') => options.onProgress?.({
+        stage, message: stage === 'fetching' ? 'Все задания завершены. Получаем презентации.' : 'Три шаблона, по три оформления каждого.',
+        jobs: rows.map(row => ({...row})),
+      });
+      publish();
+      const jobs = await Promise.all(batch.jobs.map(async (original, index) => {
         let job = original;
-        while (job.status !== 'completed') {
+        while (true) {
+          checkAborted(options.signal);
+          const current = jobProgress(job);
+          rows[index] = {...rows[index], status: job.status,
+            // A retry within this job must not reset the progress already reported.
+            progress: job.status === 'completed' ? 100 : current.progress === undefined ? rows[index].progress : Math.max(rows[index].progress || 0, current.progress),
+            message: job.status === 'completed' ? 'Три оформления готовы' : job.status === 'failed' ? 'Не удалось завершить задание' : current.message || 'Создаём презентацию',
+          };
+          publish();
           if (job.status === 'failed') throw new Error(job.error || 'Одно из заданий завершилось ошибкой.');
+          if (job.status === 'completed') break;
           if (performance.now() - started >= GENERATION_TIMEOUT) throw new Error('Общий запуск превысил пять минут. Сервер может продолжать задания.');
-          options.onProgress?.({...jobProgress(job),message:'Общий запуск: три шаблона × три оформления. Очередь, модель и изображения входят во время.'});
           await delay(800,options.signal);
           job = await request<Job>(`/jobs/${encodeURIComponent(job.id)}`,{signal:options.signal});
         }
         if (job.presentation_ids?.length !== 3) throw new Error('Сервер вернул неполный набор оформлений.');
         return job;
       }));
+      publish('fetching');
       const seconds = (performance.now()-started)/1000;
       const decks = await Promise.all(jobs.flatMap(job=>job.presentation_ids!).map(async id=>mapPresentation(
         await request<BackendPresentation>(`/presentations/${encodeURIComponent(id)}`,{signal:options.signal}),brief)));
