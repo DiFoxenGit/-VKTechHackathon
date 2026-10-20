@@ -1,0 +1,52 @@
+{
+  "checks": [
+    {
+      "id": "accepted-garden",
+      "status": "passed",
+      "scope": "visible_text_only",
+      "mode": "vlm_pixels",
+      "model": "gpt://b1g5nlmfmdtalq4pami5/qwen3.6-35b-a3b",
+      "attempted": true,
+      "has_text": false,
+      "image_sha256": "e47480f60ea0d35e72e382be939a65f29fda6dd12d93bee99b1091bc7b18aff1"
+    }
+  ],
+  "retained": 1,
+  "new_images_generated": 0,
+  "provider_host": "ai.api.cloud.yandex.net",
+  "actual_new_vlm_calls": 1,
+  "manual_review": "Garden scene relevant to office courtyard; no visible pseudo-text; right placement; square ratio; no text/logo occlusion by image",
+  "source_job_id": "dba03228ca6848179b511fca5c40ffb6",
+  "source_presentation_ids": [
+    "7d8f57f4f6f74ec5a8a91e80856bb710",
+    "757fe3b8b5354a4993f84f42b7abd670",
+    "83d28187cafa48d8a2d9a455382c696f"
+  ],
+  "exports": [
+    {
+      "variant": "classic",
+      "native_media": [
+        "ppt/media/image224.png"
+      ],
+      "pptx_sha256": "46e29c72043fb4745dd145f5420fa75bc5b9e4292b4fa55d00cdb9976dc5c6ef",
+      "pdf_sha256": "e0e34719da78fe7e8353730d58ffd052bc74ccc2f68f1f1947a8af91dde22853"
+    },
+    {
+      "variant": "split",
+      "native_media": [
+        "ppt/media/image224.png"
+      ],
+      "pptx_sha256": "8dde627e1416df925a2499381be7cd9d5197af0934dee40e7c00f48032e47f61",
+      "pdf_sha256": "54410c4d786daac43f430c4491ca2480e7ff7ddf4a1f1c35b532fc01a3a98d7e"
+    },
+    {
+      "variant": "focus",
+      "native_media": [
+        "ppt/media/image224.png"
+      ],
+      "pptx_sha256": "3df073c9785ceafa0eb95a693f13972b45b5e1930173ee82fbd105397a96f34c",
+      "pdf_sha256": "28fbfadcfd2c978d4e33bb5d32a7bec690c2dad1c564ab50506ab2d1ca86e837"
+    }
+  ],
+  "automated_scope": "Visible text only; composition reviewed separately; historical exports, fresh pixel check"
+}

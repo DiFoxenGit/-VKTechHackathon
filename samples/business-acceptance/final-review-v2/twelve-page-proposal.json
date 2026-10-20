@@ -1,0 +1,333 @@
+{
+  "status": "proposal_for_Stepa_and_Andrey; not implemented in layout",
+  "total_pages": 12,
+  "pages": [
+    {
+      "role": "cover",
+      "content": {
+        "role": "cover",
+        "title": "Результаты B2B-продуктов",
+        "audience": "Руководители бизнеса",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ]
+      }
+    },
+    {
+      "role": "summary",
+      "merge_source_ids": [
+        "decision",
+        "kpi"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "summary",
+          "page_id": "decision",
+          "answer": "Изменение выручки к периоду 2026-01 – 2026-03: 26,36 %; Изменение общей маржи: 1,02 п.п.",
+          "interpretation": "Причины изменения показателей не установлены.",
+          "next_step": "Разделить обсуждение расширения продаж и проверки партнёрской экономики.",
+          "fact_ids": [
+            "qoq_net_growth",
+            "qoq_margin_change"
+          ],
+          "action_ref": "partners",
+          "context_refs": [
+            "business-context.txt#2"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": {
+            "role": "cover",
+            "title": "Результаты B2B-продуктов",
+            "audience": "Руководители бизнеса",
+            "period": [
+              "2026-04",
+              "2026-06"
+            ]
+          }
+        },
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "kpi",
+          "answer": "Чистая выручка: 94 823 698,00 ₽; Валовая прибыль: 31 570 684,00 ₽; Валовая маржа: 33,29 %",
+          "interpretation": "Маржа — отношение сумм, а не среднее строковых процентов.",
+          "next_step": "Согласовать единые определения выручки и валовой прибыли для решения.",
+          "fact_ids": [
+            "q3_net",
+            "q3_profit",
+            "q3_margin"
+          ],
+          "action_ref": "partners",
+          "context_refs": [
+            "business-context.txt#6"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "evidence",
+      "merge_source_ids": [
+        "trend"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "trend",
+          "answer": "Изменение выручки к периоду 2026-01 – 2026-03: 26,36 %; Изменение выручки к периоду 2025-04 – 2025-06: 15,89 %",
+          "interpretation": "Сравниваются полные периоды 2026-04 – 2026-06 и 2026-01 – 2026-03; прошлые результаты не являются прогнозом.",
+          "next_step": "Проверить сезонные изменения перед обсуждением плана следующего квартала.",
+          "fact_ids": [
+            "qoq_net_growth",
+            "yoy_net_growth"
+          ],
+          "action_ref": "partners",
+          "context_refs": [
+            "business-context.txt#3"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "evidence",
+      "merge_source_ids": [
+        "plan"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "plan",
+          "answer": "Выполнение плана выручки: 87,02 %; Выполнение плана прибыли: 106,85 %",
+          "interpretation": "План за 2026-04 – 2026-06 посчитан один раз по месяцу, региону и продукту; плана по каналам нет.",
+          "next_step": "Разобрать предпосылки плана без изменения исторических целевых сумм.",
+          "fact_ids": [
+            "q3_net_plan_attainment",
+            "q3_profit_plan_attainment"
+          ],
+          "action_ref": "regions",
+          "context_refs": [
+            "business-context.txt#6"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "evidence",
+      "merge_source_ids": [
+        "products"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "products",
+          "answer": "Наибольший вклад продукта · Аналитика сделок: 8 086 827,00 ₽; Наименьший вклад продукта · Сервис сопровождения: 2 878 187,00 ₽",
+          "interpretation": "Вклад — абсолютная разница к периоду 2026-01 – 2026-03, а не темп роста.",
+          "next_step": "Сопоставить продуктовые приоритеты с очередью внедрения.",
+          "fact_ids": [
+            "best_product_contribution",
+            "worst_product_contribution"
+          ],
+          "action_ref": "implementation",
+          "context_refs": [
+            "business-context.txt#1"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "evidence",
+      "merge_source_ids": [
+        "regions"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "regions",
+          "answer": "Наименьшее отклонение региона от плана · Южный и Северо-Кавказский федеральные округа: -6 967 022,00 ₽",
+          "interpretation": "Показано абсолютное отклонение от плана, а не вклад региона в квартальный рост.",
+          "next_step": "Проверить предпосылки региона с наименьшим отклонением факта от плана; знак показывает недовыполнение или превышение.",
+          "fact_ids": [
+            "worst_region_plan_gap"
+          ],
+          "action_ref": "regions",
+          "context_refs": [
+            "business-context.txt#3"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "evidence",
+      "merge_source_ids": [
+        "channels"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "channels",
+          "answer": "Рост выручки партнёров: 29,71 %; Изменение маржи партнёров: 2,45 п.п.",
+          "interpretation": "Сопоставлены выручка и маржа канала за выбранные периоды. Причины изменения требуют отдельной проверки.",
+          "next_step": "Сверить скидки, возвраты и себестоимость партнёрского канала.",
+          "fact_ids": [
+            "partners_net_growth",
+            "partners_margin_change"
+          ],
+          "action_ref": "partners",
+          "context_refs": [
+            "business-context.txt#3"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "evidence",
+      "merge_source_ids": [
+        "concentration"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "concentration",
+          "answer": "Доля ведущего продукта · Аналитика сделок: 32,44 %",
+          "interpretation": "Доля рассчитана по net-выручке; концентрация не доказывает риск оттока.",
+          "next_step": "Обсудить зависимость от ведущего продукта без неподтверждённого вывода об оттоке.",
+          "fact_ids": [
+            "top_product_revenue_share"
+          ],
+          "action_ref": "partners",
+          "context_refs": [
+            "business-context.txt#5"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "evidence",
+      "merge_source_ids": [
+        "returns"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "evidence",
+          "page_id": "returns",
+          "answer": "Доля возвратов от gross-выручки: 2,48 %",
+          "interpretation": "Знаменатель — выручка до скидок и возвратов, не net.",
+          "next_step": "Согласовать определение доли возвратов и проверить правила корректировок затрат.",
+          "fact_ids": [
+            "q3_refund_share"
+          ],
+          "action_ref": "partners",
+          "context_refs": [
+            "business-context.txt#6"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "action",
+      "merge_source_ids": [
+        "priorities"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "action",
+          "page_id": "priorities",
+          "answer": "Валовая прибыль: 31 570 684,00 ₽; Наибольший вклад продукта · Аналитика сделок: 8 086 827,00 ₽",
+          "interpretation": "Приоритеты — предложение; эффект инвестиций не рассчитан.",
+          "next_step": "Назначить владельцев предложенных направлений и подтвердить бюджетные потолки.",
+          "fact_ids": [
+            "q3_profit",
+            "best_product_contribution"
+          ],
+          "action_ref": "implementation",
+          "context_refs": [
+            "business-context.txt#7"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "risk",
+      "merge_source_ids": [
+        "risks"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "risk",
+          "page_id": "risks",
+          "answer": "Изменение маржи партнёров: 2,45 п.п.; Наименьшее отклонение региона от плана · Южный и Северо-Кавказский федеральные округа: -6 967 022,00 ₽",
+          "interpretation": "Нет данных для CAC, удержания и причинной оценки рекламы. Параллельных внедрений — не более 1; инженеров — 3, аналитиков — 2.",
+          "next_step": "Проверить инженерную мощность и перечислить недостающие данные для CAC.",
+          "fact_ids": [
+            "partners_margin_change",
+            "worst_region_plan_gap"
+          ],
+          "action_ref": "partners",
+          "context_refs": [
+            "business-context.txt#7"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    },
+    {
+      "role": "action",
+      "merge_source_ids": [
+        "actions"
+      ],
+      "blocks": [
+        {
+          "version": "business-blocks-1",
+          "role": "action",
+          "page_id": "actions",
+          "answer": "Валовая маржа: 33,29 %; Выполнение плана выручки: 87,02 %",
+          "interpretation": "Лимит 3 000 000 ₽; предлагаемые потолки: партнёрская экономика — 600 000 ₽, внедрение — 900 000 ₽, регионы — 500 000 ₽; резерв — 1 000 000 ₽. Это не прогноз эффекта.",
+          "next_step": "Зафиксировать контрольные точки 30, 60 и 90 дней и порядок сверки результата.",
+          "fact_ids": [
+            "q3_margin",
+            "q3_net_plan_attainment"
+          ],
+          "action_ref": "implementation",
+          "context_refs": [
+            "business-context.txt#4"
+          ],
+          "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+          "cover": null
+        }
+      ]
+    }
+  ],
+  "preserve_all_fact_ids": true,
+  "preserve_context_refs": true,
+  "preserve_actions_owners_limits_and_caveats": true,
+  "current_PR_93": "Separate cover plus twelve protected pages yields thirteen total; agree count before final recording"
+}

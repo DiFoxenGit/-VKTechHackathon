@@ -1,0 +1,1210 @@
+{
+  "status": "passed",
+  "environment": "158.160.225.35: isolated branch process, production credentials",
+  "branch": "fix/dima-editorial-image-evidence",
+  "base_commit": "c54fde6ebb1ff62aab62a5c264bc289207846898",
+  "requirements_commit": "45c6ba73a67d1b25a7b5d5cef7ef57bf2475bf98",
+  "started_utc": "2026-10-20T15:07:26.122058+00:00",
+  "runs": [
+    {
+      "label": "baseline",
+      "input_sha256": "981d2fe5f85c8c0900cb8233b673f53c0e771196ca44db4c702885504a89705d",
+      "seconds": 6.414,
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": true,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 1,
+        "duration_seconds": 6.395,
+        "validation": "passed",
+        "fallback_used": false,
+        "status": "completed",
+        "error_code": null,
+        "response_id": "chatcmpl-e56d59db-dec0-48a0-9357-cd8f1cb3e216",
+        "response_sha256": "82783d6668dab76e045f356fb8ddd9e7712734eccbf3d0743a720c9950b688fe",
+        "usage": {
+          "prompt_tokens": 4181,
+          "completion_tokens": 554,
+          "total_tokens": 4735
+        },
+        "content_reused_for_variants": 0,
+        "primary_skipped_calls": null,
+        "content_batch_id": null,
+        "content_source_job_id": null,
+        "shared_from_job_id": null,
+        "content_input_sha256": null,
+        "content_revalidated": null,
+        "model_attempt": 1,
+        "model_max_attempts": 3,
+        "retry_reason": null,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 200,
+            "duration_seconds": 6.395,
+            "validation": "passed",
+            "response_id": "chatcmpl-e56d59db-dec0-48a0-9357-cd8f1cb3e216",
+            "response_sha256": "82783d6668dab76e045f356fb8ddd9e7712734eccbf3d0743a720c9950b688fe",
+            "usage": {
+              "prompt_tokens": 4181,
+              "completion_tokens": 554,
+              "total_tokens": 4735
+            },
+            "error_code": null,
+            "provider": null,
+            "validation_error": null
+          }
+        ]
+      },
+      "independent_controls": 15,
+      "verified_facts": [
+        {
+          "id": "q3_net",
+          "exact": "93563698",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit",
+          "exact": "30580684",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_margin",
+          "exact": "32.684347298885086820745370709909306919442196480947",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_net_growth",
+          "exact": "24.680117390832386520591834563965581439057112297139",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "yoy_net_growth",
+          "exact": "14.347210233274854713837923293286545386257150038741",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_net_plan_attainment",
+          "exact": "85.863502066433295294625621570379180300262600149861",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit_plan_attainment",
+          "exact": "103.50221947726726812814533688085065955466407698037",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "best_product_contribution",
+          "exact": "6826827",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_product_contribution",
+          "exact": "2878187",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_region_plan_gap",
+          "exact": "-7177022",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 36
+        },
+        {
+          "id": "top_product_revenue_share",
+          "exact": "31.528848934551518047095573328023011659928191380379",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "partners_net_growth",
+          "exact": "24.448783424714957805237728614111237852200590876980",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "partners_margin_change",
+          "exact": "0.422029260714997056410615544979842081044256953909",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "q3_refund_share",
+          "exact": "2.5087081298770551655580437880210997341640064334143",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_margin_change",
+          "exact": "0.413543032776208814565500337459634799466392742402",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        }
+      ],
+      "facts_preserved": true,
+      "twelve_pages": 12,
+      "titles": [
+        "Какие решения требуют проверки экономики?",
+        "Каковы результаты выбранного периода?",
+        "Как менялась выручка за выбранные периоды?",
+        "Насколько факт соответствует утверждённому плану?",
+        "Как различается вклад продуктов в изменение выручки?",
+        "В каком регионе проверить предпосылки плана?",
+        "Как соотносятся выручка и маржа партнёрского канала?",
+        "Как распределена чистая выручка между продуктами?",
+        "Какую долю выручки до корректировок составляют возвраты?",
+        "Какие направления требуют согласования?",
+        "Перед расширением проверить экономику и доступные ресурсы",
+        "Согласовать владельцев, сроки и критерии действий"
+      ]
+    },
+    {
+      "label": "B-1",
+      "input_sha256": "7638892358ec8d3121c950947b1f4348d3996075888e505a34dd899c3244ef41",
+      "seconds": 12.153,
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": true,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 1,
+        "duration_seconds": 12.133,
+        "validation": "passed",
+        "fallback_used": false,
+        "status": "completed",
+        "error_code": null,
+        "response_id": "chatcmpl-de64cf77-f8f0-4dde-ad1a-68d998da2224",
+        "response_sha256": "670d26b68020a4db5f519faac2da0d3f60f9a0dd345c71fee5aec00836f31147",
+        "usage": {
+          "prompt_tokens": 4184,
+          "completion_tokens": 548,
+          "total_tokens": 4732
+        },
+        "content_reused_for_variants": 0,
+        "primary_skipped_calls": null,
+        "content_batch_id": null,
+        "content_source_job_id": null,
+        "shared_from_job_id": null,
+        "content_input_sha256": null,
+        "content_revalidated": null,
+        "model_attempt": 1,
+        "model_max_attempts": 3,
+        "retry_reason": null,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 200,
+            "duration_seconds": 12.133,
+            "validation": "passed",
+            "response_id": "chatcmpl-de64cf77-f8f0-4dde-ad1a-68d998da2224",
+            "response_sha256": "670d26b68020a4db5f519faac2da0d3f60f9a0dd345c71fee5aec00836f31147",
+            "usage": {
+              "prompt_tokens": 4184,
+              "completion_tokens": 548,
+              "total_tokens": 4732
+            },
+            "error_code": null,
+            "provider": null,
+            "validation_error": null
+          }
+        ]
+      },
+      "independent_controls": 15,
+      "verified_facts": [
+        {
+          "id": "q3_net",
+          "exact": "94823698",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit",
+          "exact": "31570684",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_margin",
+          "exact": "33.294086463491436497235110995143851065584892080459",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_net_growth",
+          "exact": "26.359154787499294737664931776846122272460383312511",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "yoy_net_growth",
+          "exact": "15.887096834314569037008815740799052290234844561341",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_net_plan_attainment",
+          "exact": "87.019805364788453852715408521496458362298272106615",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit_plan_attainment",
+          "exact": "106.85293580795805959137303589216257635021768317867",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "best_product_contribution",
+          "exact": "8086827",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_product_contribution",
+          "exact": "2878187",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_region_plan_gap",
+          "exact": "-6967022",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 36
+        },
+        {
+          "id": "top_product_revenue_share",
+          "exact": "32.438681098473927899331662850778082921845127786516",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "partners_net_growth",
+          "exact": "29.709559247191330241444558938225131143625860303856",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "partners_margin_change",
+          "exact": "2.448755388286036720434532399622199933846366396361",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "q3_refund_share",
+          "exact": "2.4778445297274099188709802602745080153942076471456",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_margin_change",
+          "exact": "1.023282197382558491055240622694178945609088341914",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        }
+      ],
+      "facts_preserved": true,
+      "twelve_pages": 12,
+      "titles": [
+        "Какие решения требуют проверки экономики?",
+        "Каковы результаты выбранного периода?",
+        "Как менялась выручка за выбранные периоды?",
+        "Насколько факт соответствует утверждённому плану?",
+        "Как различается вклад продуктов в изменение выручки?",
+        "В каком регионе проверить предпосылки плана?",
+        "Как соотносятся выручка и маржа партнёрского канала?",
+        "Как распределена чистая выручка между продуктами?",
+        "Какую долю выручки до корректировок составляют возвраты?",
+        "Какие направления требуют согласования?",
+        "Причины изменения маржи требуют проверки",
+        "Сначала проверить экономику и доступные ресурсы"
+      ],
+      "content_sha256": "005f2decf92b167b493299447dbdd5fe29dd7bc26492987dd08896b7199fd489"
+    },
+    {
+      "label": "B-2",
+      "input_sha256": "7638892358ec8d3121c950947b1f4348d3996075888e505a34dd899c3244ef41",
+      "seconds": 9.977,
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": true,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 1,
+        "duration_seconds": 9.933,
+        "validation": "passed",
+        "fallback_used": false,
+        "status": "completed",
+        "error_code": null,
+        "response_id": "chatcmpl-af50c093-93c2-40d1-9d5c-8a67cf449345",
+        "response_sha256": "670d26b68020a4db5f519faac2da0d3f60f9a0dd345c71fee5aec00836f31147",
+        "usage": {
+          "prompt_tokens": 4184,
+          "completion_tokens": 548,
+          "total_tokens": 4732
+        },
+        "content_reused_for_variants": 0,
+        "primary_skipped_calls": null,
+        "content_batch_id": null,
+        "content_source_job_id": null,
+        "shared_from_job_id": null,
+        "content_input_sha256": null,
+        "content_revalidated": null,
+        "model_attempt": 1,
+        "model_max_attempts": 3,
+        "retry_reason": null,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 200,
+            "duration_seconds": 9.933,
+            "validation": "passed",
+            "response_id": "chatcmpl-af50c093-93c2-40d1-9d5c-8a67cf449345",
+            "response_sha256": "670d26b68020a4db5f519faac2da0d3f60f9a0dd345c71fee5aec00836f31147",
+            "usage": {
+              "prompt_tokens": 4184,
+              "completion_tokens": 548,
+              "total_tokens": 4732
+            },
+            "error_code": null,
+            "provider": null,
+            "validation_error": null
+          }
+        ]
+      },
+      "independent_controls": 15,
+      "verified_facts": [
+        {
+          "id": "q3_net",
+          "exact": "94823698",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit",
+          "exact": "31570684",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_margin",
+          "exact": "33.294086463491436497235110995143851065584892080459",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_net_growth",
+          "exact": "26.359154787499294737664931776846122272460383312511",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "yoy_net_growth",
+          "exact": "15.887096834314569037008815740799052290234844561341",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_net_plan_attainment",
+          "exact": "87.019805364788453852715408521496458362298272106615",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit_plan_attainment",
+          "exact": "106.85293580795805959137303589216257635021768317867",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "best_product_contribution",
+          "exact": "8086827",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_product_contribution",
+          "exact": "2878187",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_region_plan_gap",
+          "exact": "-6967022",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 36
+        },
+        {
+          "id": "top_product_revenue_share",
+          "exact": "32.438681098473927899331662850778082921845127786516",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "partners_net_growth",
+          "exact": "29.709559247191330241444558938225131143625860303856",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "partners_margin_change",
+          "exact": "2.448755388286036720434532399622199933846366396361",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "q3_refund_share",
+          "exact": "2.4778445297274099188709802602745080153942076471456",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_margin_change",
+          "exact": "1.023282197382558491055240622694178945609088341914",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        }
+      ],
+      "facts_preserved": true,
+      "twelve_pages": 12,
+      "titles": [
+        "Какие решения требуют проверки экономики?",
+        "Каковы результаты выбранного периода?",
+        "Как менялась выручка за выбранные периоды?",
+        "Насколько факт соответствует утверждённому плану?",
+        "Как различается вклад продуктов в изменение выручки?",
+        "В каком регионе проверить предпосылки плана?",
+        "Как соотносятся выручка и маржа партнёрского канала?",
+        "Как распределена чистая выручка между продуктами?",
+        "Какую долю выручки до корректировок составляют возвраты?",
+        "Какие направления требуют согласования?",
+        "Причины изменения маржи требуют проверки",
+        "Сначала проверить экономику и доступные ресурсы"
+      ],
+      "content_sha256": "005f2decf92b167b493299447dbdd5fe29dd7bc26492987dd08896b7199fd489"
+    },
+    {
+      "label": "B-3",
+      "input_sha256": "7638892358ec8d3121c950947b1f4348d3996075888e505a34dd899c3244ef41",
+      "seconds": 6.006,
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": true,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 1,
+        "duration_seconds": 5.987,
+        "validation": "passed",
+        "fallback_used": false,
+        "status": "completed",
+        "error_code": null,
+        "response_id": "chatcmpl-11eda58e-d4fd-4125-8913-74d23115ad27",
+        "response_sha256": "670d26b68020a4db5f519faac2da0d3f60f9a0dd345c71fee5aec00836f31147",
+        "usage": {
+          "prompt_tokens": 4184,
+          "completion_tokens": 548,
+          "total_tokens": 4732
+        },
+        "content_reused_for_variants": 0,
+        "primary_skipped_calls": null,
+        "content_batch_id": null,
+        "content_source_job_id": null,
+        "shared_from_job_id": null,
+        "content_input_sha256": null,
+        "content_revalidated": null,
+        "model_attempt": 1,
+        "model_max_attempts": 3,
+        "retry_reason": null,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 200,
+            "duration_seconds": 5.987,
+            "validation": "passed",
+            "response_id": "chatcmpl-11eda58e-d4fd-4125-8913-74d23115ad27",
+            "response_sha256": "670d26b68020a4db5f519faac2da0d3f60f9a0dd345c71fee5aec00836f31147",
+            "usage": {
+              "prompt_tokens": 4184,
+              "completion_tokens": 548,
+              "total_tokens": 4732
+            },
+            "error_code": null,
+            "provider": null,
+            "validation_error": null
+          }
+        ]
+      },
+      "independent_controls": 15,
+      "verified_facts": [
+        {
+          "id": "q3_net",
+          "exact": "94823698",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit",
+          "exact": "31570684",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_margin",
+          "exact": "33.294086463491436497235110995143851065584892080459",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_net_growth",
+          "exact": "26.359154787499294737664931776846122272460383312511",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "yoy_net_growth",
+          "exact": "15.887096834314569037008815740799052290234844561341",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_net_plan_attainment",
+          "exact": "87.019805364788453852715408521496458362298272106615",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit_plan_attainment",
+          "exact": "106.85293580795805959137303589216257635021768317867",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "best_product_contribution",
+          "exact": "8086827",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_product_contribution",
+          "exact": "2878187",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_region_plan_gap",
+          "exact": "-6967022",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 36
+        },
+        {
+          "id": "top_product_revenue_share",
+          "exact": "32.438681098473927899331662850778082921845127786516",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "partners_net_growth",
+          "exact": "29.709559247191330241444558938225131143625860303856",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "partners_margin_change",
+          "exact": "2.448755388286036720434532399622199933846366396361",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "q3_refund_share",
+          "exact": "2.4778445297274099188709802602745080153942076471456",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_margin_change",
+          "exact": "1.023282197382558491055240622694178945609088341914",
+          "unit": "pp",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        }
+      ],
+      "facts_preserved": true,
+      "twelve_pages": 12,
+      "titles": [
+        "Какие решения требуют проверки экономики?",
+        "Каковы результаты выбранного периода?",
+        "Как менялась выручка за выбранные периоды?",
+        "Насколько факт соответствует утверждённому плану?",
+        "Как различается вклад продуктов в изменение выручки?",
+        "В каком регионе проверить предпосылки плана?",
+        "Как соотносятся выручка и маржа партнёрского канала?",
+        "Как распределена чистая выручка между продуктами?",
+        "Какую долю выручки до корректировок составляют возвраты?",
+        "Какие направления требуют согласования?",
+        "Причины изменения маржи требуют проверки",
+        "Сначала проверить экономику и доступные ресурсы"
+      ],
+      "content_sha256": "005f2decf92b167b493299447dbdd5fe29dd7bc26492987dd08896b7199fd489"
+    },
+    {
+      "label": "alternate",
+      "input_sha256": "e8b3c03ac49ce2333b9365fafa7efa4bd5db734fee65e2f149279822f8a4490d",
+      "seconds": 6.302,
+      "inference": {
+        "requested": true,
+        "attempted": true,
+        "completed": true,
+        "provider": "vk",
+        "model": "qwen38-27b-fp8",
+        "attempts": 1,
+        "successful_calls": 1,
+        "duration_seconds": 6.283,
+        "validation": "passed",
+        "fallback_used": false,
+        "status": "completed",
+        "error_code": null,
+        "response_id": "chatcmpl-e63182fe-a0bf-4a07-841c-684c89ff753c",
+        "response_sha256": "ea71d3860780f15c20b53a5387e7ef97bb2574d43216bb0aca4a90985bd1f094",
+        "usage": {
+          "prompt_tokens": 4182,
+          "completion_tokens": 548,
+          "total_tokens": 4730
+        },
+        "content_reused_for_variants": 0,
+        "primary_skipped_calls": null,
+        "content_batch_id": null,
+        "content_source_job_id": null,
+        "shared_from_job_id": null,
+        "content_input_sha256": null,
+        "content_revalidated": null,
+        "model_attempt": 1,
+        "model_max_attempts": 3,
+        "retry_reason": null,
+        "calls": [
+          {
+            "attempt": 1,
+            "status_code": 200,
+            "duration_seconds": 6.283,
+            "validation": "passed",
+            "response_id": "chatcmpl-e63182fe-a0bf-4a07-841c-684c89ff753c",
+            "response_sha256": "ea71d3860780f15c20b53a5387e7ef97bb2574d43216bb0aca4a90985bd1f094",
+            "usage": {
+              "prompt_tokens": 4182,
+              "completion_tokens": 548,
+              "total_tokens": 4730
+            },
+            "error_code": null,
+            "provider": null,
+            "validation_error": null
+          }
+        ]
+      },
+      "independent_controls": 15,
+      "verified_facts": [
+        {
+          "id": "q3_net",
+          "exact": "116241720",
+          "unit": "RUB",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit",
+          "exact": "31763784",
+          "unit": "RUB",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_margin",
+          "exact": "27.325631451427250044132175607862650346192399768345",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_net_growth",
+          "exact": "24.238056516321105649329935633796774471227077835252",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "yoy_net_growth",
+          "exact": "30.481122262931241080488935972949230012252516927217",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_net_plan_attainment",
+          "exact": "101.37258047620198770340189276481529097284946886403",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "q3_profit_plan_attainment",
+          "exact": "102.16260445010517377795789189293502383295702348559",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "best_product_contribution",
+          "exact": "8702482",
+          "unit": "RUB",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_product_contribution",
+          "exact": "3117084",
+          "unit": "RUB",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "worst_region_plan_gap",
+          "exact": "-4210700",
+          "unit": "RUB",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 36
+        },
+        {
+          "id": "top_product_revenue_share",
+          "exact": "32.864309819228414720635585915280675475208040624313",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 54
+        },
+        {
+          "id": "partners_net_growth",
+          "exact": "57.744499535655426366485007361977639194419450852530",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "partners_margin_change",
+          "exact": "-12.594597066761973737559943932930360144094307643166",
+          "unit": "pp",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 72
+        },
+        {
+          "id": "q3_refund_share",
+          "exact": "2.4852652185479372493051303760718331551585910845941",
+          "unit": "%",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "qoq_margin_change",
+          "exact": "-5.358715847457836776613195102046656573249796712602",
+          "unit": "pp",
+          "period": [
+            "2026-07",
+            "2026-09"
+          ],
+          "source_rows": 216
+        }
+      ],
+      "facts_preserved": true,
+      "twelve_pages": 12,
+      "titles": [
+        "Какие решения требуют проверки экономики?",
+        "Каковы результаты выбранного периода?",
+        "Как менялась выручка за выбранные периоды?",
+        "Насколько факт соответствует утверждённому плану?",
+        "Как различается вклад продуктов в изменение выручки?",
+        "В каком регионе проверить предпосылки плана?",
+        "Как соотносятся выручка и маржа партнёрского канала?",
+        "Как распределена чистая выручка между продуктами?",
+        "Какую долю выручки до корректировок составляют возвраты?",
+        "Какие направления требуют согласования?",
+        "Перед расширением проверить экономику и доступные ресурсы",
+        "Согласовать владельцев, сроки и критерии действий"
+      ],
+      "content_sha256": "3e29cbaeb9f6ae511b0bdd873d38ff16d00f06d1d5a98bb09244274b57b2036f"
+    }
+  ],
+  "audit": {
+    "inference": {
+      "requested": true,
+      "attempted": true,
+      "completed": true,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "attempts": 1,
+      "successful_calls": 1,
+      "duration_seconds": 2.097,
+      "validation": "passed",
+      "fallback_used": false,
+      "status": "completed",
+      "error_code": null,
+      "response_id": "chatcmpl-7f09bfc5-7739-4f5c-8ac0-907f5191c8bb",
+      "response_sha256": "86e0aca4143ae8e780f2dd11c9a7f4b462363e956515830f8bddb898e88fd60f",
+      "usage": {
+        "prompt_tokens": 704,
+        "completion_tokens": 184,
+        "total_tokens": 888
+      },
+      "content_reused_for_variants": 0,
+      "primary_skipped_calls": null,
+      "content_batch_id": null,
+      "content_source_job_id": null,
+      "shared_from_job_id": null,
+      "content_input_sha256": null,
+      "content_revalidated": null,
+      "model_attempt": 1,
+      "model_max_attempts": 3,
+      "retry_reason": null,
+      "calls": [
+        {
+          "attempt": 1,
+          "status_code": 200,
+          "duration_seconds": 2.097,
+          "validation": "passed",
+          "response_id": "chatcmpl-7f09bfc5-7739-4f5c-8ac0-907f5191c8bb",
+          "response_sha256": "86e0aca4143ae8e780f2dd11c9a7f4b462363e956515830f8bddb898e88fd60f",
+          "usage": {
+            "prompt_tokens": 704,
+            "completion_tokens": 184,
+            "total_tokens": 888
+          },
+          "error_code": null,
+          "provider": null,
+          "validation_error": null
+        }
+      ]
+    },
+    "findings": [
+      {
+        "id": "facaea3cf79645727477",
+        "slide_index": 0,
+        "element_id": "context_0",
+        "code": "unsupported_fact",
+        "message": "Утверждение в заголовке «Реклама доказанно увеличила выручку вдвое» не подтверждается источником, который прямо указывает: «Причинный эффект рекламы не оценивался. Удвоение выручки не доказано».",
+        "box": null,
+        "fixable": false,
+        "category": "contextual",
+        "severity": "error"
+      },
+      {
+        "id": "c818fc0c5cb4fdfb65a2",
+        "slide_index": 0,
+        "element_id": "context_1",
+        "code": "title_mismatch",
+        "message": "Заголовок утверждает о доказанном удвоении выручки, тогда как текст слайда и источник говорят лишь о текущих цифрах выручки и прибыли, а также о необходимости проверки причин изменения маржи.",
+        "box": null,
+        "fixable": false,
+        "category": "contextual",
+        "severity": "error"
+      }
+    ],
+    "mode": "contextual_text",
+    "original_preserved": true
+  },
+  "scope": "Semantics and numeric oracle; not template/UI/recording acceptance",
+  "harness_note": "Initial harness incorrectly required provider on every call; transport stores VK at envelope level. Baseline was validated without another network call. Remaining scenarios ran once each.",
+  "final_delta": "After live checks, duplicate-title feedback was clarified and duplicate decision narrative was shortened; post-deploy check is recorded separately.",
+  "new_images_generated": 0
+}
