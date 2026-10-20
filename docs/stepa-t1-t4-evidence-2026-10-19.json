@@ -1,0 +1,3152 @@
+{
+  "generated_at_utc": "2026-10-19T19:30:58.445061+00:00",
+  "implementation_commit": "819e7bfb8bfa6945d5c35a88016ce7efc048ade5",
+  "prerequisite_pr": 77,
+  "live_acceptance_passed": false,
+  "task_status": {
+    "T1": "implemented; three timely live S8.1 passes blocked by provider",
+    "T2": "implemented; old saved answer and both late live answers validated offline",
+    "T3": "seven-type/B/alternate deterministic exports passed; live B/alternate and stable repeats pending",
+    "T4": "implemented and verified with controlled browser responses"
+  },
+  "verification": {
+    "backend_passed": 707,
+    "backend_skipped": 13,
+    "frontend_check": "passed",
+    "frontend_build": "passed",
+    "controlled_batch_http_test": "one paid transport call for nine decks; next batch performs a fresh call; mismatched inputs rejected",
+    "controlled_cancellation_test": "cancelled source releases followers; no stranded Future",
+    "browser_sizes": [
+      [
+        1440,
+        900
+      ],
+      [
+        1920,
+        1080
+      ]
+    ],
+    "browser_retry_preserves_revision": 2,
+    "pdf_visual_samples_reviewed": 4,
+    "all_slides_visually_reviewed": false
+  },
+  "offline_editorial_audit": {
+    "old_prompt_characters": 42825,
+    "new_prompt_characters": 13484,
+    "character_reduction_percent": 68.51,
+    "saved_responses": [
+      {
+        "sha256": "206276a9831c6064715397329b1d58db6ea8db7d23ef4a569663ca5a3bda6f28",
+        "validation": "passed"
+      }
+    ],
+    "false_positive_examples": [
+      {
+        "word": "первоочередной",
+        "before": true,
+        "after": false
+      },
+      {
+        "word": "первоначальный",
+        "before": true,
+        "after": false
+      },
+      {
+        "word": "первопричина",
+        "before": true,
+        "after": false
+      },
+      {
+        "word": "третейский",
+        "before": true,
+        "after": false
+      }
+    ]
+  },
+  "provider_reconciliation": {
+    "tasks": [
+      {
+        "status": "success",
+        "cost": 0.5758,
+        "runtime": 452.4,
+        "timestamp": 1792436724,
+        "response_id": "genapi:56078547",
+        "used_in_timed_generation": false,
+        "max_tokens": 7000,
+        "model": "gemma-4-31b",
+        "finish_reason": "stop",
+        "response_sha256": "11a01af26483d20ba0e901e2afeb93a6d0b40a16053d50db428bf2a15a3fe160",
+        "usage": {
+          "prompt_tokens": 4408,
+          "completion_tokens": 4795,
+          "total_tokens": 9203
+        },
+        "response_characters": 3849,
+        "late_offline_validation": "passed"
+      },
+      {
+        "status": "success",
+        "cost": 0.5641,
+        "runtime": 450.82,
+        "timestamp": 1792437101,
+        "response_id": "genapi:56078952",
+        "used_in_timed_generation": false,
+        "max_tokens": 7000,
+        "model": "gemma-4-31b",
+        "finish_reason": "stop",
+        "response_sha256": "0a9f4ec41f07b08fcf9500f5f9dc726d7fdcb5f0ad3ce9d182912f4fb6f58932",
+        "usage": {
+          "prompt_tokens": 3968,
+          "completion_tokens": 4811,
+          "total_tokens": 8779
+        },
+        "response_characters": 1664,
+        "late_offline_validation": "passed"
+      },
+      {
+        "status": "success",
+        "cost": 0.6377,
+        "runtime": 91.12,
+        "timestamp": 1792437697,
+        "response_id": "genapi:56079620",
+        "used_in_timed_generation": false,
+        "max_tokens": 7000,
+        "model": "gemma-4-26b",
+        "finish_reason": "length",
+        "late_offline_validation": "rejected_truncated",
+        "usage": {
+          "prompt_tokens": 4016,
+          "completion_tokens": 7000,
+          "total_tokens": 11016
+        }
+      },
+      {
+        "status": "success",
+        "cost": 1.2152,
+        "runtime": 120.48,
+        "timestamp": 1792437882,
+        "response_id": "genapi:56079807",
+        "used_in_timed_generation": false,
+        "max_tokens": 14000,
+        "model": "gemma-4-26b",
+        "finish_reason": "length",
+        "late_offline_validation": "rejected_truncated",
+        "usage": {
+          "prompt_tokens": 4016,
+          "completion_tokens": 14000,
+          "total_tokens": 18016
+        }
+      },
+      {
+        "status": "success",
+        "cost": 1.2152,
+        "runtime": 172.29,
+        "timestamp": 1792438004,
+        "response_id": "genapi:56079917",
+        "used_in_timed_generation": false,
+        "max_tokens": 14000,
+        "model": "gemma-4-26b",
+        "finish_reason": "length",
+        "late_offline_validation": "rejected_truncated",
+        "usage": {
+          "prompt_tokens": 4016,
+          "completion_tokens": 14000,
+          "total_tokens": 18016
+        }
+      }
+    ],
+    "paid_submissions": 5,
+    "timed_live_acceptance_passed": false,
+    "balance_after_rub": 60.79,
+    "settled_task_cost_rub": 4.208
+  },
+  "reports": [
+    {
+      "scenario": "business",
+      "label": "baseline-1",
+      "commit": "40e2fe29ff4b10c3cb3403f9c24353e66809110d",
+      "branch": "codex/stepa-shared-editorial",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "824cb19277cb46e415077cfd9ce2b7290655c2c1a21e7978edc71d27d19ce549",
+      "started_at_utc": "2026-10-19T19:05:21.593022+00:00",
+      "environment": "local HTTP service",
+      "service_url": "http://127.0.0.1:8041/api/v1",
+      "source_data_synthetic": true,
+      "live_acceptance_requested": true,
+      "model_content_generation": false,
+      "image_generation_requested": false,
+      "analysis_preflight_outside_clock": true,
+      "image_generation_included_in_ready_time": false,
+      "queue_model_retries_assembly_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "status": "failed",
+      "checks": [],
+      "jobs": [
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "template_sha256": "1b8883114486c69dff706e9c4fd9382727c4506c2cfa3ec34f86987f1e852f2f",
+          "job_id": "01e935aeee3945ba853500b8cf1ed2a8",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 228.631,
+          "presentation_ids": [
+            "4b95ffcb228a4aff8d2ac3b6f4498813",
+            "dd4a1a1ee6e24998be5ffabfbd234f23",
+            "19dc393d43824a7ebe4f594aa3e6e0b2"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 221.153,
+            "validation": "not_run",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "timeout",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "c1eb658d445e4e4b8f320fdc03cc4ece",
+            "content_source_job_id": "4f9c8949a21440a0be4700512a0e8c46",
+            "shared_from_job_id": "4f9c8949a21440a0be4700512a0e8c46",
+            "content_input_sha256": "551f70790dc88ca74b0345663a9dff1ec1cbe8dc479f20424948bd8cddb22935",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "template_sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+          "job_id": "4f9c8949a21440a0be4700512a0e8c46",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 230.281,
+          "presentation_ids": [
+            "6540f75286cb4604a02830be2246f1eb",
+            "45b3d4e861d242faa8054c9b8d9e0dc0",
+            "b8e21fa806a04ed98775b8989fcd2973"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": true,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 2,
+            "successful_calls": 0,
+            "duration_seconds": 221.43,
+            "validation": "failed",
+            "fallback_used": true,
+            "status": "fallback",
+            "error_code": "timeout",
+            "response_id": "genapi:56078547",
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "c1eb658d445e4e4b8f320fdc03cc4ece",
+            "content_source_job_id": "4f9c8949a21440a0be4700512a0e8c46",
+            "shared_from_job_id": null,
+            "content_input_sha256": "551f70790dc88ca74b0345663a9dff1ec1cbe8dc479f20424948bd8cddb22935",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": [
+              {
+                "attempt": 1,
+                "status_code": 500,
+                "duration_seconds": 1.362,
+                "validation": "failed",
+                "response_id": null,
+                "response_sha256": null,
+                "usage": null,
+                "error_code": "provider_error",
+                "provider": null,
+                "validation_error": null
+              },
+              {
+                "attempt": 2,
+                "status_code": null,
+                "duration_seconds": 220.025,
+                "validation": "failed",
+                "response_id": "genapi:56078547",
+                "response_sha256": null,
+                "usage": null,
+                "error_code": "timeout",
+                "provider": "genapi",
+                "validation_error": null
+              }
+            ]
+          },
+          "check_failure": "Model response was not validated"
+        },
+        {
+          "template": "VK Tech шаблон",
+          "template_sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+          "job_id": "9178c9ad2e504202ad730c3d45a1d674",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 235.585,
+          "presentation_ids": [
+            "1439326c84e94b0eb4b25ef146290d12",
+            "fec54faae5df43f8809b01f1449c005f",
+            "894aabf09c4c49f484b9e579f85d2c52"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.022,
+            "validation": "not_run",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "timeout",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "c1eb658d445e4e4b8f320fdc03cc4ece",
+            "content_source_job_id": "4f9c8949a21440a0be4700512a0e8c46",
+            "shared_from_job_id": "4f9c8949a21440a0be4700512a0e8c46",
+            "content_input_sha256": "551f70790dc88ca74b0345663a9dff1ec1cbe8dc479f20424948bd8cddb22935",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        }
+      ],
+      "runs": [],
+      "sources": [
+        {
+          "name": "sales.csv",
+          "sha256": "966ef7ece55e6f38801f130d912c3af5efdb6eb05fc64695821eb7a556ccc83c",
+          "pack_id": "2fc8d3ff114d429fa7917148e350d140"
+        },
+        {
+          "name": "plan.csv",
+          "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+          "pack_id": "5bd9dba7f97e4fd7ac9c115db5482266"
+        },
+        {
+          "name": "products.csv",
+          "sha256": "704a6e96179aa866769161fa531b91402625cb9054ff66fe26182e06c7de1ced",
+          "pack_id": "485fdc4ded034829b87f04a2ab6eabc3"
+        },
+        {
+          "name": "regions.csv",
+          "sha256": "d41a512323c57a75689ec7a6ee80cb7828f895483ae381c9d40394e7dd64cf97",
+          "pack_id": "192c157c025b4e91b0ddf0a57e0deeab"
+        },
+        {
+          "name": "context.txt",
+          "sha256": "014eff4a51645d70f4c8c5d2d6f32a31ab19c3c670c03d32160927b188b7fbde",
+          "pack_id": "f2becbb05be349c0b957ae14aa4dfb7a"
+        },
+        {
+          "name": "content-pack.zip",
+          "sha256": "c2f0eb21514dfcf177e94aa8f3bea92a103e4d3d603d1ba3cd9c681636df0904",
+          "pack_id": "a051af3c03df45429589bdd3432155fe"
+        }
+      ],
+      "version": "baseline",
+      "periods": {
+        "current": [
+          "2026-04",
+          "2026-06"
+        ],
+        "previous": [
+          "2026-01",
+          "2026-03"
+        ],
+        "year_ago": [
+          "2025-04",
+          "2025-06"
+        ],
+        "history": [
+          "2025-01",
+          "2026-06"
+        ],
+        "plan": [
+          "2026-01",
+          "2026-12"
+        ]
+      },
+      "batch_id": "c1eb658d445e4e4b8f320fdc03cc4ece",
+      "shared_generation_elapsed_seconds": 235.585,
+      "all_variants_ready_seconds": 235.585,
+      "within_five_minutes": true,
+      "actual_attempts": 2,
+      "validated_model_calls": 0,
+      "provider_response_ids": [],
+      "distinct_provider_response_ids": 0,
+      "distinct_response_content_hashes": 0,
+      "response_identity_complete": true,
+      "fallback_jobs": 3,
+      "first_attempt_passed": 0,
+      "independent_editorial_requests": 1,
+      "first_attempt_pass_rate": 0.0,
+      "all_nine_ready_seconds": 235.585,
+      "error_type": "EvidenceError",
+      "check_failure": "One or more jobs failed required generation/model evidence checks",
+      "balance_before_rub": 64.99,
+      "balance_after_rub": 64.99,
+      "account_balance_delta_rub": 0.0,
+      "balance_attribution": "Account delta may include delayed tasks from other intervals; exact task costs are reconciled separately",
+      "summary_recomputed_from_http_journals_with_final_checker": true
+    },
+    {
+      "scenario": "business",
+      "label": "baseline-compact-1",
+      "commit": "40e2fe29ff4b10c3cb3403f9c24353e66809110d",
+      "branch": "codex/stepa-shared-editorial",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "678ac722b37bdd0043431b9a6eb327929b9f5f4d48681c6748e1a7366fd2679f",
+      "started_at_utc": "2026-10-19T19:11:38.156252+00:00",
+      "environment": "local HTTP service",
+      "service_url": "http://127.0.0.1:8041/api/v1",
+      "source_data_synthetic": true,
+      "live_acceptance_requested": true,
+      "model_content_generation": false,
+      "image_generation_requested": false,
+      "analysis_preflight_outside_clock": true,
+      "image_generation_included_in_ready_time": false,
+      "queue_model_retries_assembly_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "status": "failed",
+      "checks": [],
+      "jobs": [
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "template_sha256": "1b8883114486c69dff706e9c4fd9382727c4506c2cfa3ec34f86987f1e852f2f",
+          "job_id": "8f6ba389cc3448f58bc0aea2c8402f34",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 228.789,
+          "presentation_ids": [
+            "4bbcd5f3e71242c3b960f907c0911c59",
+            "3dcab526efc74d939227178bc8a396da",
+            "b20c8f6054dc4184826bb8c5a8c8a668"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 221.433,
+            "validation": "not_run",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "timeout",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "d00aa1044c304c5a945fb8a1eb8bd783",
+            "content_source_job_id": "3f07f562c77f4844b1ecf2e3ffd2c4f4",
+            "shared_from_job_id": "3f07f562c77f4844b1ecf2e3ffd2c4f4",
+            "content_input_sha256": "0222336f4492296888cc76b6e74947b774959fe3f7fd43b2b1c094305340d9c5",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "template_sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+          "job_id": "3f07f562c77f4844b1ecf2e3ffd2c4f4",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 230.474,
+          "presentation_ids": [
+            "a3053494bcd44742816bf59fd933fbdd",
+            "ce0f39621e6b40f2817b1d523e208a86",
+            "ac93c799d230473e84338ddc2e907629"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": true,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 2,
+            "successful_calls": 0,
+            "duration_seconds": 221.702,
+            "validation": "failed",
+            "fallback_used": true,
+            "status": "fallback",
+            "error_code": "timeout",
+            "response_id": "genapi:56078952",
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "d00aa1044c304c5a945fb8a1eb8bd783",
+            "content_source_job_id": "3f07f562c77f4844b1ecf2e3ffd2c4f4",
+            "shared_from_job_id": null,
+            "content_input_sha256": "0222336f4492296888cc76b6e74947b774959fe3f7fd43b2b1c094305340d9c5",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": [
+              {
+                "attempt": 1,
+                "status_code": 500,
+                "duration_seconds": 1.633,
+                "validation": "failed",
+                "response_id": null,
+                "response_sha256": null,
+                "usage": null,
+                "error_code": "provider_error",
+                "provider": null,
+                "validation_error": null
+              },
+              {
+                "attempt": 2,
+                "status_code": null,
+                "duration_seconds": 220.028,
+                "validation": "failed",
+                "response_id": "genapi:56078952",
+                "response_sha256": null,
+                "usage": null,
+                "error_code": "timeout",
+                "provider": "genapi",
+                "validation_error": null
+              }
+            ]
+          },
+          "check_failure": "Model response was not validated"
+        },
+        {
+          "template": "VK Tech шаблон",
+          "template_sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+          "job_id": "dc1ea746fad2497c88b5d9b20891bab9",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 240.537,
+          "presentation_ids": [
+            "73f2b53ba1be4024a6c9c6d538e937a7",
+            "405acc54f7e140bca38b1d7e095410a4",
+            "4d173a68b4a54980ad923ac90ed40efc"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.022,
+            "validation": "not_run",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "timeout",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "d00aa1044c304c5a945fb8a1eb8bd783",
+            "content_source_job_id": "3f07f562c77f4844b1ecf2e3ffd2c4f4",
+            "shared_from_job_id": "3f07f562c77f4844b1ecf2e3ffd2c4f4",
+            "content_input_sha256": "0222336f4492296888cc76b6e74947b774959fe3f7fd43b2b1c094305340d9c5",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        }
+      ],
+      "runs": [],
+      "sources": [
+        {
+          "name": "sales.csv",
+          "sha256": "966ef7ece55e6f38801f130d912c3af5efdb6eb05fc64695821eb7a556ccc83c",
+          "pack_id": "78b5c323736943a2a26d2026bea14547"
+        },
+        {
+          "name": "plan.csv",
+          "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+          "pack_id": "434d53d9f82b482aa775d16d2edb5975"
+        },
+        {
+          "name": "products.csv",
+          "sha256": "704a6e96179aa866769161fa531b91402625cb9054ff66fe26182e06c7de1ced",
+          "pack_id": "f7edc3c7d8a24fcba6013aee42f4c96d"
+        },
+        {
+          "name": "regions.csv",
+          "sha256": "d41a512323c57a75689ec7a6ee80cb7828f895483ae381c9d40394e7dd64cf97",
+          "pack_id": "c09e5fb3d0f34eb1a763ace40cad695e"
+        },
+        {
+          "name": "context.txt",
+          "sha256": "014eff4a51645d70f4c8c5d2d6f32a31ab19c3c670c03d32160927b188b7fbde",
+          "pack_id": "5f9e58c94085475482f03b6498922d49"
+        },
+        {
+          "name": "content-pack.zip",
+          "sha256": "c2f0eb21514dfcf177e94aa8f3bea92a103e4d3d603d1ba3cd9c681636df0904",
+          "pack_id": "fedb8c7024b9419092599e2bec8ccb90"
+        }
+      ],
+      "version": "baseline",
+      "periods": {
+        "current": [
+          "2026-04",
+          "2026-06"
+        ],
+        "previous": [
+          "2026-01",
+          "2026-03"
+        ],
+        "year_ago": [
+          "2025-04",
+          "2025-06"
+        ],
+        "history": [
+          "2025-01",
+          "2026-06"
+        ],
+        "plan": [
+          "2026-01",
+          "2026-12"
+        ]
+      },
+      "batch_id": "d00aa1044c304c5a945fb8a1eb8bd783",
+      "shared_generation_elapsed_seconds": 240.538,
+      "all_variants_ready_seconds": 240.538,
+      "within_five_minutes": true,
+      "actual_attempts": 2,
+      "validated_model_calls": 0,
+      "provider_response_ids": [],
+      "distinct_provider_response_ids": 0,
+      "distinct_response_content_hashes": 0,
+      "response_identity_complete": true,
+      "fallback_jobs": 3,
+      "first_attempt_passed": 0,
+      "independent_editorial_requests": 1,
+      "first_attempt_pass_rate": 0.0,
+      "all_nine_ready_seconds": 240.538,
+      "error_type": "EvidenceError",
+      "check_failure": "One or more jobs failed required generation/model evidence checks",
+      "balance_before_rub": 64.99,
+      "balance_after_rub": 64.42,
+      "account_balance_delta_rub": 0.57,
+      "balance_attribution": "Account delta may include delayed tasks from other intervals; exact task costs are reconciled separately",
+      "summary_recomputed_from_http_journals_with_final_checker": true
+    },
+    {
+      "scenario": "business",
+      "label": "baseline-26b-1",
+      "commit": "6ae1234f3cb0c9af24b97301a2942ce567075f94",
+      "branch": "codex/stepa-shared-editorial",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "41b6eacd5372118bb2f5dda7200f8ccb50476c1db7310f4bc8a5bc1937cc61ec",
+      "started_at_utc": "2026-10-19T19:21:34.402379+00:00",
+      "environment": "local HTTP service",
+      "service_url": "http://127.0.0.1:8042/api/v1",
+      "source_data_synthetic": true,
+      "live_acceptance_requested": true,
+      "model_content_generation": false,
+      "image_generation_requested": false,
+      "analysis_preflight_outside_clock": true,
+      "image_generation_included_in_ready_time": false,
+      "queue_model_retries_assembly_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "status": "failed",
+      "checks": [],
+      "jobs": [
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "template_sha256": "1b8883114486c69dff706e9c4fd9382727c4506c2cfa3ec34f86987f1e852f2f",
+          "job_id": "4357ec5751d34e9b8ec806c2245dcf31",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 102.046,
+          "presentation_ids": [
+            "cd26e196f0d34b85b99846f23e58f64d",
+            "66d789fe618c4523833374325a7c5aa8",
+            "7348d4f2a5304f37887aa7270ad6d6c7"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-26b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 94.88,
+            "validation": "not_run",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "invalid_response",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "7f23c175e0104d929772501951f32927",
+            "content_source_job_id": "060fd7fba92144ad89562cd10585e1b6",
+            "shared_from_job_id": "060fd7fba92144ad89562cd10585e1b6",
+            "content_input_sha256": "18cb689e431fd7f34321b160008bdd27632d9a8808f21ec8e04bb97c94e7e828",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        },
+        {
+          "template": "VK Tech шаблон",
+          "template_sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+          "job_id": "060fd7fba92144ad89562cd10585e1b6",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 105.932,
+          "presentation_ids": [
+            "5bb879a0869c445daa93aa08be3b6a4e",
+            "bf04d24a9b224758922d18a6158d5df0",
+            "b9915ef849b945ad9bd329ba263022f4"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": true,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-26b",
+            "attempts": 2,
+            "successful_calls": 0,
+            "duration_seconds": 95.108,
+            "validation": "failed",
+            "fallback_used": true,
+            "status": "fallback",
+            "error_code": "invalid_response",
+            "response_id": "genapi:56079620",
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "7f23c175e0104d929772501951f32927",
+            "content_source_job_id": "060fd7fba92144ad89562cd10585e1b6",
+            "shared_from_job_id": null,
+            "content_input_sha256": "18cb689e431fd7f34321b160008bdd27632d9a8808f21ec8e04bb97c94e7e828",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": [
+              {
+                "attempt": 1,
+                "status_code": 500,
+                "duration_seconds": 1.085,
+                "validation": "failed",
+                "response_id": null,
+                "response_sha256": null,
+                "usage": null,
+                "error_code": "provider_error",
+                "provider": null,
+                "validation_error": null
+              },
+              {
+                "attempt": 2,
+                "status_code": 200,
+                "duration_seconds": 93.969,
+                "validation": "failed",
+                "response_id": "genapi:56079620",
+                "response_sha256": null,
+                "usage": {
+                  "prompt_tokens": 4016,
+                  "completion_tokens": 7000,
+                  "total_tokens": 11016
+                },
+                "error_code": "invalid_response",
+                "provider": "genapi",
+                "validation_error": "Ответ модели обрезан по лимиту токенов"
+              }
+            ]
+          },
+          "check_failure": "Model response was not validated"
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "template_sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+          "job_id": "5eff29df2f034891aaec4a2b3248acd4",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 109.255,
+          "presentation_ids": [
+            "e6045754759c429483a361c3b8b38db6",
+            "bc484538d65a493a9f622c9eb118c149",
+            "d207c24605f94f7e992954e913c65e21"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-26b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.024,
+            "validation": "not_run",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "invalid_response",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "7f23c175e0104d929772501951f32927",
+            "content_source_job_id": "060fd7fba92144ad89562cd10585e1b6",
+            "shared_from_job_id": "060fd7fba92144ad89562cd10585e1b6",
+            "content_input_sha256": "18cb689e431fd7f34321b160008bdd27632d9a8808f21ec8e04bb97c94e7e828",
+            "content_revalidated": null,
+            "model_attempt": 1,
+            "model_max_attempts": 1,
+            "retry_reason": null,
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        }
+      ],
+      "runs": [],
+      "sources": [
+        {
+          "name": "sales.csv",
+          "sha256": "966ef7ece55e6f38801f130d912c3af5efdb6eb05fc64695821eb7a556ccc83c",
+          "pack_id": "08f7386b729a4cbe85be123588a60d7e"
+        },
+        {
+          "name": "plan.csv",
+          "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+          "pack_id": "22e72e305fff456bbd5221584ca94388"
+        },
+        {
+          "name": "products.csv",
+          "sha256": "704a6e96179aa866769161fa531b91402625cb9054ff66fe26182e06c7de1ced",
+          "pack_id": "2aefa8b10d2a47249f9937c2b80fb48a"
+        },
+        {
+          "name": "regions.csv",
+          "sha256": "d41a512323c57a75689ec7a6ee80cb7828f895483ae381c9d40394e7dd64cf97",
+          "pack_id": "9b71680f4af44bdd8d8c12281cc864ec"
+        },
+        {
+          "name": "context.txt",
+          "sha256": "014eff4a51645d70f4c8c5d2d6f32a31ab19c3c670c03d32160927b188b7fbde",
+          "pack_id": "e3f742104c714672b89e474968cebef2"
+        },
+        {
+          "name": "content-pack.zip",
+          "sha256": "c2f0eb21514dfcf177e94aa8f3bea92a103e4d3d603d1ba3cd9c681636df0904",
+          "pack_id": "5aa3f017fda145aabb183c2013667698"
+        }
+      ],
+      "version": "baseline",
+      "periods": {
+        "current": [
+          "2026-04",
+          "2026-06"
+        ],
+        "previous": [
+          "2026-01",
+          "2026-03"
+        ],
+        "year_ago": [
+          "2025-04",
+          "2025-06"
+        ],
+        "history": [
+          "2025-01",
+          "2026-06"
+        ],
+        "plan": [
+          "2026-01",
+          "2026-12"
+        ]
+      },
+      "batch_id": "7f23c175e0104d929772501951f32927",
+      "shared_generation_elapsed_seconds": 109.256,
+      "all_variants_ready_seconds": 109.256,
+      "within_five_minutes": true,
+      "actual_attempts": 2,
+      "validated_model_calls": 0,
+      "provider_response_ids": [],
+      "distinct_provider_response_ids": 0,
+      "distinct_response_content_hashes": 0,
+      "response_identity_complete": true,
+      "fallback_jobs": 3,
+      "first_attempt_passed": 0,
+      "independent_editorial_requests": 1,
+      "first_attempt_pass_rate": 0.0,
+      "all_nine_ready_seconds": 109.256,
+      "error_type": "EvidenceError",
+      "check_failure": "One or more jobs failed required generation/model evidence checks",
+      "balance_before_rub": 63.85,
+      "balance_after_rub": 63.22,
+      "account_balance_delta_rub": 0.63,
+      "balance_attribution": "Account delta may include delayed tasks from other intervals; exact task costs are reconciled separately",
+      "summary_recomputed_from_http_journals_with_final_checker": true
+    },
+    {
+      "scenario": "business",
+      "label": "baseline-26b-2",
+      "commit": "6ae1234f3cb0c9af24b97301a2942ce567075f94",
+      "branch": "codex/stepa-shared-editorial",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "56b69b284ed5c55f4f72d1c9d2bb157673ecd2de2bda7a35dc59ed076d0a8a36",
+      "started_at_utc": "2026-10-19T19:24:40.087772+00:00",
+      "environment": "local HTTP service",
+      "service_url": "http://127.0.0.1:8042/api/v1",
+      "source_data_synthetic": true,
+      "live_acceptance_requested": true,
+      "model_content_generation": false,
+      "image_generation_requested": false,
+      "analysis_preflight_outside_clock": true,
+      "image_generation_included_in_ready_time": false,
+      "queue_model_retries_assembly_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "status": "failed",
+      "checks": [],
+      "jobs": [
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "template_sha256": "1b8883114486c69dff706e9c4fd9382727c4506c2cfa3ec34f86987f1e852f2f",
+          "job_id": "e0eee38577d0422fa63adbfd7e191b2d",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 246.772,
+          "presentation_ids": [
+            "10c7d07cfad44ee48b48279c40f2759a",
+            "62f89806a7a2464bbd857ccef2b0a205",
+            "aeb595623c1847f2bbe65cd791827ac8"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": true,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-26b",
+            "attempts": 3,
+            "successful_calls": 0,
+            "duration_seconds": 240.015,
+            "validation": "failed",
+            "fallback_used": true,
+            "status": "fallback",
+            "error_code": "timeout",
+            "response_id": "genapi:56079917",
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": 1,
+            "content_batch_id": "f48c3d68fc5f47ffaa1fe84dc1a0f4a1",
+            "content_source_job_id": "e0eee38577d0422fa63adbfd7e191b2d",
+            "shared_from_job_id": null,
+            "content_input_sha256": "4e3e22d7f7e230bf61142a5ad1833296a08cd1e6cf5860732ae374ad6839248e",
+            "content_revalidated": null,
+            "model_attempt": 2,
+            "model_max_attempts": 2,
+            "retry_reason": "invalid_response",
+            "calls": [
+              {
+                "attempt": 1,
+                "status_code": 500,
+                "duration_seconds": 1.242,
+                "validation": "failed",
+                "response_id": null,
+                "response_sha256": null,
+                "usage": null,
+                "error_code": "provider_error",
+                "provider": null,
+                "validation_error": null
+              },
+              {
+                "attempt": 2,
+                "status_code": 200,
+                "duration_seconds": 120.942,
+                "validation": "failed",
+                "response_id": "genapi:56079807",
+                "response_sha256": null,
+                "usage": {
+                  "prompt_tokens": 4016,
+                  "completion_tokens": 14000,
+                  "total_tokens": 18016
+                },
+                "error_code": "invalid_response",
+                "provider": "genapi",
+                "validation_error": "Ответ модели обрезан по лимиту токенов"
+              },
+              {
+                "attempt": 3,
+                "status_code": null,
+                "duration_seconds": 117.354,
+                "validation": "failed",
+                "response_id": "genapi:56079917",
+                "response_sha256": null,
+                "usage": null,
+                "error_code": "timeout",
+                "provider": "genapi",
+                "validation_error": null
+              }
+            ]
+          },
+          "check_failure": "Model response was not validated"
+        },
+        {
+          "template": "VK Tech шаблон",
+          "template_sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+          "job_id": "87cc75a46a0d45cd938c993873d88e9e",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 250.409,
+          "presentation_ids": [
+            "e3799b2a30b1495c8daee7e18bd1d96b",
+            "c78d5ffc9da947508c2e698c2aab3bd0",
+            "dd210fa4067744f4b7c7515b6025c8ce"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-26b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 239.763,
+            "validation": "failed",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "timeout",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "f48c3d68fc5f47ffaa1fe84dc1a0f4a1",
+            "content_source_job_id": "e0eee38577d0422fa63adbfd7e191b2d",
+            "shared_from_job_id": "e0eee38577d0422fa63adbfd7e191b2d",
+            "content_input_sha256": "4e3e22d7f7e230bf61142a5ad1833296a08cd1e6cf5860732ae374ad6839248e",
+            "content_revalidated": null,
+            "model_attempt": 2,
+            "model_max_attempts": 2,
+            "retry_reason": "invalid_response",
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "template_sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+          "job_id": "37c42c5e7af04cb981f8a48c0b98f7e7",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 253.752,
+          "presentation_ids": [
+            "43f1fd14cc604d95aa31a6ff4cc9cb4c",
+            "e82e246192aa481ab24d230412badb57",
+            "80857dbe20ce473d93a2320067793cb4"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": false,
+            "provider": "genapi",
+            "model": "gemma-4-26b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.021,
+            "validation": "failed",
+            "fallback_used": true,
+            "status": "unavailable",
+            "error_code": "timeout",
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": "f48c3d68fc5f47ffaa1fe84dc1a0f4a1",
+            "content_source_job_id": "e0eee38577d0422fa63adbfd7e191b2d",
+            "shared_from_job_id": "e0eee38577d0422fa63adbfd7e191b2d",
+            "content_input_sha256": "4e3e22d7f7e230bf61142a5ad1833296a08cd1e6cf5860732ae374ad6839248e",
+            "content_revalidated": null,
+            "model_attempt": 2,
+            "model_max_attempts": 2,
+            "retry_reason": "invalid_response",
+            "calls": []
+          },
+          "check_failure": "Model was configured but never requested/attempted"
+        }
+      ],
+      "runs": [],
+      "sources": [
+        {
+          "name": "sales.csv",
+          "sha256": "966ef7ece55e6f38801f130d912c3af5efdb6eb05fc64695821eb7a556ccc83c",
+          "pack_id": "d16161696c5241fc894bcfba4caed306"
+        },
+        {
+          "name": "plan.csv",
+          "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+          "pack_id": "e833fddde6504b71b42adacebe60cc9f"
+        },
+        {
+          "name": "products.csv",
+          "sha256": "704a6e96179aa866769161fa531b91402625cb9054ff66fe26182e06c7de1ced",
+          "pack_id": "02cfa6b08a4b464f8b83622de0706413"
+        },
+        {
+          "name": "regions.csv",
+          "sha256": "d41a512323c57a75689ec7a6ee80cb7828f895483ae381c9d40394e7dd64cf97",
+          "pack_id": "aba43d62b1e04ca2b46ed014d2af3a3c"
+        },
+        {
+          "name": "context.txt",
+          "sha256": "014eff4a51645d70f4c8c5d2d6f32a31ab19c3c670c03d32160927b188b7fbde",
+          "pack_id": "e72fd1516e27470f9d23f6a26bda1cff"
+        },
+        {
+          "name": "content-pack.zip",
+          "sha256": "c2f0eb21514dfcf177e94aa8f3bea92a103e4d3d603d1ba3cd9c681636df0904",
+          "pack_id": "c6e091f2300c4ffd9edb9e3b6dcf0e7e"
+        }
+      ],
+      "version": "baseline",
+      "periods": {
+        "current": [
+          "2026-04",
+          "2026-06"
+        ],
+        "previous": [
+          "2026-01",
+          "2026-03"
+        ],
+        "year_ago": [
+          "2025-04",
+          "2025-06"
+        ],
+        "history": [
+          "2025-01",
+          "2026-06"
+        ],
+        "plan": [
+          "2026-01",
+          "2026-12"
+        ]
+      },
+      "batch_id": "f48c3d68fc5f47ffaa1fe84dc1a0f4a1",
+      "shared_generation_elapsed_seconds": 253.753,
+      "all_variants_ready_seconds": 253.753,
+      "within_five_minutes": true,
+      "actual_attempts": 3,
+      "validated_model_calls": 0,
+      "provider_response_ids": [],
+      "distinct_provider_response_ids": 0,
+      "distinct_response_content_hashes": 0,
+      "response_identity_complete": true,
+      "fallback_jobs": 3,
+      "first_attempt_passed": 0,
+      "independent_editorial_requests": 1,
+      "first_attempt_pass_rate": 0.0,
+      "all_nine_ready_seconds": 253.753,
+      "error_type": "EvidenceError",
+      "check_failure": "One or more jobs failed required generation/model evidence checks",
+      "balance_before_rub": 63.22,
+      "balance_after_rub": 62.0,
+      "account_balance_delta_rub": 1.22,
+      "balance_attribution": "Account delta may include delayed tasks from other intervals; exact task costs are reconciled separately",
+      "summary_recomputed_from_http_journals_with_final_checker": true
+    },
+    {
+      "scenario": "seven-types",
+      "label": "seven-types",
+      "commit": "6ae1234f3cb0c9af24b97301a2942ce567075f94",
+      "branch": "codex/stepa-shared-editorial",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "41b6eacd5372118bb2f5dda7200f8ccb50476c1db7310f4bc8a5bc1937cc61ec",
+      "started_at_utc": "2026-10-19T19:15:07.174020+00:00",
+      "environment": "local HTTP service",
+      "service_url": "http://127.0.0.1:8041/api/v1",
+      "source_data_synthetic": true,
+      "live_acceptance_requested": false,
+      "model_content_generation": false,
+      "image_generation_requested": false,
+      "analysis_preflight_outside_clock": true,
+      "image_generation_included_in_ready_time": false,
+      "queue_model_retries_assembly_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "status": "passed",
+      "checks": [
+        {
+          "dataset": "01-sales",
+          "dataset_id": "4c692aaddd40ba92e73b4994",
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "02-regions",
+          "dataset_id": "92799d798357873eba6065c2",
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "03-channels",
+          "dataset_id": "c9a107a27b5cb707deab698f",
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "04-orders",
+          "dataset_id": "acd827bf8ec043dcea42cb52",
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "05-catalog",
+          "dataset_id": "8a88f041e56467bfb89cd0e6",
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "06-missing",
+          "dataset_id": "a1d974d028971c573a160c38",
+          "exact_contract_match": true
+        },
+        {
+          "dataset": "07-report",
+          "dataset_id": "c57725545648cc77fea685c2",
+          "exact_contract_match": true
+        }
+      ],
+      "jobs": [
+        {
+          "template": "Шаблон презентации VK Education",
+          "template_sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+          "job_id": "7410b8050a3341b9a083a2df1f9f975a",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 34.045,
+          "presentation_ids": [
+            "04798e146ab44f2cb70d4bbe83a51adc",
+            "0990ccb91228452c96b68838e33d1127",
+            "15947cde92584a18a0f1106deff5e49d"
+          ],
+          "inference": {
+            "requested": false,
+            "attempted": false,
+            "completed": false,
+            "provider": null,
+            "model": null,
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.0,
+            "validation": "not_run",
+            "fallback_used": false,
+            "status": "not_requested",
+            "error_code": null,
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": null,
+            "content_source_job_id": null,
+            "shared_from_job_id": null,
+            "content_input_sha256": null,
+            "content_revalidated": null,
+            "model_attempt": 0,
+            "model_max_attempts": 0,
+            "retry_reason": null,
+            "calls": []
+          }
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "template_sha256": "1b8883114486c69dff706e9c4fd9382727c4506c2cfa3ec34f86987f1e852f2f",
+          "job_id": "cdecb679bddc4f72b63fa4bfe3b5c132",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 44.84,
+          "presentation_ids": [
+            "9ac1ca0e44dd405f92ad9bbd95206dff",
+            "1911f793d5c14b1db4da02aaa0eb1635",
+            "087e788dd20f4d5b8f128ade653c7d90"
+          ],
+          "inference": {
+            "requested": false,
+            "attempted": false,
+            "completed": false,
+            "provider": null,
+            "model": null,
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.0,
+            "validation": "not_run",
+            "fallback_used": false,
+            "status": "not_requested",
+            "error_code": null,
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": null,
+            "content_source_job_id": null,
+            "shared_from_job_id": null,
+            "content_input_sha256": null,
+            "content_revalidated": null,
+            "model_attempt": 0,
+            "model_max_attempts": 0,
+            "retry_reason": null,
+            "calls": []
+          }
+        },
+        {
+          "template": "VK Tech шаблон",
+          "template_sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+          "job_id": "7b79d3ac3b0242a6b515158d68d5414b",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 50.279,
+          "presentation_ids": [
+            "75e393b52bea4f95a49907269fa3255e",
+            "309ce47f2a654e97987255b269855e48",
+            "8ce8040ebb99461bbb0bdafaef870fec"
+          ],
+          "inference": {
+            "requested": false,
+            "attempted": false,
+            "completed": false,
+            "provider": null,
+            "model": null,
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.0,
+            "validation": "not_run",
+            "fallback_used": false,
+            "status": "not_requested",
+            "error_code": null,
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": null,
+            "content_source_job_id": null,
+            "shared_from_job_id": null,
+            "content_input_sha256": null,
+            "content_revalidated": null,
+            "model_attempt": 0,
+            "model_max_attempts": 0,
+            "retry_reason": null,
+            "calls": []
+          }
+        }
+      ],
+      "runs": [
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "classic",
+          "id": "04798e146ab44f2cb70d4bbe83a51adc",
+          "job_id": "7410b8050a3341b9a083a2df1f9f975a",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "95aeb6bd8582f79855e545dbbcaffd5e2ae5f2c0a9a555cb137b3b705929fa85",
+          "pdf_sha256": "2698d7d9d3b9db62f2df5b5685251844ff8ec6306d2314f6f90907e7a0c16d0f",
+          "pptx_export_seconds": 0.014,
+          "pdf_export_seconds": 16.851,
+          "pptx_file": "output\\t1-t4\\seven-types\\Шаблон презентации VK Education-classic.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\Шаблон презентации VK Education-classic.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "split",
+          "id": "0990ccb91228452c96b68838e33d1127",
+          "job_id": "7410b8050a3341b9a083a2df1f9f975a",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "ee7f638ea1b2643043e834ffb0324dc9aa9b3907c262c2104f6def2865b3db7c",
+          "pdf_sha256": "7d48e8a9371d568e2ff87bfdaad31f9901a3376cfea8a6b892a79c415f43486e",
+          "pptx_export_seconds": 0.014,
+          "pdf_export_seconds": 16.643,
+          "pptx_file": "output\\t1-t4\\seven-types\\Шаблон презентации VK Education-split.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\Шаблон презентации VK Education-split.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "Шаблон презентации VK Education",
+          "variant": "focus",
+          "id": "15947cde92584a18a0f1106deff5e49d",
+          "job_id": "7410b8050a3341b9a083a2df1f9f975a",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "43a067a651530363942d9452777ad01fdaa5e4b15a16ad43024e5e9d956240e5",
+          "pdf_sha256": "2f43f80e51f39a7234ebdf4805a6a064be3fe1887fb9217892961ab6ffc532db",
+          "pptx_export_seconds": 0.014,
+          "pdf_export_seconds": 17.337,
+          "pptx_file": "output\\t1-t4\\seven-types\\Шаблон презентации VK Education-focus.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\Шаблон презентации VK Education-focus.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "classic",
+          "id": "9ac1ca0e44dd405f92ad9bbd95206dff",
+          "job_id": "cdecb679bddc4f72b63fa4bfe3b5c132",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "62e56296e0ed62b57dd370470e11b93d7e2078ca7bf5e010e8e811e166ab69da",
+          "pdf_sha256": "72a3a2ca53d57a4f95cb4754528f906bcb408cad6a9da8800ac7e91524f42c3d",
+          "pptx_export_seconds": 0.073,
+          "pdf_export_seconds": 23.801,
+          "pptx_file": "output\\t1-t4\\seven-types\\VK_WorkSpace_Клиентская_конференция_Шаблон_03-classic.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\VK_WorkSpace_Клиентская_конференция_Шаблон_03-classic.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "split",
+          "id": "1911f793d5c14b1db4da02aaa0eb1635",
+          "job_id": "cdecb679bddc4f72b63fa4bfe3b5c132",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 63
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "0e005092162116364de2c3f374bb1d817593c2d68a99a345f3a34be013f19a80",
+          "pdf_sha256": "9571598d51f7aa9eacd75dac343d4f2e0ddd562803a8d0265e18c35c22ae8fca",
+          "pptx_export_seconds": 30.65,
+          "pdf_export_seconds": 26.065,
+          "pptx_file": "output\\t1-t4\\seven-types\\VK_WorkSpace_Клиентская_конференция_Шаблон_03-split.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\VK_WorkSpace_Клиентская_конференция_Шаблон_03-split.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK_WorkSpace_Клиентская_конференция_Шаблон_03",
+          "variant": "focus",
+          "id": "087e788dd20f4d5b8f128ade653c7d90",
+          "job_id": "cdecb679bddc4f72b63fa4bfe3b5c132",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 56
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "a65354ac14b24a35b9d129f30deee0b54e2877415d131cc8a648730a236118c1",
+          "pdf_sha256": "5889f5b54b398411e5a6f691d13e09fb11cbca99d72685b4169ca1f963b73517",
+          "pptx_export_seconds": 14.618,
+          "pdf_export_seconds": 38.588,
+          "pptx_file": "output\\t1-t4\\seven-types\\VK_WorkSpace_Клиентская_конференция_Шаблон_03-focus.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\VK_WorkSpace_Клиентская_конференция_Шаблон_03-focus.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "classic",
+          "id": "75e393b52bea4f95a49907269fa3255e",
+          "job_id": "7b79d3ac3b0242a6b515158d68d5414b",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 110
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "65af0528e6ae3f8406cfbec9fd6741102f3b8199f48dd1ab69b080b6cc8cef47",
+          "pdf_sha256": "abed7cb0121214f552b81b0ce69026ff82dc9b92e7610f2e13cc302cc401162c",
+          "pptx_export_seconds": 28.879,
+          "pdf_export_seconds": 16.812,
+          "pptx_file": "output\\t1-t4\\seven-types\\VK Tech шаблон-classic.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\VK Tech шаблон-classic.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "split",
+          "id": "309ce47f2a654e97987255b269855e48",
+          "job_id": "7b79d3ac3b0242a6b515158d68d5414b",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 113
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "40dd3cfcb12487f53cc1110720294ec1e32cde7bdb90a58e6a3efba87508366f",
+          "pdf_sha256": "6562be299e783032f925aa15e43eeb01ac9640df87be95b9eef37072bde5d789",
+          "pptx_export_seconds": 0.014,
+          "pdf_export_seconds": 16.506,
+          "pptx_file": "output\\t1-t4\\seven-types\\VK Tech шаблон-split.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\VK Tech шаблон-split.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "focus",
+          "id": "8ce8040ebb99461bbb0bdafaef870fec",
+          "job_id": "7b79d3ac3b0242a6b515158d68d5414b",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 110
+          },
+          "all_seven_datasets_in_this_deck": true,
+          "slides": 30,
+          "native_charts": 6,
+          "native_tables": 24,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 30,
+          "kpi_values_in_pptx_pdf": 0,
+          "pptx_sha256": "e937edc8bad12a4634fb0e123e05f8886463a0a84bb3587656e9c05002248a1b",
+          "pdf_sha256": "bd01534d88e867081bd2c4017f2f81cbdb1d7d539b47e9d948af592049b70136",
+          "pptx_export_seconds": 0.014,
+          "pdf_export_seconds": 16.591,
+          "pptx_file": "output\\t1-t4\\seven-types\\VK Tech шаблон-focus.pptx",
+          "pdf_file": "output\\t1-t4\\seven-types\\VK Tech шаблон-focus.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        }
+      ],
+      "sources": [
+        {
+          "name": "01-sales.csv",
+          "sha256": "5f632ff9948f797629db3f9a4a73c7c779ded67ebf6223fc059e5f059a08c49d",
+          "pack_id": "aa09eff93bbf4cafb97dfcbc59aa297e"
+        },
+        {
+          "name": "02-regions.csv",
+          "sha256": "6bee2d8cfcf6916ee4e1dd1231ef58450365de1fd19cc33396469d7b11d5c196",
+          "pack_id": "133de13ea3264e7e83c55203c1188783"
+        },
+        {
+          "name": "03-channels.csv",
+          "sha256": "6ab0c1e03de5ca8afcab85e62a552f0b86f577b9493bc1ca57bad936bbd4dd8e",
+          "pack_id": "730f37a735f34dca84c496e99f066d11"
+        },
+        {
+          "name": "04-orders.csv",
+          "sha256": "4386ba032eb0a2e5a2fabf8367e9d81ce396f36ff971268ad4d96c8d46bcff66",
+          "pack_id": "b95da55daa2643cba4b424feeab905c1"
+        },
+        {
+          "name": "05-catalog.csv",
+          "sha256": "d9a00ed890dd55358f0bdc1502baa116b9e38a7735d0558eefa29495ed728b7d",
+          "pack_id": "9924af7a4d6840f5b3ce77b4300caa6c"
+        },
+        {
+          "name": "06-missing.csv",
+          "sha256": "0ac808f57e233ec7eba37d1f3054e7d878386167d0a285eb7ad483fa90db5659",
+          "pack_id": "066834673c1d49288919bc3ee8ccae89"
+        },
+        {
+          "name": "07-report.md",
+          "sha256": "9bea619be36a3aabac88234995cea194853e6c3239471e997ae244f8af623db3",
+          "pack_id": "3c60ecb935a14c1eaf5f3b20c98b7997"
+        }
+      ],
+      "batch_id": "029815ee1f0947f98aa2824abe1c9b3a",
+      "shared_generation_elapsed_seconds": 50.28,
+      "all_variants_ready_seconds": 50.28,
+      "within_five_minutes": true,
+      "actual_attempts": 0,
+      "validated_model_calls": 0,
+      "provider_response_ids": [],
+      "distinct_provider_response_ids": 0,
+      "distinct_response_content_hashes": 0,
+      "response_identity_complete": true,
+      "fallback_jobs": 0,
+      "first_attempt_passed": 0,
+      "independent_editorial_requests": 0,
+      "first_attempt_pass_rate": null,
+      "all_nine_ready_seconds": 50.28,
+      "pdf_export_total_seconds": 189.194,
+      "visual_review": "pending: inspect four exported samples and slide contact sheets",
+      "balance_before_rub": 64.42,
+      "balance_after_rub": 63.85,
+      "account_balance_delta_rub": 0.57,
+      "balance_attribution": "Account delta may include delayed tasks from other intervals; exact task costs are reconciled separately",
+      "summary_recomputed_from_http_journals_with_final_checker": true
+    },
+    {
+      "scenario": "business",
+      "label": "version-b-offline",
+      "commit": "6ae1234f3cb0c9af24b97301a2942ce567075f94",
+      "branch": "codex/stepa-shared-editorial",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "41b6eacd5372118bb2f5dda7200f8ccb50476c1db7310f4bc8a5bc1937cc61ec",
+      "started_at_utc": "2026-10-19T19:16:57.548136+00:00",
+      "environment": "local HTTP service",
+      "service_url": "http://127.0.0.1:8041/api/v1",
+      "source_data_synthetic": true,
+      "live_acceptance_requested": false,
+      "model_content_generation": false,
+      "image_generation_requested": false,
+      "analysis_preflight_outside_clock": true,
+      "image_generation_included_in_ready_time": false,
+      "queue_model_retries_assembly_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "status": "passed",
+      "checks": [],
+      "jobs": [
+        {
+          "template": "VK Tech шаблон",
+          "template_sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+          "job_id": "c9bc2db3e9a84f1b809c44a8a3eb7076",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 12.868,
+          "presentation_ids": [
+            "73fdd0910dda4341aa374fafc1599704",
+            "54bacf22b7dc4817b314d5262f1355f9",
+            "7565283bdf28499d93041cd4d61171b2"
+          ],
+          "inference": {
+            "requested": false,
+            "attempted": false,
+            "completed": false,
+            "provider": null,
+            "model": null,
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.0,
+            "validation": "not_run",
+            "fallback_used": false,
+            "status": "not_requested",
+            "error_code": null,
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": null,
+            "content_source_job_id": null,
+            "shared_from_job_id": null,
+            "content_input_sha256": null,
+            "content_revalidated": null,
+            "model_attempt": 0,
+            "model_max_attempts": 0,
+            "retry_reason": null,
+            "calls": []
+          }
+        }
+      ],
+      "runs": [
+        {
+          "template": "VK Tech шаблон",
+          "variant": "classic",
+          "id": "73fdd0910dda4341aa374fafc1599704",
+          "job_id": "c9bc2db3e9a84f1b809c44a8a3eb7076",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 24
+          },
+          "independent_numeric_controls": 15,
+          "periods_verified": true,
+          "fact_evidence_verified": true,
+          "verified_facts": [
+            {
+              "id": "q3_net",
+              "exact": "94823698",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit",
+              "exact": "31570684",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_margin",
+              "exact": "33.294086463491436497235110995143851065584892080459",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_net_growth",
+              "exact": "26.359154787499294737664931776846122272460383312511",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "yoy_net_growth",
+              "exact": "15.887096834314569037008815740799052290234844561341",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_net_plan_attainment",
+              "exact": "87.019805364788453852715408521496458362298272106615",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit_plan_attainment",
+              "exact": "106.85293580795805959137303589216257635021768317867",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "best_product_contribution",
+              "exact": "8086827",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_product_contribution",
+              "exact": "2878187",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_region_plan_gap",
+              "exact": "-6967022",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 36
+            },
+            {
+              "id": "top_product_revenue_share",
+              "exact": "32.438681098473927899331662850778082921845127786516",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "partners_net_growth",
+              "exact": "29.709559247191330241444558938225131143625860303856",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "partners_margin_change",
+              "exact": "2.448755388286036720434532399622199933846366396361",
+              "unit": "pp",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "q3_refund_share",
+              "exact": "2.4778445297274099188709802602745080153942076471456",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_margin_change",
+              "exact": "1.023282197382558491055240622694178945609088341914",
+              "unit": "pp",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            }
+          ],
+          "excluded_sales_rows": 216,
+          "slide_evidence_links_verified": 12,
+          "model_provenance_on_every_slide": false,
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "24c2dbefb5427074b411dbc9b1f90945c4a98e42806ea3fe54e3ec6cf964831c",
+          "pdf_sha256": "408a9a8069686489a9504ab4b63b837db14b5a5f186b6c3f3e205dcc31329a85",
+          "pptx_export_seconds": 2.467,
+          "pdf_export_seconds": 30.693,
+          "pptx_file": "output\\t1-t4\\version-b-offline\\VK Tech шаблон-classic.pptx",
+          "pdf_file": "output\\t1-t4\\version-b-offline\\VK Tech шаблон-classic.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "split",
+          "id": "54bacf22b7dc4817b314d5262f1355f9",
+          "job_id": "c9bc2db3e9a84f1b809c44a8a3eb7076",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 23
+          },
+          "independent_numeric_controls": 15,
+          "periods_verified": true,
+          "fact_evidence_verified": true,
+          "verified_facts": [
+            {
+              "id": "q3_net",
+              "exact": "94823698",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit",
+              "exact": "31570684",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_margin",
+              "exact": "33.294086463491436497235110995143851065584892080459",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_net_growth",
+              "exact": "26.359154787499294737664931776846122272460383312511",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "yoy_net_growth",
+              "exact": "15.887096834314569037008815740799052290234844561341",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_net_plan_attainment",
+              "exact": "87.019805364788453852715408521496458362298272106615",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit_plan_attainment",
+              "exact": "106.85293580795805959137303589216257635021768317867",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "best_product_contribution",
+              "exact": "8086827",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_product_contribution",
+              "exact": "2878187",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_region_plan_gap",
+              "exact": "-6967022",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 36
+            },
+            {
+              "id": "top_product_revenue_share",
+              "exact": "32.438681098473927899331662850778082921845127786516",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "partners_net_growth",
+              "exact": "29.709559247191330241444558938225131143625860303856",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "partners_margin_change",
+              "exact": "2.448755388286036720434532399622199933846366396361",
+              "unit": "pp",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "q3_refund_share",
+              "exact": "2.4778445297274099188709802602745080153942076471456",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_margin_change",
+              "exact": "1.023282197382558491055240622694178945609088341914",
+              "unit": "pp",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            }
+          ],
+          "excluded_sales_rows": 216,
+          "slide_evidence_links_verified": 12,
+          "model_provenance_on_every_slide": false,
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "b7d4749b045fb68fe56926efdcf232ffdf7f072e2a24deceabc2129abb5b5d71",
+          "pdf_sha256": "fed98b8f6ce7bd137c934eeb6fd215a01ef36cb7ddf4bccb97c224cf4dcd9981",
+          "pptx_export_seconds": 17.085,
+          "pdf_export_seconds": 14.765,
+          "pptx_file": "output\\t1-t4\\version-b-offline\\VK Tech шаблон-split.pptx",
+          "pdf_file": "output\\t1-t4\\version-b-offline\\VK Tech шаблон-split.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "focus",
+          "id": "7565283bdf28499d93041cd4d61171b2",
+          "job_id": "c9bc2db3e9a84f1b809c44a8a3eb7076",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 24
+          },
+          "independent_numeric_controls": 15,
+          "periods_verified": true,
+          "fact_evidence_verified": true,
+          "verified_facts": [
+            {
+              "id": "q3_net",
+              "exact": "94823698",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit",
+              "exact": "31570684",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_margin",
+              "exact": "33.294086463491436497235110995143851065584892080459",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_net_growth",
+              "exact": "26.359154787499294737664931776846122272460383312511",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "yoy_net_growth",
+              "exact": "15.887096834314569037008815740799052290234844561341",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_net_plan_attainment",
+              "exact": "87.019805364788453852715408521496458362298272106615",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit_plan_attainment",
+              "exact": "106.85293580795805959137303589216257635021768317867",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "best_product_contribution",
+              "exact": "8086827",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_product_contribution",
+              "exact": "2878187",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_region_plan_gap",
+              "exact": "-6967022",
+              "unit": "RUB",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 36
+            },
+            {
+              "id": "top_product_revenue_share",
+              "exact": "32.438681098473927899331662850778082921845127786516",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "partners_net_growth",
+              "exact": "29.709559247191330241444558938225131143625860303856",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "partners_margin_change",
+              "exact": "2.448755388286036720434532399622199933846366396361",
+              "unit": "pp",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "q3_refund_share",
+              "exact": "2.4778445297274099188709802602745080153942076471456",
+              "unit": "%",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_margin_change",
+              "exact": "1.023282197382558491055240622694178945609088341914",
+              "unit": "pp",
+              "period": [
+                "2026-04",
+                "2026-06"
+              ],
+              "source_rows": 216
+            }
+          ],
+          "excluded_sales_rows": 216,
+          "slide_evidence_links_verified": 12,
+          "model_provenance_on_every_slide": false,
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "a7f2542901cd4e245c8190f2c173d05153bbfa563e9c472951c9a644f4330a64",
+          "pdf_sha256": "56ae1b553f3efb1bc782f8d9c30235835a77d49e347f34726a0102ef6b0cbdcd",
+          "pptx_export_seconds": 3.813,
+          "pdf_export_seconds": 28.964,
+          "pptx_file": "output\\t1-t4\\version-b-offline\\VK Tech шаблон-focus.pptx",
+          "pdf_file": "output\\t1-t4\\version-b-offline\\VK Tech шаблон-focus.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        }
+      ],
+      "sources": [
+        {
+          "name": "sales.csv",
+          "sha256": "3efc679315b33c34680f349a02e1c04d52e2f248b12e528996a80893e30bbb5d",
+          "pack_id": "1522f9efac3b42d485832851fd93256c"
+        },
+        {
+          "name": "plan.csv",
+          "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+          "pack_id": "a6b0bb457b9e40e998b2841d16f83ec7"
+        },
+        {
+          "name": "products.csv",
+          "sha256": "704a6e96179aa866769161fa531b91402625cb9054ff66fe26182e06c7de1ced",
+          "pack_id": "693da31eba4a4ca59a8126a0abbd7eb7"
+        },
+        {
+          "name": "regions.csv",
+          "sha256": "d41a512323c57a75689ec7a6ee80cb7828f895483ae381c9d40394e7dd64cf97",
+          "pack_id": "77d8ca285f7046bf9d49c8205c6e57ad"
+        },
+        {
+          "name": "context.txt",
+          "sha256": "cdfb50f6b236a5417dae4e1ded9718a6e86664fe8f7b5178e951e9e2f47a1f8a",
+          "pack_id": "432a56f8337949ed92f3f539ed502008"
+        },
+        {
+          "name": "content-pack.zip",
+          "sha256": "c2f0eb21514dfcf177e94aa8f3bea92a103e4d3d603d1ba3cd9c681636df0904",
+          "pack_id": "c9c0d6ac99f54785852ecf96544cde26"
+        }
+      ],
+      "version": "version-b",
+      "periods": {
+        "current": [
+          "2026-04",
+          "2026-06"
+        ],
+        "previous": [
+          "2026-01",
+          "2026-03"
+        ],
+        "year_ago": [
+          "2025-04",
+          "2025-06"
+        ],
+        "history": [
+          "2025-01",
+          "2026-06"
+        ],
+        "plan": [
+          "2026-01",
+          "2026-12"
+        ]
+      },
+      "batch_id": "f5e40bb5b3cb4bd0aa9ecf0fc10aaba0",
+      "shared_generation_elapsed_seconds": 12.868,
+      "all_variants_ready_seconds": 12.868,
+      "within_five_minutes": true,
+      "actual_attempts": 0,
+      "validated_model_calls": 0,
+      "provider_response_ids": [],
+      "distinct_provider_response_ids": 0,
+      "distinct_response_content_hashes": 0,
+      "response_identity_complete": true,
+      "fallback_jobs": 0,
+      "first_attempt_passed": 0,
+      "independent_editorial_requests": 0,
+      "first_attempt_pass_rate": null,
+      "all_nine_ready_seconds": null,
+      "pdf_export_total_seconds": 74.422,
+      "visual_review": "pending: inspect four exported samples and slide contact sheets",
+      "balance_before_rub": 64.42,
+      "balance_after_rub": 63.85,
+      "account_balance_delta_rub": 0.57,
+      "balance_attribution": "Account delta may include delayed tasks from other intervals; exact task costs are reconciled separately",
+      "summary_recomputed_from_http_journals_with_final_checker": true
+    },
+    {
+      "scenario": "business",
+      "label": "alternate-offline",
+      "commit": "6ae1234f3cb0c9af24b97301a2942ce567075f94",
+      "branch": "codex/stepa-shared-editorial",
+      "working_tree_dirty": true,
+      "source_tree_sha256": "41b6eacd5372118bb2f5dda7200f8ccb50476c1db7310f4bc8a5bc1937cc61ec",
+      "started_at_utc": "2026-10-19T19:16:57.614916+00:00",
+      "environment": "local HTTP service",
+      "service_url": "http://127.0.0.1:8041/api/v1",
+      "source_data_synthetic": true,
+      "live_acceptance_requested": false,
+      "model_content_generation": false,
+      "image_generation_requested": false,
+      "analysis_preflight_outside_clock": true,
+      "image_generation_included_in_ready_time": false,
+      "queue_model_retries_assembly_inside_clock": true,
+      "pdf_conversion_outside_clock": true,
+      "status": "passed",
+      "checks": [],
+      "jobs": [
+        {
+          "template": "VK Tech шаблон",
+          "template_sha256": "cbbe3aa6a21d23cebc4d1383b93dd07a9cea460d683de1903567b616c839485d",
+          "job_id": "6e356f8dd4d54c28896e483e703218cb",
+          "status": "completed",
+          "ready_since_shared_start_seconds": 12.155,
+          "presentation_ids": [
+            "ab31485f8c57485bb83dd55c87c52f3d",
+            "63bd8cfea372426f8c52f68ca705f4e5",
+            "18129dfd36fa4f8095290f6be69725f5"
+          ],
+          "inference": {
+            "requested": false,
+            "attempted": false,
+            "completed": false,
+            "provider": null,
+            "model": null,
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.0,
+            "validation": "not_run",
+            "fallback_used": false,
+            "status": "not_requested",
+            "error_code": null,
+            "response_id": null,
+            "response_sha256": null,
+            "usage": null,
+            "content_reused_for_variants": 0,
+            "primary_skipped_calls": null,
+            "content_batch_id": null,
+            "content_source_job_id": null,
+            "shared_from_job_id": null,
+            "content_input_sha256": null,
+            "content_revalidated": null,
+            "model_attempt": 0,
+            "model_max_attempts": 0,
+            "retry_reason": null,
+            "calls": []
+          }
+        }
+      ],
+      "runs": [
+        {
+          "template": "VK Tech шаблон",
+          "variant": "classic",
+          "id": "ab31485f8c57485bb83dd55c87c52f3d",
+          "job_id": "6e356f8dd4d54c28896e483e703218cb",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 24
+          },
+          "independent_numeric_controls": 15,
+          "periods_verified": true,
+          "fact_evidence_verified": true,
+          "verified_facts": [
+            {
+              "id": "q3_net",
+              "exact": "116241720",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit",
+              "exact": "31763784",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_margin",
+              "exact": "27.325631451427250044132175607862650346192399768345",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_net_growth",
+              "exact": "24.238056516321105649329935633796774471227077835252",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "yoy_net_growth",
+              "exact": "30.481122262931241080488935972949230012252516927217",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_net_plan_attainment",
+              "exact": "101.37258047620198770340189276481529097284946886403",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit_plan_attainment",
+              "exact": "102.16260445010517377795789189293502383295702348559",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "best_product_contribution",
+              "exact": "8702482",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_product_contribution",
+              "exact": "3117084",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_region_plan_gap",
+              "exact": "-4210700",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 36
+            },
+            {
+              "id": "top_product_revenue_share",
+              "exact": "32.864309819228414720635585915280675475208040624313",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "partners_net_growth",
+              "exact": "57.744499535655426366485007361977639194419450852530",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "partners_margin_change",
+              "exact": "-12.594597066761973737559943932930360144094307643166",
+              "unit": "pp",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "q3_refund_share",
+              "exact": "2.4852652185479372493051303760718331551585910845941",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_margin_change",
+              "exact": "-5.358715847457836776613195102046656573249796712602",
+              "unit": "pp",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            }
+          ],
+          "excluded_sales_rows": 0,
+          "slide_evidence_links_verified": 12,
+          "model_provenance_on_every_slide": false,
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "a9c21077f9ab3242551938bb238c5ca88e8779bef51cfb5a0edb2ea162abbe1d",
+          "pdf_sha256": "3f644561a0bdc432e6b59f24040185ebdfc005328d88cb3b7968ad411ab24364",
+          "pptx_export_seconds": 4.815,
+          "pdf_export_seconds": 15.768,
+          "pptx_file": "output\\t1-t4\\alternate-offline\\VK Tech шаблон-classic.pptx",
+          "pdf_file": "output\\t1-t4\\alternate-offline\\VK Tech шаблон-classic.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "split",
+          "id": "63bd8cfea372426f8c52f68ca705f4e5",
+          "job_id": "6e356f8dd4d54c28896e483e703218cb",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 23
+          },
+          "independent_numeric_controls": 15,
+          "periods_verified": true,
+          "fact_evidence_verified": true,
+          "verified_facts": [
+            {
+              "id": "q3_net",
+              "exact": "116241720",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit",
+              "exact": "31763784",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_margin",
+              "exact": "27.325631451427250044132175607862650346192399768345",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_net_growth",
+              "exact": "24.238056516321105649329935633796774471227077835252",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "yoy_net_growth",
+              "exact": "30.481122262931241080488935972949230012252516927217",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_net_plan_attainment",
+              "exact": "101.37258047620198770340189276481529097284946886403",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit_plan_attainment",
+              "exact": "102.16260445010517377795789189293502383295702348559",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "best_product_contribution",
+              "exact": "8702482",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_product_contribution",
+              "exact": "3117084",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_region_plan_gap",
+              "exact": "-4210700",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 36
+            },
+            {
+              "id": "top_product_revenue_share",
+              "exact": "32.864309819228414720635585915280675475208040624313",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "partners_net_growth",
+              "exact": "57.744499535655426366485007361977639194419450852530",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "partners_margin_change",
+              "exact": "-12.594597066761973737559943932930360144094307643166",
+              "unit": "pp",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "q3_refund_share",
+              "exact": "2.4852652185479372493051303760718331551585910845941",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_margin_change",
+              "exact": "-5.358715847457836776613195102046656573249796712602",
+              "unit": "pp",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            }
+          ],
+          "excluded_sales_rows": 0,
+          "slide_evidence_links_verified": 12,
+          "model_provenance_on_every_slide": false,
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "32aa078cbf544311c9fb9cceb32035366d447c10a2dcd03c0f708dc3c823325d",
+          "pdf_sha256": "b09eb743d8bab6e2c1daae08d55bca44aaec1f9b638660c0516b7d9925df6f1c",
+          "pptx_export_seconds": 25.953,
+          "pdf_export_seconds": 17.188,
+          "pptx_file": "output\\t1-t4\\alternate-offline\\VK Tech шаблон-split.pptx",
+          "pdf_file": "output\\t1-t4\\alternate-offline\\VK Tech шаблон-split.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        },
+        {
+          "template": "VK Tech шаблон",
+          "variant": "focus",
+          "id": "18129dfd36fa4f8095290f6be69725f5",
+          "job_id": "6e356f8dd4d54c28896e483e703218cb",
+          "revision": 2,
+          "save_reopen_verified": true,
+          "audit": {
+            "errors": 0,
+            "warnings": 25
+          },
+          "independent_numeric_controls": 15,
+          "periods_verified": true,
+          "fact_evidence_verified": true,
+          "verified_facts": [
+            {
+              "id": "q3_net",
+              "exact": "116241720",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit",
+              "exact": "31763784",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_margin",
+              "exact": "27.325631451427250044132175607862650346192399768345",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_net_growth",
+              "exact": "24.238056516321105649329935633796774471227077835252",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "yoy_net_growth",
+              "exact": "30.481122262931241080488935972949230012252516927217",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_net_plan_attainment",
+              "exact": "101.37258047620198770340189276481529097284946886403",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "q3_profit_plan_attainment",
+              "exact": "102.16260445010517377795789189293502383295702348559",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "best_product_contribution",
+              "exact": "8702482",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_product_contribution",
+              "exact": "3117084",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "worst_region_plan_gap",
+              "exact": "-4210700",
+              "unit": "RUB",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 36
+            },
+            {
+              "id": "top_product_revenue_share",
+              "exact": "32.864309819228414720635585915280675475208040624313",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 54
+            },
+            {
+              "id": "partners_net_growth",
+              "exact": "57.744499535655426366485007361977639194419450852530",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "partners_margin_change",
+              "exact": "-12.594597066761973737559943932930360144094307643166",
+              "unit": "pp",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 72
+            },
+            {
+              "id": "q3_refund_share",
+              "exact": "2.4852652185479372493051303760718331551585910845941",
+              "unit": "%",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            },
+            {
+              "id": "qoq_margin_change",
+              "exact": "-5.358715847457836776613195102046656573249796712602",
+              "unit": "pp",
+              "period": [
+                "2026-07",
+                "2026-09"
+              ],
+              "source_rows": 216
+            }
+          ],
+          "excluded_sales_rows": 0,
+          "slide_evidence_links_verified": 12,
+          "model_provenance_on_every_slide": false,
+          "slides": 12,
+          "native_charts": 5,
+          "native_tables": 2,
+          "native_values_verified": true,
+          "pdf_extractable_text": true,
+          "saved_titles_in_pptx_pdf": 12,
+          "kpi_values_in_pptx_pdf": 3,
+          "pptx_sha256": "51b0141fa2033bea2c5291b9b7ada592a2b7833e66cc1d9dbe74de352bd3355c",
+          "pdf_sha256": "27c4802beeeb751e5c3522f1a7a0f92930d5daf211df76c91fe279be490e453c",
+          "pptx_export_seconds": 6.057,
+          "pdf_export_seconds": 14.585,
+          "pptx_file": "output\\t1-t4\\alternate-offline\\VK Tech шаблон-focus.pptx",
+          "pdf_file": "output\\t1-t4\\alternate-offline\\VK Tech шаблон-focus.pdf",
+          "image_generation": {
+            "status": "not_requested",
+            "message": "Генерация иллюстрации не запрашивалась"
+          },
+          "text_comparisons": []
+        }
+      ],
+      "sources": [
+        {
+          "name": "sales.csv",
+          "sha256": "966ef7ece55e6f38801f130d912c3af5efdb6eb05fc64695821eb7a556ccc83c",
+          "pack_id": "e63c74c19a704657b2ab9ffd8af5caf0"
+        },
+        {
+          "name": "plan.csv",
+          "sha256": "907f770307f9dc51135fa88a668730641069537657bf55bfd942063eb8aba090",
+          "pack_id": "898b408f7aa0402188e89b009a1e5a81"
+        },
+        {
+          "name": "products.csv",
+          "sha256": "704a6e96179aa866769161fa531b91402625cb9054ff66fe26182e06c7de1ced",
+          "pack_id": "178e2c01092d4fe2868c95d5e2a621b3"
+        },
+        {
+          "name": "regions.csv",
+          "sha256": "d41a512323c57a75689ec7a6ee80cb7828f895483ae381c9d40394e7dd64cf97",
+          "pack_id": "8bae05f7f27e48afb8d1e27f5e92a7b5"
+        },
+        {
+          "name": "context.txt",
+          "sha256": "2d644fb9d032a45719da9f0480f5a71176e548c358dc6b4cb4df50cbb8d40c03",
+          "pack_id": "5798df94cb45492287764b151b077bd8"
+        },
+        {
+          "name": "content-pack.zip",
+          "sha256": "c2f0eb21514dfcf177e94aa8f3bea92a103e4d3d603d1ba3cd9c681636df0904",
+          "pack_id": "6f0b7cce249c4d1d9153688bd41e15a5"
+        }
+      ],
+      "version": "baseline",
+      "periods": {
+        "current": [
+          "2026-07",
+          "2026-09"
+        ],
+        "previous": [
+          "2026-04",
+          "2026-06"
+        ],
+        "year_ago": [
+          "2025-07",
+          "2025-09"
+        ],
+        "history": [
+          "2025-01",
+          "2026-09"
+        ],
+        "plan": [
+          "2026-01",
+          "2026-12"
+        ]
+      },
+      "batch_id": "cccb7de5ab434499b3e763a1b3baa0b3",
+      "shared_generation_elapsed_seconds": 12.156,
+      "all_variants_ready_seconds": 12.156,
+      "within_five_minutes": true,
+      "actual_attempts": 0,
+      "validated_model_calls": 0,
+      "provider_response_ids": [],
+      "distinct_provider_response_ids": 0,
+      "distinct_response_content_hashes": 0,
+      "response_identity_complete": true,
+      "fallback_jobs": 0,
+      "first_attempt_passed": 0,
+      "independent_editorial_requests": 0,
+      "first_attempt_pass_rate": null,
+      "all_nine_ready_seconds": null,
+      "pdf_export_total_seconds": 47.541,
+      "visual_review": "pending: inspect four exported samples and slide contact sheets",
+      "balance_before_rub": 64.42,
+      "balance_after_rub": 63.85,
+      "account_balance_delta_rub": 0.57,
+      "balance_attribution": "Account delta may include delayed tasks from other intervals; exact task costs are reconciled separately",
+      "summary_recomputed_from_http_journals_with_final_checker": true
+    }
+  ],
+  "visual_samples": [
+    {
+      "file": "output/t1-t4/visual/alternate-actions.png",
+      "sha256": "364d005735db6f962aed4867128e695ccc49c11b2ec869003e901a18d5c32b63"
+    },
+    {
+      "file": "output/t1-t4/visual/alternate-table.png",
+      "sha256": "ac65f03a237cab5df933c487974aa8b1a90986ec5af9368055e334f223d6f356"
+    },
+    {
+      "file": "output/t1-t4/visual/version-b-chart.png",
+      "sha256": "f8d25d03a5dd77fca2e23f0736d99bc4809140051a9dfc935a3245f7846f949e"
+    },
+    {
+      "file": "output/t1-t4/visual/version-b-kpi.png",
+      "sha256": "c9d2b94f9bfe73134247e79a9d6730ce3c4bbab59b86c083e1ebe70f85ced7a5"
+    },
+    {
+      "file": "output/playwright/model-timeout-1920.png",
+      "sha256": "ce6751bfb1e2aad104f062b93b9810fdd5a5dbb1043d7e3dc812b736ef6b328d"
+    },
+    {
+      "file": "output/playwright/previous-revision-timeout.png",
+      "sha256": "a54bca8c0e46dc011567a3007e1d4880fdf5107db581a35d6c2c8af3fa50514c"
+    },
+    {
+      "file": "output/playwright/slow-model-1440.png",
+      "sha256": "353673d64b22bc3b404b1829866f16726f473592feb37437b7501edf079acf25"
+    },
+    {
+      "file": "output/playwright/slow-model-1920.png",
+      "sha256": "1dba5c1d15a1643313b536663713379c7d4f6bfeb7cbd356a6ccd9d0b6ae2570"
+    }
+  ],
+  "remaining_live_checks": [
+    "Three consecutive S8.1 passes under 300 seconds",
+    "Live version B",
+    "Live alternate period"
+  ],
+  "concurrent_export_runs": true
+}

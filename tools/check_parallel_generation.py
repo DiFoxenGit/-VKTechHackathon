@@ -14,7 +14,8 @@ import time
 import httpx
 
 from acceptance_evidence import (EvidenceError, code_version, require, response_summary, safe_name, sanitized_inference,
-                                 sha256, validate_inference, verify_business, verify_office_exports, verify_slide_evidence)
+                                 sha256, validate_inference, verify_business, verify_office_exports, verify_slide_evidence,
+                                 verify_shared_jobs)
 from business_reference import calculate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -129,8 +130,10 @@ async def run_scenario(args):
                            "analysis_goals": goals, "generate_images": args.images}
             persist()
             started = time.monotonic()
-            async def generate(template):
-                job = (await req("POST", "/generations", json={**payload, "template_id": template["id"]})).json()
+            batch = (await req('POST', '/generation-batches', json={'requests': [
+                {**payload, 'template_id': template['id']} for template in templates]})).json()
+            report['batch_id'] = batch['id']
+            async def generate(template, job):
                 while job["status"] not in {"completed", "failed"} and time.monotonic() - started < args.timeout:
                     await asyncio.sleep(.25)
                     job = (await req("GET", "/jobs/" + job["id"])).json()
@@ -155,7 +158,7 @@ async def run_scenario(args):
                 require(job["status"] == "completed", "Generation did not complete: " + job["id"])
                 require(len(job["presentation_ids"]) == 3, "Job did not produce all three variants")
                 return template, job
-            outcomes = await asyncio.gather(*(generate(t) for t in templates), return_exceptions=True)
+            outcomes = await asyncio.gather(*(generate(t, j) for t, j in zip(templates, batch['jobs'])), return_exceptions=True)
             report["shared_generation_elapsed_seconds"] = round(time.monotonic() - started, 3)
             report["all_variants_ready_seconds"] = report["shared_generation_elapsed_seconds"] if all(
                 j["status"] == "completed" for j in report["jobs"]) and len(report["jobs"]) == len(templates) else None
@@ -167,6 +170,9 @@ async def run_scenario(args):
             report["all_nine_ready_seconds"] = report["all_variants_ready_seconds"] if len(templates) == 3 else None
             persist()
             require(not failures, "One or more jobs failed required generation/model evidence checks")
+            if args.live:
+                report['editorial_sharing'] = verify_shared_jobs(report['jobs'], len(templates))
+                require(report['within_five_minutes'], 'Generation exceeded the shared five-minute budget')
             groups = outcomes
             for template, job in groups:
                 variants = []

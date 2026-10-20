@@ -63,7 +63,8 @@ async def balance_outline(outline, template, capacity=None, warnings=None):
 async def run_generation(request, template, sources, *, outline_factory, balance,
                          render_variant, variants, on_stage, on_outline,
                          on_variant, warnings, label_assets=None,
-                         draw_illustrations=None, contextual_check=None, on_inference=None):
+                         draw_illustrations=None, contextual_check=None, on_inference=None,
+                         shared_editorial=None, job_id=None):
     if not sources:
         sources = [{'id': 'brief', 'text': request.brief}]
     trace = new_trace()
@@ -73,7 +74,8 @@ async def run_generation(request, template, sources, *, outline_factory, balance
             return await _run_generation(request, template, sources, outline_factory=outline_factory,
                 balance=balance, render_variant=render_variant, variants=variants, on_stage=on_stage,
                 on_outline=on_outline, on_variant=on_variant, warnings=warnings, label_assets=label_assets,
-                draw_illustrations=draw_illustrations, contextual_check=contextual_check)
+                draw_illustrations=draw_illustrations, contextual_check=contextual_check,
+                shared_editorial=shared_editorial, job_id=job_id, on_inference=on_inference)
         finally:
             publish()
 
@@ -81,7 +83,8 @@ async def run_generation(request, template, sources, *, outline_factory, balance
 async def _run_generation(request, template, sources, *, outline_factory, balance,
                          render_variant, variants, on_stage, on_outline,
                          on_variant, warnings, label_assets=None,
-                         draw_illustrations=None, contextual_check=None):
+                         draw_illustrations=None, contextual_check=None,
+                         shared_editorial=None, job_id=None, on_inference=None):
     """Run the same content through algorithms, optional AI and each renderer.
 
     The HTTP layer owns jobs/storage. Callbacks make this pipeline runnable and
@@ -116,11 +119,13 @@ async def _run_generation(request, template, sources, *, outline_factory, balanc
                     if not settings.configured:
                         raise HTTPException(503, 'Текстовая модель не настроена')
                     from .business_editorial import edit_business
-                    # A generation always makes a fresh request; replay is only for
-                    # persisted revisions, never a cache for a new business story.
                     sources[0].pop('_business_editorial', None)
                     async with asyncio.timeout(240):
-                        outline = await edit_business(sources, outline, request.brief)
+                        if shared_editorial is None:
+                            outline = await edit_business(sources, outline, request.brief)
+                        else:
+                            outline = await shared_editorial.edit(sources, outline, request.brief,
+                                                                 job_id, trace, on_inference)
                     trace['content_reused_for_variants'] = len(variants)
                 except (HTTPException, TimeoutError) as exc:
                     if isinstance(exc, TimeoutError):

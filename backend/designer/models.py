@@ -156,6 +156,20 @@ class GenerateRequest(Brief):
         return self
 
 
+class GenerateBatchRequest(StrictModel):
+    requests: list[GenerateRequest] = Field(min_length=1, max_length=3)
+
+    @model_validator(mode='after')
+    def shared_content(self):
+        ignored = {'template_id', 'brandbook_id', 'style_overrides'}
+        content = self.requests[0].model_dump(exclude=ignored)
+        if any(item.model_dump(exclude=ignored) != content for item in self.requests[1:]):
+            raise ValueError('Задания общей генерации должны иметь одинаковые исходники, бриф, периоды и условия')
+        if len({item.template_id for item in self.requests}) != len(self.requests):
+            raise ValueError('Выберите разные шаблоны для общей генерации')
+        return self
+
+
 class FixRequest(StrictModel):
     revision: int = Field(ge=1)
     issue_ids: list[str] = Field(min_length=1, max_length=500)

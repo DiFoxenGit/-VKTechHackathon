@@ -105,6 +105,7 @@ export default function App() {
   const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [generationRetry, setGenerationRetry] = useState<'create' | 'model' | null>(null);
   const [briefError, setBriefError] = useState('');
   const [exportError, setExportError] = useState('');
   const [storageError, setStorageError] = useState(false);
@@ -269,7 +270,7 @@ export default function App() {
     const controller = new AbortController();
     operationRef.current = controller;
     setBusy(kind); setProgress({ stage: kind === 'generation' ? 'preparing' : kind === 'material' || kind === 'template' ? 'uploading' : 'preparing' });
-    setStartedAt(Date.now()); setError('');
+    setStartedAt(Date.now()); setError(''); setGenerationRetry(null);
     return controller;
   }
   function operationOptions(controller: AbortController) {
@@ -300,7 +301,7 @@ export default function App() {
       setDecks(prev => [result, ...prev.filter(d => d.id !== result.id)]);
       if (screenRef.current === 'create' && briefContextRef.current === briefContext) { setDeck(result); setActiveSlide(0); navigate('editor'); setToast('Презентация готова. Можно редактировать и скачивать.'); }
       else setReadyDeck(result);
-    } catch (e) { if (!controller.signal.aborted) setError(`${e instanceof Error ? e.message : 'Не удалось создать презентацию.'} Ваш бриф сохранён — попробуйте ещё раз.`); }
+    } catch (e) { if (!controller.signal.aborted) { setError(`${e instanceof Error ? e.message : 'Не удалось создать презентацию.'} Ваш бриф сохранён — попробуйте ещё раз.`); setGenerationRetry('create'); } }
     finally { finishOperation(controller); }
   }
   async function retryModel() {
@@ -318,7 +319,7 @@ export default function App() {
         setToast('Создана новая презентация. Предыдущая версия сохранена в проектах.');
       } else setReadyDeck(result);
     } catch (e) {
-      if (!controller.signal.aborted) setError(`${e instanceof Error ? e.message : 'Не удалось повторить запрос модели.'} Предыдущая презентация сохранена.`);
+      if (!controller.signal.aborted) { setError(`${e instanceof Error ? e.message : 'Не удалось повторить запрос модели.'} Предыдущая презентация сохранена.`); setGenerationRetry('model'); }
     } finally { finishOperation(controller); }
   }
   async function readMaterial(file?: File) {
@@ -417,7 +418,7 @@ export default function App() {
         {removedSlide && removedSlide.deckId === deck?.id && ['editor', 'outline'].includes(screen) && <div className="generation-result" role="status"><span>Слайд удалён</span><button className="secondary-button" disabled={deck.slides.length >= 30} onClick={restoreSlide}>Вернуть слайд</button><IconButton label="Скрыть сообщение об удалении" onClick={() => setRemovedSlide(null)}><X size={16} /></IconButton></div>}
         {busy && (busy !== 'generation' || screen !== 'create') && dialog !== 'export' && !(dialog === 'settings' && busy === 'template') && progressPanel}
         {exportError && dialog !== 'export' && <div className="error-banner" role="alert"><AlertCircle size={18} /><span>{exportError}</span><button className="secondary-button" onClick={() => setDialog('export')}>Повторить скачивание</button></div>}
-        {error && <div className="error-banner" role="alert"><AlertCircle size={18} /><span>{error}</span><IconButton label="Закрыть сообщение" onClick={() => setError('')}><X size={16} /></IconButton></div>}
+        {error && <div className="error-banner" role="alert"><AlertCircle size={18} /><span>{error}</span>{generationRetry && <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={() => void (generationRetry === 'model' ? retryModel() : startDeck())}>Повторить</button>}<IconButton label="Закрыть сообщение" onClick={() => { setError(''); setGenerationRetry(null); }}><X size={16} /></IconButton></div>}
 
         {screen === 'create' && <section className="creation-home">
           <div className="home-title"><div className="home-kicker"><span />Меньше рутины. Больше ваших идей.</div><h1>{busy === 'generation' ? <>Создаём <span>вашу историю</span></> : <>О чём <span>расскажем?</span></>}</h1><p>{busy === 'generation' ? 'Следите за этапами — готовая презентация откроется автоматически.' : 'Добавьте идею — получите презентацию в фирменном стиле.'}</p></div>

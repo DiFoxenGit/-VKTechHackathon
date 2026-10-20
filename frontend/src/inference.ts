@@ -14,9 +14,19 @@ export type ModelInference = {
   error_code: string | null;
   response_id: string | null;
   content_reused_for_variants: number;
+  model_attempt?: number;
+  model_max_attempts?: number;
+  retry_reason?: string | null;
+  shared_from_job_id?: string | null;
+  content_source_job_id?: string | null;
+  content_input_sha256?: string | null;
+  content_batch_id?: string | null;
+  content_revalidated?: boolean;
+  shared_inference?: ModelInference;
 };
 
-export function parseInference(value: unknown): ModelInference | undefined {
+export function parseInference(value: unknown, depth = 0): ModelInference | undefined {
+  if (depth > 1) return;
   if (!value || typeof value !== 'object' || Array.isArray(value)) return;
   const v = value as Record<string, unknown>;
   if (typeof v.requested !== 'boolean' || typeof v.completed !== 'boolean') return;
@@ -31,12 +41,34 @@ export function parseInference(value: unknown): ModelInference | undefined {
     fallback_used: v.fallback_used === true, status: label(v.status) || 'unknown',
     error_code: label(v.error_code), response_id: label(v.response_id),
     content_reused_for_variants: count(v.content_reused_for_variants),
+    ...(typeof v.model_attempt === 'number' ? {model_attempt: count(v.model_attempt), model_max_attempts: count(v.model_max_attempts), retry_reason: label(v.retry_reason)} : {}),
+    ...(typeof v.content_source_job_id === 'string' ? {
+      content_source_job_id: label(v.content_source_job_id), content_input_sha256: label(v.content_input_sha256),
+      content_batch_id: label(v.content_batch_id), content_revalidated: v.content_revalidated === true,
+      shared_from_job_id: label(v.shared_from_job_id), shared_inference: parseInference(v.shared_inference, depth + 1),
+    } : {}),
   };
 }
 
 export function hasValidatedModelText(value: ModelInference): boolean {
+  if (value.shared_inference) {
+    const source = value.shared_inference;
+    return value.requested && value.completed && value.validation === 'passed' && !value.fallback_used
+      && !value.attempted && value.attempts === 0 && value.successful_calls === 0 && value.content_revalidated === true
+      && Boolean(value.content_batch_id && value.content_input_sha256 && value.shared_from_job_id)
+      && value.shared_from_job_id === source.content_source_job_id && value.content_batch_id === source.content_batch_id
+      && value.content_input_sha256 === source.content_input_sha256 && !source.shared_inference && hasValidatedModelText(source);
+  }
   return value.requested && value.attempted && value.completed && value.validation === 'passed'
     && value.attempts > 0 && value.successful_calls > 0 && !value.fallback_used;
+}
+
+export function modelRetryReason(code: string | null | undefined): string | undefined {
+  return ({invalid_response: 'Ответ не прошёл проверку фактов или формата. Модель исправляет текст.',
+    timeout: 'Провайдер не ответил вовремя. Ожидаем повторный ответ.',
+    rate_limit: 'Провайдер ограничил запросы. Повторяем после паузы.',
+    connection: 'Соединение с моделью прервалось. Подключаемся снова.',
+    provider_error: 'Сервис модели вернул ошибку. Повторяем запрос.'} as Record<string, string>)[code || ''];
 }
 
 export function inferenceCopy(value: ModelInference): { title: string; message: string; retry: boolean } {

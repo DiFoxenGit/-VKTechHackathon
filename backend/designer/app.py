@@ -635,7 +635,7 @@ def create_app(data_dir=None, seed_dir=None):
         store.put("revisions", {**copy.deepcopy(record), "id": identifier + "_1"})
         return store.put("presentations", record)
 
-    async def run_job(identifier, request, template, sources):
+    async def run_job(identifier, request, template, sources, shared_editorial=None):
         reset_inference_route()
         job = store.get("jobs", identifier)
         started = time.monotonic()
@@ -666,6 +666,7 @@ def create_app(data_dir=None, seed_dir=None):
                         draw_illustrations=draw_illustrations,
                         contextual_check=contextual_audit,
                         on_inference=inference_update,
+                        shared_editorial=shared_editorial, job_id=identifier,
                     )
                     job.update(status="completed", stage="completed", progress=100)
         except asyncio.CancelledError:
@@ -683,14 +684,14 @@ def create_app(data_dir=None, seed_dir=None):
                 error=exc.detail
                 if isinstance(exc, HTTPException)
                 else str(exc) if isinstance(exc, ValueError)
-                else "Generation failed or exceeded 300 seconds",
+                else 'Генерация не завершилась за отведённое время. Повторите запрос.' if isinstance(exc, TimeoutError)
+                else 'Не удалось собрать презентацию. Повторите запрос.',
             )
         finally:
             job["elapsed_seconds"] = round(time.monotonic() - started, 3)
             store.put("jobs", job)
 
-    @api.post("/generations", status_code=202, tags=["Generation"])
-    async def generate(request: GenerateRequest):
+    def prepare_generation(request):
         template = store.get("templates", request.template_id)
         sources = sources_for(store, request)
         structured = any(s.get("datasets") for s in sources)
@@ -701,6 +702,9 @@ def create_app(data_dir=None, seed_dir=None):
             template = apply_style(template, overrides=request.style_overrides)
         if (request.outline is None and not structured) or request.contextual_audit:
             provider()
+        return template, sources
+
+    def queue_generation(request, template, sources, shared_editorial=None):
         if len(tasks) >= 20:
             raise HTTPException(429, "Generation queue is full")
         job = store.put(
@@ -718,14 +722,35 @@ def create_app(data_dir=None, seed_dir=None):
                 "workflow": workflow(),
             },
         )
-        task = asyncio.create_task(run_job(job["id"], request, template, sources))
+        task = asyncio.create_task(run_job(job["id"], request, template, sources, shared_editorial))
         tasks.add(task)
         task.add_done_callback(tasks.discard)
         return {**job, "status_url": f"{base_path}/api/v1/jobs/{job['id']}"}
 
+    @api.post('/generations', status_code=202, tags=['Generation'])
+    async def generate(request: GenerateRequest):
+        return queue_generation(request, *prepare_generation(request))
+
+    from .models import GenerateBatchRequest
+
+    @api.post('/generation-batches', status_code=202, tags=['Generation'])
+    async def generate_batch(request: GenerateBatchRequest):
+        # Validate every request before accepting any job. This object is owned
+        # solely by these jobs and becomes unreachable when the batch finishes.
+        from .shared_editorial import SharedEditorial
+        prepared = [prepare_generation(item) for item in request.requests]
+        if len(tasks) + len(prepared) > 20:
+            raise HTTPException(429, 'Generation queue is full')
+        shared = SharedEditorial(store.new_id())
+        return {'id': shared.batch_id, 'jobs': [queue_generation(item, *values, shared)
+                for item, values in zip(request.requests, prepared)]}
+
     @api.get("/jobs/{job_id}", tags=["Generation"])
     def job(job_id: str):
-        return store.get("jobs", job_id)
+        record = store.get('jobs', job_id)
+        if record['status'] in {'queued', 'running'}:
+            record['elapsed_seconds'] = round(max(0, time.time() - record['created_at']), 3)
+        return record
 
     @api.get("/presentations", tags=["Presentations"])
     def presentations(
