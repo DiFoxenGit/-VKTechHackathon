@@ -195,3 +195,20 @@ def test_layout_and_chart_labels_drop_unsupported_symbols(tmp_path):
         for i in audit(deck, template, [{"id": "brief", "text": "186 и 4"}])["issues"]
         if i["code"] == "font_missing_glyphs"
     ]
+
+
+def test_unavailable_face_uses_explicit_cyrillic_fallback(monkeypatch):
+    from designer.fonts import choose_font
+    monkeypatch.setattr('designer.fonts._system_fonts', lambda: {})
+    result = choose_font(Counter({'Uninstalled Proprietary Family':1000,'Arial':30}), [], {})
+    assert result['selected'] == 'Arial'
+    assert result['rejected'] == ['Uninstalled Proprietary Family']
+    assert result['reason'] == 'cyrillic_fallback'
+    assert result['candidates'][0]['coverage'] == 'unavailable'
+    only_missing = choose_font(Counter({'Another Missing Family':1000}), [], {})
+    assert only_missing['selected'] == 'Arial'
+    assert only_missing['reason'] == 'no_template_font_with_cyrillic'
+    # Embedded/installed faces with actual Cyrillic coverage stay native.
+    available = choose_font(Counter({'Private Embedded Family':1000}), [],
+        {'Private Embedded Family':{'source':'embedded','cyrillic':True}})
+    assert available['selected'] == 'Private Embedded Family'

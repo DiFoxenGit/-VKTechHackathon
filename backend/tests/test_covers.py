@@ -186,3 +186,22 @@ def test_supplied_template_has_cover_and_uses_it(path):
         deck = compose(plan(), template, variant)
         first = template['patterns'][deck['slides'][0]['pattern_index']]
         assert first['role'] == 'cover'
+
+
+def test_centered_cover_is_not_lost_to_larger_content_headlines():
+    """A content specimen can have a bigger font than the actual cover."""
+    source = cover_template()
+    cover = parse_template(save(source), 'unrelated.pptx')['patterns'][0]
+    cover['slots'][0]['style']['size'] = 44
+    content = copy.deepcopy(cover)
+    content['title_box'] = {'x':.05,'y':.12,'w':.9,'h':.25}
+    content['slots'][0]['box'] = content['title_box']
+    content['slots'][0]['style']['size'] = 80
+    content['slots'][1]['length'] = 160
+    patterns = [copy.deepcopy(cover),copy.deepcopy(content),copy.deepcopy(content),copy.deepcopy(content)]
+    for i,p in enumerate(patterns):p['index']=i
+    classify_patterns(patterns)
+    assert patterns[0]['role']=='cover'
+    assert all(p['role']!='cover' for p in patterns[1:])
+    selected,_=choose_pattern(patterns,plan()['slides'][0],[],position=0,total=2)
+    assert selected['index']==0

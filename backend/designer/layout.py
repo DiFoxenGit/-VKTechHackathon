@@ -248,6 +248,17 @@ def fit_text(element, scale, minimum=12):
         element["font_size"] = size
         if estimated_text_height(element) <= height:
             break
+    if estimated_text_height(element) > height:
+        # Some specimen decks declare only large presentation sizes (e.g.
+        # 24/28/40). Their smallest sample is not a readability lower bound.
+        # Continue below it instead of exporting a clipped paragraph. The
+        # template scale remains the first choice whenever it can fit.
+        size = math.floor(element["font_size"] - 1)
+        while size >= minimum:
+            element["font_size"] = size
+            if estimated_text_height(element) <= height:
+                break
+            size -= 1
     return element
 
 

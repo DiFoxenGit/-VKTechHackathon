@@ -33,6 +33,11 @@ def compose_analytics(outline, template, variant, assets=None):
     candidates = branded or candidates
     pattern=min(candidates,key=lambda p:(p.get("image_cover",0),p.get("decoration_area",0),p["index"]))
     background=pattern.get("background") or tokens.get("theme",{}).get("lt1","FFFFFF")
+    if not template.get('brandbook') and pattern.get('bg_luma') is not None:
+        from .parsing import relative_luminance
+        measured=pattern['bg_luma']; declared=relative_luminance(background)
+        if measured < .25 and declared > .6:background='111111'
+        elif measured > .85 and declared < .25:background='FFFFFF'
     if template.get("brandbook"):
         background=template["brandbook"].get("background","FFFFFF")
     color=best_text_color(background,[*tokens["colors"],"000000","FFFFFF"],minimum=4.5)
@@ -161,13 +166,13 @@ def compose_analytics(outline, template, variant, assets=None):
                     elements.append(dict(defaults,id=identifier,kind='text',role='body',text=text,
                         font_size=size,bold=identifier=='lead',box=[width*left,height*y,width*usable,height*h]))
             elements.append(dict(defaults,id='source',kind='text',role='body',text=content['visual'].get('source',''),
-                font_size=11,box=[width*left,height*(bottom-.035),width*usable,height*.035]))
+                font_size=11,box=[width*left,height*bottom-24,width*usable,24]))
         from .layout import estimated_text_height
         for element in elements:
             if element['kind']=='text':
                 while element['font_size']> (16 if element['role']=='title' else 11) and (estimated_text_height(element)>element['box'][3] or max((len(w) for w in element['text'].split()),default=0)*element['font_size']*.78>element['box'][2]-12):
                     element['font_size']=max(16 if element['role']=='title' else 11,element['font_size']-1)
         slides.append(dict(analytic_layout=True,purpose=kind,source_refs=content.get('source_refs',[]),asset_usage=[dict(asset=e['asset'],reason='Смысловая иконка показателя') for e in elements if e.get('asset')],pattern_choice=dict(reason=f'Редактируемые данные: {kind}; композиция {variant}',pattern_index=pattern['index']),index=i,pattern_index=pattern["index"],layout_index=pattern["layout_index"],background=background,
-                           background_kind=pattern.get("background_kind","solid"),image_cover=pattern.get("image_cover",0),needs_scrim=False,native_cover=False,clear_stage=True,
+                           background_kind=pattern.get("background_kind","solid"),image_cover=pattern.get("image_cover",0),needs_scrim=not bool(template.get('brandbook')) and pattern.get('background_kind','solid')!='solid' and pattern.get('bg_spread',0)>.12,native_cover=False,clear_stage=True,
                            content=copy.deepcopy(content),elements=elements))
     return dict(width=width,height=height,variant=variant,slides=slides)

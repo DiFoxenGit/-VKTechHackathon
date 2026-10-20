@@ -220,7 +220,12 @@ def choose_font(counts, fallback, coverage, language="ru"):
     records = {name: coverage.get(name) or font_coverage(name) for name in ordered}
     rejected = []
     for name in ordered:
-        if language.startswith("ru") and records[name].get("cyrillic") is False:
+        # An unavailable proprietary face has neither a cmap nor predictable
+        # Cyrillic metrics. Letting Office silently choose a replacement can
+        # expand letter spacing and invalidate the measured layout. Prefer a
+        # verified template face; otherwise record the explicit safe fallback.
+        if language.startswith("ru") and (records[name].get("cyrillic") is False
+                                          or records[name].get("source") == "unavailable"):
             rejected.append(name)
             continue
         return {"selected": name, "reason": "cyrillic_fallback" if rejected else "character_weight", "rejected": rejected, "candidates": [{"font": candidate, "characters": counts.get(candidate, 0), "coverage": records[candidate]["source"]} for candidate in ordered]}

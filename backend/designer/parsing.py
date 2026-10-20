@@ -24,7 +24,7 @@ CONTENT_REGION = (0.05, 0.23, 0.95, 0.87)
 # Версия разбора. Меняется, когда правила извлечения меняют результат: шаблоны,
 # разобранные старой версией, переразбираются при старте, иначе экспорт и аудит
 # работали бы по устаревшему «паспорту» файла.
-PARSER_VERSION = 19
+PARSER_VERSION = 20
 
 
 def is_footer_placeholder(shape):
@@ -230,9 +230,13 @@ def classify_patterns(patterns):
             s['length'] for s in pattern['slots'] if s['role'] == 'body'
         ) <= 220
         large_title = size >= large if size else box.get('h', 0) >= 0.15
-        eligible.append(bool(title and sparse and large_title))
+        centered_title = any(str(shape.get('placeholder', '')).startswith('CENTER_TITLE')
+                             for shape in pattern.get('shapes', []))
+        cover_composition = (centered_title and box.get('h', 0) >= .15 and box.get('y', 0) >= .2) or (box.get('y', 0) > .2 and
+            sum(s['length'] for s in pattern['slots'] if s['role'] == 'body') <= 100)
+        eligible.append(bool(title and sparse and (large_title or cover_composition)))
         pattern['role_evidence'] = {'large_title': bool(large_title), 'sparse': sparse,
-                                    'opening': index < 3}
+                                    'opening': index < 3, 'cover_composition': cover_composition}
     # At most two opening alternatives; later matching pages are dividers when
     # the same composition recurs throughout the file.
     seeds = [i for i, p in enumerate(patterns[:3]) if eligible[i]
@@ -243,7 +247,9 @@ def classify_patterns(patterns):
               and p['role'] == 'section'
               and not any(word in ' '.join(s['text'] for s in p['shapes']).lower()
                           for word in ROLE_WORDS['section'])]
-    seeds = sorted(set(seeds))[:2]
+    seeds = sorted(set(seeds))
+    composed_covers = [i for i in seeds if patterns[i]['role_evidence']['cover_composition']]
+    seeds = (composed_covers or seeds)[:2]
 
     def similar(first, second):
         a, b = first.get('title_box') or {}, second.get('title_box') or {}
@@ -416,6 +422,14 @@ def background_info(slide, theme):
     фотографии цвет в конкретной точке неизвестен, поэтому вёрстка обязана
     положить под текст подложку, а не надеяться на удачу.
     """
+    master = slide.slide_layout.slide_master
+    mapping = {'bg1':'lt1','tx1':'dk1','bg2':'lt2','tx2':'dk2'}
+    for owner in (master, slide.slide_layout, slide):
+        for tag in ('p:clrMap','a:overrideClrMapping'):
+            for node in owner._element.xpath('.//' + tag):
+                mapping.update(node.attrib)
+    def resolved(name):
+        return theme.get(mapping.get(name,name))
     for owner in (slide, slide.slide_layout, slide.slide_layout.slide_master):
         bg = owner._element.cSld.bg
         if bg is None:
@@ -426,8 +440,27 @@ def background_info(slide, theme):
         if rgb:
             return {"color": rgb[0], "kind": "solid"}
         scheme = bg.xpath(".//a:solidFill/a:schemeClr/@val")
-        if scheme and scheme[0] in theme:
-            return {"color": theme[scheme[0]], "kind": "solid"}
+        if scheme and resolved(scheme[0]):
+            return {"color": resolved(scheme[0]), "kind": "solid"}
+        reference = bg.find(qn("p:bgRef"))
+        if reference is not None:
+            rgb = reference.xpath("./a:srgbClr/@val", namespaces=NS)
+            scheme = reference.xpath("./a:schemeClr/@val", namespaces=NS)
+            value = rgb[0] if rgb else resolved(scheme[0]) if scheme else None
+            if value:
+                # Theme bgRef uses the master colour map (bg1 may mean dk1).
+                # Its first background fill is the usual phClr solid fill.
+                kind = "solid"
+                for rel in master.part.rels.values():
+                    if rel.reltype.endswith("/theme"):
+                        root = etree.fromstring(rel.target_part.blob, etree.XMLParser(resolve_entities=False,no_network=True))
+                        fills = root.findall(".//a:bgFillStyleLst/*", NS)
+                        index = int(reference.get("idx","1001"))-1001
+                        if 0 <= index < len(fills):
+                            tag = etree.QName(fills[index]).localname
+                            kind = "gradient" if tag == "gradFill" else "image" if tag == "blipFill" else "solid"
+                        break
+                return {"color":value, "kind":kind}
         stops = bg.xpath(".//a:gsLst/a:gs//a:srgbClr/@val")
         if stops:
             # У градиента берём самый светлый край: подложка всё равно обязательна.
