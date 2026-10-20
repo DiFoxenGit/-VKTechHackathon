@@ -83,6 +83,9 @@ def apply_style(template, brandbook=None, overrides=None):
         target["font_choice"] = {role: {"selected": rules["font"]} for role in ("title", "body")}
     for pattern in result.get("patterns", []):
         pattern.update(background=background, background_kind="solid", reserved=[], image_cover=0, decoration_area=0, decoration_count=0, bg_luma=relative_luminance(background), bg_spread=0)
+        # The source cover sample describes artwork removed by the brandbook.
+        # Keeping it would select white text for a newly white slide (or vice versa).
+        pattern.pop("title_background", None)
         for slot in pattern.get("slots", []):
             if rules.get("font"):
                 slot.setdefault("style", {})["font"] = rules["font"]

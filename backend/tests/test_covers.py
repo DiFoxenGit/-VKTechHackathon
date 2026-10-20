@@ -136,6 +136,32 @@ def test_transparent_art_is_sampled_over_the_slide_fill():
     assert compose(plan(), template, 'classic')['slides'][0]['elements'][0]['color'] == 'FFFFFF'
 
 
+@pytest.mark.parametrize('variant', ['classic', 'split', 'focus'])
+@pytest.mark.parametrize('background', ['FFFFFF', '111111'])
+def test_brandbook_cover_uses_new_background_not_source_sample(tmp_path, variant, background):
+    from designer.brandbook import apply_style
+    from designer.parsing import contrast_ratio
+
+    data = save(cover_template(image_background='picture'))
+    original = parse_template(data, 'unseen.pptx')
+    original['patterns'][0]['title_background']['color'] = '41006B' if background == 'FFFFFF' else 'FFFFFF'
+    template = apply_style(original, {'background': background, 'font': 'Arial'})
+    deck = compose(plan(), template, variant)
+    source, target = tmp_path / 'source.pptx', tmp_path / 'result.pptx'
+    source.write_bytes(data)
+    export_pptx(source, template, deck, target)
+    slide = Presentation(target).slides[0]
+    actual_background = str(slide.background.fill.fore_color.rgb)
+    assert actual_background == background
+    assert deck['slides'][0]['background'] == background
+    text = [s for s in slide.shapes if s.has_text_frame and s.text.strip()]
+    assert any(s.text == plan()['slides'][0]['title'] for s in text)
+    for shape in text:
+        for paragraph in shape.text_frame.paragraphs:
+            for run in paragraph.runs:
+                assert contrast_ratio(str(run.font.color.rgb), actual_background) >= 4.5
+
+
 def test_branding_ignores_empty_frames_and_off_canvas_art():
     deck = Presentation()
     slide = deck.slides.add_slide(deck.slide_layouts[6])
