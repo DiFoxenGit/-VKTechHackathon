@@ -56,9 +56,10 @@ def sanitized_inference(trace):
     trace = trace or {}
     fields = ("requested", "attempted", "completed", "provider", "model", "attempts",
               "successful_calls", "duration_seconds", "validation", "fallback_used", "status",
-              "error_code", "response_id", "response_sha256", "usage", "content_reused_for_variants")
+              "error_code", "response_id", "response_sha256", "usage", "content_reused_for_variants",
+              "primary_skipped_calls")
     call_fields = ("attempt", "status_code", "duration_seconds", "validation", "response_id",
-                   "response_sha256", "usage", "error_code")
+                   "response_sha256", "usage", "error_code", "provider", "validation_error")
     return {**{key: trace.get(key) for key in fields},
             "calls": [{key: call.get(key) for key in call_fields} for call in trace.get("calls", [])]}
 

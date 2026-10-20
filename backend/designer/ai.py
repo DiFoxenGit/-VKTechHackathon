@@ -16,6 +16,10 @@ from .inference_trace import current_trace, mark_validated, publish
 LOGGER = logging.getLogger("designer.ai")
 MAX_ATTEMPTS = min(3, max(1, int(os.getenv("DESIGNER_LLM_ATTEMPTS", "3"))))
 RETRY_DELAY = max(0.0, float(os.getenv("DESIGNER_LLM_RETRY_DELAY", "0.4")))
+# After VK fails at the transport level, go straight to the fallback for a while
+# instead of spending every agent attempt of every parallel job on a known outage.
+VK_SKIP_SECONDS = max(0.0, float(os.getenv("DESIGNER_VK_SKIP_SECONDS", "300")))
+_vk_unavailable_until = 0.0
 
 class InvalidCompletion(Exception):
     """The provider answered, but the answer cannot be used as is."""
@@ -79,20 +83,30 @@ def _usage(value, depth=0):
 
 async def ask(messages):
     settings = require_llm()
+    global _vk_unavailable_until
     fallback = fallback_settings() if settings.profile == "vk" else None
-    try:
-        answer = await _ask_primary(messages, settings)
-        if settings.json_mode and fallback is not None:
-            parse_json(answer)
-        record_inference(settings, settings)
-        return answer
-    except httpx.HTTPStatusError as exc:
-        if fallback is None or (exc.response.status_code not in {408, 429} and exc.response.status_code < 500):
-            raise
-    except (httpx.TransportError, InvalidCompletion):
-        if fallback is None:
-            raise
-    LOGGER.warning("VK text inference failed; using configured GenAPI fallback")
+    skipped = fallback is not None and time.monotonic() < _vk_unavailable_until
+    if not skipped:
+        try:
+            answer = await _ask_primary(messages, settings)
+            if settings.json_mode and fallback is not None:
+                parse_json(answer)
+            record_inference(settings, settings)
+            return answer
+        except httpx.HTTPStatusError as exc:
+            if fallback is None or (exc.response.status_code not in {408, 429} and exc.response.status_code < 500):
+                raise
+            _vk_unavailable_until = time.monotonic() + VK_SKIP_SECONDS
+        except httpx.TransportError:
+            if fallback is None:
+                raise
+            _vk_unavailable_until = time.monotonic() + VK_SKIP_SECONDS
+        except InvalidCompletion:
+            if fallback is None:
+                raise
+        LOGGER.warning("VK text inference failed; using configured GenAPI fallback")
+    else:
+        LOGGER.info("VK marked unavailable; using configured GenAPI fallback directly")
     from .text_genapi import generate, GenApiTextError
     trace = current_trace()
     started = time.monotonic()
@@ -102,8 +116,10 @@ async def ask(messages):
                     model=fallback.model, status_code=None, duration_seconds=0.0,
                     validation='not_run', error_code=None, response_id=None, usage=None)
         trace['calls'].append(call)
-        trace.update(provider=fallback.profile, model=fallback.model,
+        trace.update(requested=True, attempted=True, provider=fallback.profile, model=fallback.model,
                      attempts=len(trace['calls']), status='running')
+        if skipped:
+            trace['primary_skipped_calls'] = trace.get('primary_skipped_calls', 0) + 1
         publish()
     def submitted(identifier):
         if call is not None:
@@ -122,6 +138,7 @@ async def ask(messages):
         if call is not None:
             call['response_sha256'] = hashlib.sha256(answer.encode()).hexdigest()
     except GenApiTextError as exc:
+        LOGGER.warning("GenAPI fallback failed: %s", exc)
         if call is not None:
             call.update(error_code='provider_error', validation='failed')
             trace.update(error_code='provider_error', validation='failed', status='failed')
@@ -139,8 +156,12 @@ async def ask(messages):
 
 def _chat_text(value):
     try:
-        if value["choices"][0].get("finish_reason") == "length":
+        finish = value["choices"][0].get("finish_reason")
+        if finish == "length":
             raise InvalidCompletion("Ответ модели обрезан по лимиту токенов")
+        if finish == "error":
+            # GenAPI Gemma can abort mid-reasoning and return no content at all.
+            raise InvalidCompletion("Провайдер оборвал генерацию (finish_reason=error)")
         return message_text(value["choices"][0]["message"])
     except (ValueError, KeyError, IndexError, AttributeError, TypeError):
         raise InvalidCompletion("Ответ провайдера без содержимого") from None
@@ -412,6 +433,8 @@ async def complete_json(messages, validate=None, agent='probe', attempts=None):
             if trace is not None and len(trace['calls']) > call_count:
                 call = trace['calls'][-1]
                 call['error_code'] = 'invalid_response'
+                # Server-owned validator message only; never the model's text.
+                call['validation_error'] = last[:300]
                 trace['error_code'] = 'invalid_response'
                 mark_validated(call, False)
             if answer is not None:
@@ -426,7 +449,7 @@ async def complete_json(messages, validate=None, agent='probe', attempts=None):
                         ),
                     },
                 ]
-        LOGGER.warning("Agent %s attempt %s/%s failed: %s", agent, attempt, attempts, last_code)
+        LOGGER.warning("Agent %s attempt %s/%s failed: %s (%s)", agent, attempt, attempts, last_code, last[:300])
         if attempt < attempts and RETRY_DELAY:
             await asyncio.sleep(RETRY_DELAY * attempt)
     trace = current_trace()

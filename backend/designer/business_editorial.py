@@ -197,10 +197,12 @@ def validate_editorial(value, sources, outline):
                     not token.startswith('fact:') for token in found):
                 raise ValueError('Свободная формулировка может использовать только факт-токены')
             prose = TOKEN.sub('', text)
-            if (any(c in prose for c in '{}') or re.search(r'\d', prose)
-                    or NUMBER_WORDS.search(prose) or DATE_WORDS.search(prose)
-                    or UNIT_LITERALS.search(prose)):
-                raise ValueError('Числа и даты разрешены только через защищённые токены')
+            offending = (re.search(r'[{}]|\d+', prose) or NUMBER_WORDS.search(prose)
+                         or DATE_WORDS.search(prose) or UNIT_LITERALS.search(prose))
+            if offending:
+                # Name the page, field and fragment so a retry fixes exactly that spot.
+                raise ValueError(f'Числа и даты разрешены только через защищённые токены: '
+                                 f'страница {page["id"]}, поле {field}, «{offending.group(0)[:40]}»')
             if CAUSAL.search(prose) and not (field == 'interpretation' and edit.interpretation_kind == 'hypothesis'):
                 raise ValueError('Неподтверждённая причина должна быть явно отмеченной гипотезой')
             if text.casefold() in seen:
