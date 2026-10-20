@@ -6,7 +6,7 @@
 
 **Проверяющим:** [рабочий стенд на auto-sell.site](https://auto-sell.site/presentations/) · [пошаговый гайд: запуск, сценарии, API, тесты](docs/test-run.md) · [презентация решения](docs/presentation.pdf)
 
-**Финальная передача 20.10:** [путь решения, результаты проверок и комплект демо](docs/final-delivery-2026-10-20.md) · [основной стенд, использованный в записи](http://158.160.225.35/).
+**Документация решения:** [продукт, архитектура, алгоритмы, данные, модели, запуск и API](docs/README.md). [Финальная приёмка и комплект демо](docs/final-delivery-2026-10-20.md) · [основной стенд, использованный в записи](http://158.160.225.35/).
 
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)

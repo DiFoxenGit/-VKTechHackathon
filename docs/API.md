@@ -1,5 +1,7 @@
 # Контракт API для отдельного фронтенда
 
+Общее устройство и сценарий продукта: [итоговая документация](README.md).
+
 Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратным прокси сервис может жить под под-путём (`DESIGNER_BASE_PATH`, например `https://auto-sell.site/presentations`): тогда `exports`, `status_url` и `servers` в `openapi.json` уже содержат префикс, и достраивать его не нужно — используйте эти значения как есть. Swagger `/docs`, схема `/openapi.json`.
 При заданном `DESIGNER_API_KEY` каждый запрос `/api/v1/*` содержит `Authorization: Bearer <token>`.
 
@@ -17,11 +19,13 @@ Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратны
 | GET | `/api/v1/assets/{template\|pack}/{owner}/{file}` | Файл картинки (SVG отдаётся с запрещающим CSP) |
 | GET | `/api/v1/content-packs` | Список загруженных материалов |
 | POST | `/api/v1/content-packs` | multipart `file`, 201, `{id,name,text,assets,asset_counts,sha256}`. Текст (txt, md, csv, json, pdf, docx, pptx), картинка (svg, png, jpg) или zip из них |
+| POST | `/api/v1/brandbooks` | multipart `file`, импорт правил оформления |
 | GET | `/api/v1/content-packs/{id}` | Извлечённый текст и метаданные картинок |
 | GET | `/api/v1/content-packs/{id}/assets` | Картинки пакета со ссылками на файлы |
 | POST | `/api/v1/analysis` | Совместная проверка выбранных материалов, `{items, business}`; принимает параметры `GenerateRequest` |
 | POST | `/api/v1/outlines` | Бриф → Outline; синхронно, до 150 секунд ожидания модели |
 | POST | `/api/v1/generations` | 202, задача генерации трёх вариантов |
+| POST | `/api/v1/generation-batches` | 202, `{requests:[GenerateRequest,…]}` → общий batch ID и задания; совместимые входы могут использовать общую проверенную редактуру |
 | GET | `/api/v1/jobs/{id}` | Статус, progress 0–100, presentation_ids, error |
 | GET | `/api/v1/presentations?offset=0&limit=50` | Список презентаций с пагинацией |
 | GET | `/api/v1/presentations/{id}` | Слайды, геометрия, аудит, revision, ссылки exports |
@@ -29,6 +33,9 @@ Base URL: `http://localhost:8000`. Префикс `/api/v1`. За обратны
 | GET | `/api/v1/presentations/{id}/audit` | Аудит текущей версии |
 | POST | `/api/v1/presentations/{id}/audit?contextual=false` | Повторный аудит; true добавляет проверку LLM |
 | POST | `/api/v1/presentations/{id}/fixes` | `{revision,issue_ids}` — применить выбранные автоматические исправления |
+| POST | `/api/v1/presentations/{id}/revisions/{target_revision}/restore` | `{revision}` — восстановить предыдущую версию новой ревизией |
+| POST | `/api/v1/presentations/{id}/illustrations/retry` | Повтор создания иллюстраций с проверкой текущей ревизии |
+| PATCH | `/api/v1/presentations/{id}` | Сохранить название, оформление и содержание с проверкой ревизии и защищённых фактов |
 | PATCH | `/api/v1/presentations/{id}/slides/{index}` | `{revision,content}` — заменить содержимое одного слайда |
 | GET | `/api/v1/presentations/{id}/export/{format}?revision=1` | Скачать pptx/pdf/html нужной версии |
 
