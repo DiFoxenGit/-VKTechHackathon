@@ -1,0 +1,415 @@
+{
+  "scope": "Read-only HTTP GET and existing local artifacts; no generation, audit, export conversion or model request",
+  "code_commit": "566fabd28e36c3e42fd6397a1b45e00d26417e77",
+  "services": [
+    {
+      "site": "auto-sell",
+      "health": {
+        "status": "ok",
+        "llm_configured": true,
+        "pdf_available": true
+      },
+      "health_seconds": 0.299,
+      "templates_count": 6,
+      "templates_seconds": 0.152,
+      "history_seconds": 0.145,
+      "history_items": 1
+    },
+    {
+      "site": "primary",
+      "health": {
+        "status": "ok",
+        "llm_configured": true,
+        "pdf_available": true
+      },
+      "health_seconds": 0.28,
+      "templates_count": 3,
+      "templates_seconds": 0.174,
+      "history_seconds": 0.244,
+      "history_items": 1
+    }
+  ],
+  "recorded_decks": [
+    {
+      "id": "e88d20ec20824fe588cf167f1e309d55",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "passed"
+      ]
+    },
+    {
+      "id": "bd31c709f83c4611a24f3a3edeb51674",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "passed"
+      ]
+    },
+    {
+      "id": "726687c211b94df9be9bda9a11ed96ed",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "passed"
+      ]
+    },
+    {
+      "id": "7050ff185da7485886ad5d3f4e01c6c6",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "failed",
+        "passed"
+      ]
+    },
+    {
+      "id": "c4bb3343dd954923b0bcc304aae688aa",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "failed",
+        "passed"
+      ]
+    },
+    {
+      "id": "39dc46b07b9048ce8fa55f54130c9b22",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "failed",
+        "passed"
+      ]
+    },
+    {
+      "id": "86f591e20a744db5ac598d4806f70301",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "passed"
+      ]
+    },
+    {
+      "id": "8e791f46ac11453ea09c1188355516cb",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "passed"
+      ]
+    },
+    {
+      "id": "008bbead9eb84eee806284b46e6ba294",
+      "revision": 1,
+      "slides": 13,
+      "provider": "vk",
+      "model": "qwen38-27b-fp8",
+      "image_status": "ready",
+      "image_count": 2,
+      "quality_scopes": [
+        "visible_text_only"
+      ],
+      "quality_statuses": [
+        "passed"
+      ]
+    }
+  ],
+  "downloaded_deck_checks": {
+    "independent_numeric_controls": 15,
+    "periods_verified": true,
+    "fact_evidence_verified": true,
+    "verified_facts": [
+      {
+        "id": "q3_net",
+        "exact": "93563698",
+        "unit": "RUB",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "q3_profit",
+        "exact": "30580684",
+        "unit": "RUB",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "q3_margin",
+        "exact": "32.684347298885086820745370709909306919442196480947",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "qoq_net_growth",
+        "exact": "24.680117390832386520591834563965581439057112297139",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "yoy_net_growth",
+        "exact": "14.347210233274854713837923293286545386257150038741",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "q3_net_plan_attainment",
+        "exact": "85.863502066433295294625621570379180300262600149861",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "q3_profit_plan_attainment",
+        "exact": "103.50221947726726812814533688085065955466407698037",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "best_product_contribution",
+        "exact": "6826827",
+        "unit": "RUB",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 54
+      },
+      {
+        "id": "worst_product_contribution",
+        "exact": "2878187",
+        "unit": "RUB",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 54
+      },
+      {
+        "id": "worst_region_plan_gap",
+        "exact": "-7177022",
+        "unit": "RUB",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 36
+      },
+      {
+        "id": "top_product_revenue_share",
+        "exact": "31.528848934551518047095573328023011659928191380379",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 54
+      },
+      {
+        "id": "partners_net_growth",
+        "exact": "24.448783424714957805237728614111237852200590876980",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 72
+      },
+      {
+        "id": "partners_margin_change",
+        "exact": "0.422029260714997056410615544979842081044256953909",
+        "unit": "pp",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 72
+      },
+      {
+        "id": "q3_refund_share",
+        "exact": "2.5087081298770551655580437880210997341640064334143",
+        "unit": "%",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      },
+      {
+        "id": "qoq_margin_change",
+        "exact": "0.413543032776208814565500337459634799466392742402",
+        "unit": "pp",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ],
+        "source_rows": 216
+      }
+    ],
+    "excluded_sales_rows": 216,
+    "slides": 13,
+    "native_charts": 5,
+    "native_tables": 2,
+    "native_values_verified": true,
+    "pdf_extractable_text": true,
+    "saved_titles_in_pptx_pdf": 13,
+    "kpi_values_in_pptx_pdf": 3,
+    "pptx_sha256": "840627efe4b678ffdd90237eb8d2fa9b90a97577858036a683315a2654bba742",
+    "pdf_sha256": "0b040ab62ec99176227ebe0d3df5fb5135348b4c20e23e8cb065a7bf3baba0ba"
+  },
+  "embedded_generated_images_verified": 2,
+  "status": "passed",
+  "checked_at_utc": "2026-10-20T19:55:59.255616+00:00",
+  "ci_url": "https://github.com/DiFoxenGit/-VKTechHackathon/actions/runs/39484491891",
+  "video": {
+    "demo-raw-continuous.mp4": {
+      "duration": "303.200000",
+      "size": 14611416,
+      "streams": [
+        {
+          "type": "video",
+          "codec": "h264",
+          "width": 1440,
+          "height": 1000,
+          "frames": "7580"
+        }
+      ]
+    },
+    "demo-silent.mp4": {
+      "duration": "300.000000",
+      "size": 13932907,
+      "streams": [
+        {
+          "type": "video",
+          "codec": "h264",
+          "width": 1440,
+          "height": 1000,
+          "frames": "7500"
+        }
+      ]
+    },
+    "demo-voiced.mp4": {
+      "duration": "300.000000",
+      "size": 15954834,
+      "streams": [
+        {
+          "type": "video",
+          "codec": "h264",
+          "width": 1440,
+          "height": 1100,
+          "frames": "7500"
+        },
+        {
+          "type": "audio",
+          "codec": "aac",
+          "width": null,
+          "height": null,
+          "frames": "14064"
+        }
+      ]
+    },
+    "raw_silent_identical": false,
+    "pptx": {
+      "slides": 13,
+      "native_charts": 5,
+      "tables": 2
+    }
+  },
+  "opening_trim": {
+    "user_authorized": true,
+    "removed_opening_seconds": 3.2,
+    "final_duration_seconds": 300,
+    "original_continuous_preserved": "demo-raw-continuous.mp4",
+    "untrimmed_files": "before-opening-trim/",
+    "internal_cuts": false,
+    "speed_changes": false,
+    "subtitle_shift_seconds": -3.2
+  },
+  "artifact_sha256": {
+    "demo-voiced.mp4": "34bbbde1e6b018463d881616942459f6f714c64888242f754272127cd1c502ff",
+    "demo-silent.mp4": "b36c991e5097a4699b0940726fe65090e79a9901aaf5d659fef4bb162e1bc66c",
+    "demo-raw-continuous.mp4": "576ed2e6ad9d4c6b10c6af54e02ae09274c1994cc54a4a2d39c3400a3856ec45",
+    "demo.pptx": "840627efe4b678ffdd90237eb8d2fa9b90a97577858036a683315a2654bba742",
+    "demo.pdf": "0b040ab62ec99176227ebe0d3df5fb5135348b4c20e23e8cb065a7bf3baba0ba",
+    "subtitles.srt": "6e02d8e057d5424cfb2941985c1454c465e13cdd372ca3b0bf3ebe0d1e9e4bee"
+  }
+}
