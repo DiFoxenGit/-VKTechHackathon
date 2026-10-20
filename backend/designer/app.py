@@ -891,6 +891,10 @@ def create_app(data_dir=None, seed_dir=None):
             report['model_checks'] = {**current.get('_model_checks', {}), **report.get('model_checks', {})}
             current['_model_checks'] = copy.deepcopy(report['model_checks'])
             store.put("presentations", current)
+            # Audit enriches this revision without changing its content. Keep its
+            # snapshot current so undoing a later geometry fix retains warnings.
+            store.put("revisions", {**copy.deepcopy(current),
+                                    "id": f"{presentation_id}_{current['revision']}"})
         return {"revision": record["revision"], **report}
 
     def save_revision(record, retained_findings=None):

@@ -4,6 +4,36 @@ import pytest
 from tests.test_pipeline import client, generate  # client is the shared API fixture
 
 
+def test_real_audit_then_fix_and_restore_retains_semantic_warning(client, monkeypatch):
+    import designer.app as module
+    from designer.audit import issue
+
+    _, job = generate(client)
+    identifier = job['presentation_ids'][0]
+    path = f'/api/v1/presentations/{identifier}'
+    store = client.app.state.store
+    record = store.get('presentations', identifier)
+    record['deck']['slides'][0]['elements'][0]['box'][0] = -30
+    store.put('presentations', record)
+    semantic = issue(0, 'context_0', 'unsupported_fact', 'Недоказанное причинное утверждение', category='contextual')
+
+    async def text_audit(*args):
+        return [semantic]
+
+    monkeypatch.setattr(module, 'contextual_audit', text_audit)
+    audited = client.post(path + '/audit?contextual=true')
+    assert audited.status_code == 200, audited.text
+    finding = next(i for i in audited.json()['issues'] if i['code'] == 'out_of_bounds')
+    fixed = client.post(path + '/fixes', json={'revision': 1, 'issue_ids': [finding['id']]})
+    assert fixed.status_code == 200, fixed.text
+    assert semantic in fixed.json()['audit']['issues']
+    restored = client.post(path + '/revisions/1/restore', json={'revision': 2})
+    assert restored.status_code == 200, restored.text
+    assert semantic in restored.json()['audit']['issues']
+    assert restored.json()['deck'] == record['deck']
+    assert not restored.json()['audit'].get('model_checks')
+
+
 @pytest.mark.parametrize("first,second", [("contextual", "visual"), ("visual", "contextual"), ("contextual=true&visual", "contextual=true&visual")])
 def test_model_audits_keep_other_mode_and_replace_own_findings(client, monkeypatch, first, second):
     import designer.app as module
