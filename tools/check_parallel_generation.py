@@ -100,10 +100,21 @@ async def run_scenario(args):
                 for name in ("sales.csv", "plan.csv", "products.csv", "regions.csv", "context.txt", "content-pack.zip"):
                     path = (DATA if name in {"products.csv", "regions.csv", "content-pack.zip"} else folder) / name
                     packs.append(await upload(path, context.encode("utf8") if name == "context.txt" else None))
-                payload = {"brief": BRIEF, "slide_count": 12, "content_pack_ids": [p["id"] for p in packs],
+                payload = {"brief": BRIEF, "slide_count": args.slide_count, "content_pack_ids": [p["id"] for p in packs],
                            "generate_images": args.images, "model_content_generation": args.live,
                            "business_settings": settings, "business_conditions": conditions,
                            "business_context_id": packs[-2]["id"]}
+                if args.images:
+                    pages = "2 и 12" if args.slide_count == 13 else "11"
+                    payload["brief"] += (f" Создайте новые иллюстрации на слайдах {pages}, справа. "
+                        "Сюжеты: абстрактная композиция из объёмных геометрических объектов о выборе приоритетов "
+                        "и устойчивости бизнеса. Без людей, экранов, надписей, букв, логотипов и диаграмм. "
+                        "Не заменяйте иллюстрациями таблицы и графики.")
+                if args.brandbook:
+                    book = (await req("POST", "/brandbooks", files={"file":
+                        (args.brandbook.name, args.brandbook.read_bytes())})).json()
+                    payload["brandbook_id"] = book["id"]
+                    report["brandbook"] = {"id":book["id"], "name":book["name"], "tokens":book["tokens"]}
                 preflight = (await req("POST", "/analysis", json={**payload, "template_id": templates[0]["id"]})).json()
                 require(preflight.get("business") and len(preflight["items"]) == 12, "Business preflight failed")
             else:
@@ -212,7 +223,7 @@ async def run_scenario(args):
                         base.with_suffix("." + fmt).write_bytes(exports[fmt])
                     checks.update(verify_office_exports(exports["pptx"], exports["pdf"], reopened))
                     if expected:
-                        require(checks["slides"] == 12 and checks["native_charts"] == 5 and checks["native_tables"] == 2, "Wrong business story structure")
+                        require(checks["slides"] == args.slide_count and checks["native_charts"] == 5 and checks["native_tables"] == 2, "Wrong business story structure")
                     comparisons = record.get("generation", {}).get("editorial", []) if args.live else []
                     item = {"template": template["name"], "variant": record["variant"], "id": identifier,
                             "job_id": job["id"], "revision": saved["revision"], "save_reopen_verified": True,
@@ -245,6 +256,8 @@ def parser():
     result.add_argument("--scenario", choices=["business", "seven-types"], default="business")
     result.add_argument("--live", action="store_true")
     result.add_argument("--images", action="store_true")
+    result.add_argument("--slide-count", type=int, choices=[12,13], default=12)
+    result.add_argument("--brandbook", type=Path)
     result.add_argument("--version", choices=["baseline", "version-b"], default="baseline")
     result.add_argument("--period", choices=["default", "alternate"], default="default")
     result.add_argument("--one-template", action="store_true")
