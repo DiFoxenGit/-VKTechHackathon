@@ -1,0 +1,5888 @@
+{
+  "schema_version": "dima-semantic-review-1",
+  "synthetic_data": true,
+  "settings": {
+    "current": [
+      "2026-04",
+      "2026-06"
+    ],
+    "previous": [
+      "2026-01",
+      "2026-03"
+    ],
+    "year_ago": [
+      "2025-04",
+      "2025-06"
+    ],
+    "history": [
+      "2025-01",
+      "2026-06"
+    ],
+    "plan": [
+      "2026-01",
+      "2026-12"
+    ]
+  },
+  "page_contract": [
+    {
+      "version": "business-blocks-1",
+      "role": "summary",
+      "page_id": "decision",
+      "answer": "Изменение выручки к периоду 2026-01 – 2026-03: 26,36 %; Изменение общей маржи: 1,02 п.п.",
+      "interpretation": "Причины изменения показателей не установлены.",
+      "next_step": "Разделить обсуждение расширения продаж и проверки партнёрской экономики.",
+      "fact_ids": [
+        "qoq_net_growth",
+        "qoq_margin_change"
+      ],
+      "action_ref": "partners",
+      "context_refs": [
+        "business-context.txt#2"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": {
+        "role": "cover",
+        "title": "Результаты B2B-продуктов",
+        "audience": "Руководители бизнеса",
+        "period": [
+          "2026-04",
+          "2026-06"
+        ]
+      }
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "kpi",
+      "answer": "Чистая выручка: 94 823 698,00 ₽; Валовая прибыль: 31 570 684,00 ₽; Валовая маржа: 33,29 %",
+      "interpretation": "Маржа — отношение сумм, а не среднее строковых процентов.",
+      "next_step": "Согласовать единые определения выручки и валовой прибыли для решения.",
+      "fact_ids": [
+        "q3_net",
+        "q3_profit",
+        "q3_margin"
+      ],
+      "action_ref": "partners",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "trend",
+      "answer": "Изменение выручки к периоду 2026-01 – 2026-03: 26,36 %; Изменение выручки к периоду 2025-04 – 2025-06: 15,89 %",
+      "interpretation": "Сравниваются полные периоды 2026-04 – 2026-06 и 2026-01 – 2026-03; прошлые результаты не являются прогнозом.",
+      "next_step": "Проверить сезонные изменения перед обсуждением плана следующего квартала.",
+      "fact_ids": [
+        "qoq_net_growth",
+        "yoy_net_growth"
+      ],
+      "action_ref": "partners",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "plan",
+      "answer": "Выполнение плана выручки: 87,02 %; Выполнение плана прибыли: 106,85 %",
+      "interpretation": "План за 2026-04 – 2026-06 посчитан один раз по месяцу, региону и продукту; плана по каналам нет.",
+      "next_step": "Разобрать предпосылки плана без изменения исторических целевых сумм.",
+      "fact_ids": [
+        "q3_net_plan_attainment",
+        "q3_profit_plan_attainment"
+      ],
+      "action_ref": "regions",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "products",
+      "answer": "Наибольший вклад продукта · Аналитика сделок: 8 086 827,00 ₽; Наименьший вклад продукта · Сервис сопровождения: 2 878 187,00 ₽",
+      "interpretation": "Вклад — абсолютная разница к периоду 2026-01 – 2026-03, а не темп роста.",
+      "next_step": "Сопоставить продуктовые приоритеты с очередью внедрения.",
+      "fact_ids": [
+        "best_product_contribution",
+        "worst_product_contribution"
+      ],
+      "action_ref": "implementation",
+      "context_refs": [
+        "business-context.txt#1"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "regions",
+      "answer": "Наименьшее отклонение региона от плана · Южный и Северо-Кавказский федеральные округа: -6 967 022,00 ₽",
+      "interpretation": "Показано абсолютное отклонение от плана, а не вклад региона в квартальный рост.",
+      "next_step": "Проверить предпосылки региона с наименьшим отклонением факта от плана; знак показывает недовыполнение или превышение.",
+      "fact_ids": [
+        "worst_region_plan_gap"
+      ],
+      "action_ref": "regions",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "channels",
+      "answer": "Рост выручки партнёров: 29,71 %; Изменение маржи партнёров: 2,45 п.п.",
+      "interpretation": "Сопоставлены выручка и маржа канала за выбранные периоды. Причины изменения требуют отдельной проверки.",
+      "next_step": "Сверить скидки, возвраты и себестоимость партнёрского канала.",
+      "fact_ids": [
+        "partners_net_growth",
+        "partners_margin_change"
+      ],
+      "action_ref": "partners",
+      "context_refs": [
+        "business-context.txt#3"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "concentration",
+      "answer": "Доля ведущего продукта · Аналитика сделок: 32,44 %",
+      "interpretation": "Доля рассчитана по net-выручке; концентрация не доказывает риск оттока.",
+      "next_step": "Обсудить зависимость от ведущего продукта без неподтверждённого вывода об оттоке.",
+      "fact_ids": [
+        "top_product_revenue_share"
+      ],
+      "action_ref": "partners",
+      "context_refs": [
+        "business-context.txt#5"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "evidence",
+      "page_id": "returns",
+      "answer": "Доля возвратов от gross-выручки: 2,48 %",
+      "interpretation": "Знаменатель — выручка до скидок и возвратов, не net.",
+      "next_step": "Согласовать определение доли возвратов и проверить правила корректировок затрат.",
+      "fact_ids": [
+        "q3_refund_share"
+      ],
+      "action_ref": "partners",
+      "context_refs": [
+        "business-context.txt#6"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "action",
+      "page_id": "priorities",
+      "answer": "Валовая прибыль: 31 570 684,00 ₽; Наибольший вклад продукта · Аналитика сделок: 8 086 827,00 ₽",
+      "interpretation": "Приоритеты — предложение; эффект инвестиций не рассчитан.",
+      "next_step": "Назначить владельцев предложенных направлений и подтвердить бюджетные потолки.",
+      "fact_ids": [
+        "q3_profit",
+        "best_product_contribution"
+      ],
+      "action_ref": "implementation",
+      "context_refs": [
+        "business-context.txt#7"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "risk",
+      "page_id": "risks",
+      "answer": "Изменение маржи партнёров: 2,45 п.п.; Наименьшее отклонение региона от плана · Южный и Северо-Кавказский федеральные округа: -6 967 022,00 ₽",
+      "interpretation": "Нет данных для CAC, удержания и причинной оценки рекламы. Параллельных внедрений — не более 1; инженеров — 3, аналитиков — 2.",
+      "next_step": "Проверить инженерную мощность и перечислить недостающие данные для CAC.",
+      "fact_ids": [
+        "partners_margin_change",
+        "worst_region_plan_gap"
+      ],
+      "action_ref": "partners",
+      "context_refs": [
+        "business-context.txt#7"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    },
+    {
+      "version": "business-blocks-1",
+      "role": "action",
+      "page_id": "actions",
+      "answer": "Валовая маржа: 33,29 %; Выполнение плана выручки: 87,02 %",
+      "interpretation": "Лимит 3 000 000 ₽; предлагаемые потолки: партнёрская экономика — 600 000 ₽, внедрение — 900 000 ₽, регионы — 500 000 ₽; резерв — 1 000 000 ₽. Это не прогноз эффекта.",
+      "next_step": "Зафиксировать контрольные точки 30, 60 и 90 дней и порядок сверки результата.",
+      "fact_ids": [
+        "q3_margin",
+        "q3_net_plan_attainment"
+      ],
+      "action_ref": "implementation",
+      "context_refs": [
+        "business-context.txt#4"
+      ],
+      "deduplication": "render_each_role_once; never_repeat_answer_as_interpretation",
+      "cover": null
+    }
+  ],
+  "editorial_input": {
+    "input_sha256": "7638892358ec8d3121c950947b1f4348d3996075888e505a34dd899c3244ef41",
+    "brief": "Прибыль и маржа, план-факт",
+    "selected_periods": {
+      "current": [
+        "2026-04",
+        "2026-06"
+      ],
+      "previous": [
+        "2026-01",
+        "2026-03"
+      ],
+      "year_ago": [
+        "2025-04",
+        "2025-06"
+      ],
+      "history": [
+        "2025-01",
+        "2026-06"
+      ],
+      "plan": [
+        "2026-01",
+        "2026-12"
+      ]
+    },
+    "metric_definitions": {
+      "net_revenue": "Выручка до корректировок минус скидки и возвраты, RUB",
+      "gross_profit": "Чистая выручка минус себестоимость, RUB",
+      "margin": "Отношение суммы прибыли к сумме чистой выручки, %; изменение в п.п.",
+      "plan": "Один раз по месяцу, региону и продукту; сравнения одинаковой длины"
+    },
+    "context": {
+      "business-context.txt#2": "## Решение руководителя\nКоммерческий директор и руководитель продукта выбирают приоритеты на июль — сентябрь 2026 года. Нужно отделить рост масштаба от роста прибыли. Управленческий ответ должен показать, где расширение продаж совместимо с экономикой, а где сначала стоит проверить скидки, условия возврата и структуру затрат. Успех решения — согласованный список действий с владельцами, сроками и проверяемыми критериями. Дополнительную выручку или окупаемость инициатив заранее не обещаем: экспериментов и прогнозной модели в пакете нет.\nОсновной отчёт состоит из 10–12 страниц. Руководитель должен за несколько минут увидеть ответ, затем проверить доказательства. Полные 1 512 строк доступны в sales.csv и на листе sales книги business-data.xlsx; их не следует переносить в основную колоду. Тарифный справочник хранится отдельно. Приложение может содержать определения, детализацию и журнал качест",
+      "business-context.txt#6": "## Определения\nВыручка после скидок и возвратов равна gross_revenue_rub минус discount_rub минус refund_rub. Валовая прибыль равна этой выручке минус cogs_rub. Себестоимость уже скорректирована на возвраты; повторно вычитать её часть при возврате нельзя. Валовая маржа квартала считается отношением суммы валовой прибыли к сумме чистой выручки. Среднее процентов по строкам даёт другой показатель и для решения не используется. Изменение маржи показывается в процентных пунктах.\nВыполнение плана — отношение фактической суммы к плановой сумме сопоставимого периода и ключей. Сначала факт трёх каналов сворачивается до зерна плана. Каждый плановый ключ учитывается ровно один раз. Рост выручки — относительное изменение к положительной базе. При нулевой или отрицательной базе процентный рост не публикуется; абсолютное изменение сохраняется. Доля возвратов в этой колоде имеет знаменатель gross_reven",
+      "business-context.txt#3": "## События\nВ январе 2026 года компания согласовала годовой план на уровне месяца, региона и продукта. План не распределён по каналам: сравнение отдельного канала с «его планом» невозможно без нового утверждённого документа. В июле расширена партнёрская программа. Для неё разрешены повышенные коммерческие скидки и дополнительное сопровождение. Эти события заданы сценарием; утверждение, что именно программа вызвала рост или снижение маржи, остаётся гипотезой. Разница кварталов не является причинным экспериментом.\nДля «Аналитики сделок» рассматривается расширение продаж после проверки готовности внедрения. Для «Интеграционного шлюза» действует ограничение инженерной мощности. Южный регион просит проверить реалистичность целевых показателей, но план не должен задним числом подгоняться под факт. Нужно отдельно оценить отклонение, затем решить, какие предпосылки плана проверить. Ни одно из эти",
+      "business-context.txt#1": "## Компания\nКомпания поставляет B2B-командам четыре взаимодополняющих продукта. «Командный портал» объединяет работу менеджеров и руководителей: задачи, документы и согласования находятся в общем кабинете. Его целевая аудитория — средний бизнес с несколькими отделами продаж. «Аналитика сделок» помогает руководителю наблюдать воронку и готовить управленческие отчёты. Для внедрения аналитики нужны согласованные справочники и ответственные за качество данных. Это самостоятельный продукт: его выручку нельзя приписывать порталу без отдельного доказательства связи.\n«Интеграционный шлюз» передаёт заказы и статусы между системами клиента. Продажа требует участия инженера внедрения. «Сервис сопровождения» предоставляет поддержку пользователей и регламентных процессов действующим клиентам. У него другая экономика, чем у лицензий: рост обращений может увеличивать себестоимость. В агрегатах нет часо",
+      "business-context.txt#5": "## Клиенты\nПродажи агрегированы до месяца, региона, продукта и канала. orders_count означает количество заказов в непересекающихся ячейках и может суммироваться. Идентификаторов клиентов, числа новых клиентов и повторных покупок нет. Нельзя рассчитывать уникальных клиентов, удержание, LTV или CAC. В пакете также нет подтверждённых маркетинговых затрат: рост онлайн-выручки не доказывает эффективность рекламы. Если руководитель просит эти показатели, ответ должен перечислить недостающие источники, а не предлагать вымышленную оценку.\nВ основных суммах используется одна валюта RUB без НДС. Контрольные данные не содержат валютных курсов. Случайная строка USD в негативном сценарии должна приводить к отказу сравнивать суммы, а не к молчаливому пересчёту. Числа с неоднозначными разделителями требуют явного исправления или согласованного правила. Пропуск не заменяется нулём. Возврат — известная к",
+      "business-context.txt#7": "## Риски\nКоммерческий директор отвечает за условия скидок и партнёрского договора. Финансовый контролёр проверяет сопоставимость затрат и правила возвратов. Руководитель продукта определяет готовность внедрения и допустимую последовательность запусков. Региональные руководители уточняют плановые предпосылки и доступные мощности. Ни одна рекомендация не должна звучать как уже принятое решение. Гипотезы о причинах следует помечать явно и связывать с проверкой, которую можно выполнить за 90 дней.\nЗа первые 30 дней нужно согласовать определения, проверить партнёрские скидки и список ограничений внедрения. К 60-му дню владельцы представляют варианты условий и региональные предпосылки. К 90-му дню финансовый контролёр сверяет фактические показатели с согласованными определениями и лимитами. Если данных для вывода нет, критерием становится получение конкретного источника, а не произвольная целе",
+      "business-context.txt#4": "## Ресурсы\nДоступный дополнительный бюджет следующего квартала — не более 3 000 000 рублей без НДС. Это лимит решения, а не строка фактических затрат в CSV. Предварительные потолки инициатив: проверка партнёрской экономики — 600 000 рублей, улучшение готовности внедрения аналитики — 900 000 рублей, проверка региональных гипотез — 500 000 рублей. Нераспределённый резерв — 1 000 000 рублей; он не считается одобренным расходом. Распределение по этим направлениям предлагается на обсуждение. Суммарные потолки вместе с резервом равны общему лимиту.\nКоманда располагает тремя инженерами внедрения и двумя аналитиками на эти инициативы. Допускается до 1 параллельных внедрений интеграционного шлюза. Поддержка не получает автоматического увеличения штата. Масштабирование партнёрских продаж до проверки маржи может ухудшить валовую прибыль. Критерии контрольной точки — полнота данных, утверждённые усл"
+    },
+    "pages": [
+      {
+        "id": "decision",
+        "purpose": "Как распределить усилия после периода 2026-04 – 2026-06?",
+        "fact_ids": [
+          "qoq_net_growth",
+          "qoq_margin_change"
+        ],
+        "approved_titles": [
+          "Какие решения требуют проверки экономики?",
+          "Разделить проверку экономики и обсуждение продаж"
+        ],
+        "role": "summary",
+        "context_refs": [
+          "business-context.txt#2"
+        ],
+        "action_ref": "partners",
+        "verified_interpretation": "Причины изменения показателей не установлены.",
+        "allowed_tokens": {
+          "fact:qoq_net_growth": "26,36%",
+          "fact:qoq_margin_change": "1,02 п.п."
+        }
+      },
+      {
+        "id": "kpi",
+        "purpose": "Каковы результаты периода 2026-04 – 2026-06?",
+        "fact_ids": [
+          "q3_net",
+          "q3_profit",
+          "q3_margin"
+        ],
+        "approved_titles": [
+          "Каковы результаты выбранного периода?",
+          "Чистая выручка: {{fact:q3_net}}; маржа: {{fact:q3_margin}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#6"
+        ],
+        "action_ref": "partners",
+        "verified_interpretation": "Маржа — отношение сумм, а не среднее строковых процентов.",
+        "allowed_tokens": {
+          "fact:q3_net": "94,82 млн ₽",
+          "fact:q3_profit": "31,57 млн ₽",
+          "fact:q3_margin": "33,29%"
+        }
+      },
+      {
+        "id": "trend",
+        "purpose": "Сохраняется ли рост?",
+        "fact_ids": [
+          "qoq_net_growth",
+          "yoy_net_growth"
+        ],
+        "approved_titles": [
+          "Как менялась выручка за выбранные периоды?",
+          "Изменение выручки: {{fact:qoq_net_growth}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#3"
+        ],
+        "action_ref": "partners",
+        "verified_interpretation": "Сравниваются полные периоды 2026-04 – 2026-06 и 2026-01 – 2026-03; прошлые результаты не являются прогнозом.",
+        "allowed_tokens": {
+          "fact:qoq_net_growth": "26,36%",
+          "fact:yoy_net_growth": "15,89%"
+        }
+      },
+      {
+        "id": "plan",
+        "purpose": "Выполнены ли утверждённые цели?",
+        "fact_ids": [
+          "q3_net_plan_attainment",
+          "q3_profit_plan_attainment"
+        ],
+        "approved_titles": [
+          "Насколько факт соответствует утверждённому плану?",
+          "Выполнение плана выручки: {{fact:q3_net_plan_attainment}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#6"
+        ],
+        "action_ref": "regions",
+        "verified_interpretation": "План за 2026-04 – 2026-06 посчитан один раз по месяцу, региону и продукту; плана по каналам нет.",
+        "allowed_tokens": {
+          "fact:q3_net_plan_attainment": "87,02%",
+          "fact:q3_profit_plan_attainment": "106,85%"
+        }
+      },
+      {
+        "id": "products",
+        "purpose": "Какие продукты изменили выручку?",
+        "fact_ids": [
+          "best_product_contribution",
+          "worst_product_contribution"
+        ],
+        "approved_titles": [
+          "Как различается вклад продуктов в изменение выручки?",
+          "Наибольший вклад продукта: {{fact:best_product_contribution}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#1"
+        ],
+        "action_ref": "implementation",
+        "verified_interpretation": "Вклад — абсолютная разница к периоду 2026-01 – 2026-03, а не темп роста.",
+        "allowed_tokens": {
+          "fact:best_product_contribution": "8,09 млн ₽",
+          "fact:worst_product_contribution": "2,88 млн ₽"
+        }
+      },
+      {
+        "id": "regions",
+        "purpose": "Где проверить региональные предпосылки?",
+        "fact_ids": [
+          "worst_region_plan_gap"
+        ],
+        "approved_titles": [
+          "В каком регионе проверить предпосылки плана?",
+          "Наименьшее отклонение региона: {{fact:worst_region_plan_gap}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#3"
+        ],
+        "action_ref": "regions",
+        "verified_interpretation": "Показано абсолютное отклонение от плана, а не вклад региона в квартальный рост.",
+        "allowed_tokens": {
+          "fact:worst_region_plan_gap": "-6,97 млн ₽"
+        }
+      },
+      {
+        "id": "channels",
+        "purpose": "Где рост требует проверки экономики?",
+        "fact_ids": [
+          "partners_net_growth",
+          "partners_margin_change"
+        ],
+        "approved_titles": [
+          "Как соотносятся выручка и маржа партнёрского канала?",
+          "Изменение маржи партнёров: {{fact:partners_margin_change}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#3"
+        ],
+        "action_ref": "partners",
+        "verified_interpretation": "Сопоставлены выручка и маржа канала за выбранные периоды. Причины изменения требуют отдельной проверки.",
+        "allowed_tokens": {
+          "fact:partners_net_growth": "29,71%",
+          "fact:partners_margin_change": "2,45 п.п."
+        }
+      },
+      {
+        "id": "concentration",
+        "purpose": "Насколько результат зависит от ведущего продукта?",
+        "fact_ids": [
+          "top_product_revenue_share"
+        ],
+        "approved_titles": [
+          "Как распределена чистая выручка между продуктами?",
+          "Доля ведущего продукта: {{fact:top_product_revenue_share}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#5"
+        ],
+        "action_ref": "partners",
+        "verified_interpretation": "Доля рассчитана по net-выручке; концентрация не доказывает риск оттока.",
+        "allowed_tokens": {
+          "fact:top_product_revenue_share": "32,44%"
+        }
+      },
+      {
+        "id": "returns",
+        "purpose": "Какова нагрузка возвратов?",
+        "fact_ids": [
+          "q3_refund_share"
+        ],
+        "approved_titles": [
+          "Какую долю выручки до корректировок составляют возвраты?",
+          "Доля возвратов: {{fact:q3_refund_share}}"
+        ],
+        "role": "evidence",
+        "context_refs": [
+          "business-context.txt#6"
+        ],
+        "action_ref": "partners",
+        "verified_interpretation": "Знаменатель — выручка до скидок и возвратов, не net.",
+        "allowed_tokens": {
+          "fact:q3_refund_share": "2,48%"
+        }
+      },
+      {
+        "id": "priorities",
+        "purpose": "Какие направления обсудить первыми?",
+        "fact_ids": [
+          "q3_profit",
+          "best_product_contribution"
+        ],
+        "approved_titles": [
+          "Какие направления требуют согласования?",
+          "Приоритеты требуют подтверждения владельцев и бюджета"
+        ],
+        "role": "action",
+        "context_refs": [
+          "business-context.txt#7"
+        ],
+        "action_ref": "implementation",
+        "verified_interpretation": "Приоритеты — предложение; эффект инвестиций не рассчитан.",
+        "allowed_tokens": {
+          "fact:q3_profit": "31,57 млн ₽",
+          "fact:best_product_contribution": "8,09 млн ₽"
+        }
+      },
+      {
+        "id": "risks",
+        "purpose": "Какие ограничения меняют решение?",
+        "fact_ids": [
+          "partners_margin_change",
+          "worst_region_plan_gap"
+        ],
+        "approved_titles": [
+          "Причины изменения маржи требуют проверки",
+          "Перед расширением проверить экономику и доступные ресурсы"
+        ],
+        "role": "risk",
+        "context_refs": [
+          "business-context.txt#7"
+        ],
+        "action_ref": "partners",
+        "verified_interpretation": "Нет данных для CAC, удержания и причинной оценки рекламы. Параллельных внедрений — не более 1; инженеров — 3, аналитиков — 2.",
+        "allowed_tokens": {
+          "fact:partners_margin_change": "2,45 п.п.",
+          "fact:worst_region_plan_gap": "-6,97 млн ₽"
+        }
+      },
+      {
+        "id": "actions",
+        "purpose": "Что проверить за 90 дней?",
+        "fact_ids": [
+          "q3_margin",
+          "q3_net_plan_attainment"
+        ],
+        "approved_titles": [
+          "Сначала проверить экономику и доступные ресурсы",
+          "Согласовать владельцев, сроки и критерии действий"
+        ],
+        "role": "action",
+        "context_refs": [
+          "business-context.txt#4"
+        ],
+        "action_ref": "implementation",
+        "verified_interpretation": "Лимит 3 000 000 ₽; предлагаемые потолки: партнёрская экономика — 600 000 ₽, внедрение — 900 000 ₽, регионы — 500 000 ₽; резерв — 1 000 000 ₽. Это не прогноз эффекта.",
+        "allowed_tokens": {
+          "fact:q3_margin": "33,29%",
+          "fact:q3_net_plan_attainment": "87,02%"
+        }
+      }
+    ],
+    "schema": {
+      "$defs": {
+        "PageDraft": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "title": "Id",
+              "type": "string"
+            },
+            "title": {
+              "maxLength": 180,
+              "minLength": 8,
+              "title": "Title",
+              "type": "string"
+            },
+            "hypothesis": {
+              "anyOf": [
+                {
+                  "maxLength": 440,
+                  "minLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Hypothesis"
+            }
+          },
+          "required": [
+            "id",
+            "title"
+          ],
+          "title": "PageDraft",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "input_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "pages": {
+          "items": {
+            "$ref": "#/$defs/PageDraft"
+          },
+          "maxItems": 12,
+          "minItems": 12,
+          "title": "Pages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "input_sha256",
+        "pages"
+      ],
+      "title": "EditorialDraft",
+      "type": "object"
+    }
+  },
+  "examples": [
+    {
+      "version": 1,
+      "source_id": "sales",
+      "contract": {
+        "schema_version": "1.0",
+        "dataset_ref": {
+          "dataset_id": "50456d438f63ba703b60016c",
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "filename": "monthly_trend.json",
+          "archive_path": null,
+          "table": "1"
+        },
+        "profile": {
+          "row_count": 18,
+          "column_count": 3,
+          "columns": [
+            {
+              "id": "c1",
+              "name": "month",
+              "kind": "date",
+              "role": "time",
+              "unit": "",
+              "missing": 0,
+              "distinct": 18,
+              "outlier_row_ids": [],
+              "period": [
+                "2025-01-01",
+                "2026-06-01"
+              ],
+              "periodicity": "monthly",
+              "missing_periods": []
+            },
+            {
+              "id": "c2",
+              "name": "net_revenue_rub",
+              "kind": "number",
+              "role": "metric",
+              "unit": "",
+              "missing": 0,
+              "distinct": 18,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c3",
+              "name": "gross_profit_rub",
+              "kind": "number",
+              "role": "metric",
+              "unit": "",
+              "missing": 0,
+              "distinct": 18,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            }
+          ],
+          "hierarchies": [],
+          "dimension_count": 1,
+          "metric_count": 2,
+          "warnings": []
+        },
+        "analysis": {
+          "goal": "dynamics",
+          "task": "dynamics",
+          "dimension": "c1",
+          "series_dimension": null,
+          "metrics": [
+            "c2",
+            "c3"
+          ],
+          "aggregation": "sum",
+          "missing_policy": "preserve_gaps_exclude_from_aggregate",
+          "transformations": [
+            "group_by_dimension",
+            "sum",
+            "sort_dimension"
+          ]
+        },
+        "visualization": {
+          "selected": "line",
+          "candidates": [
+            {
+              "kind": "line",
+              "rank": 1,
+              "reason": {
+                "code": "candidate.line",
+                "params": {
+                  "task": "dynamics",
+                  "source_rows": 18,
+                  "metric_count": 2,
+                  "dimension": "c1",
+                  "distinct_categories": 18,
+                  "periodicity": "monthly"
+                }
+              }
+            },
+            {
+              "kind": "grouped_bar",
+              "rank": 2,
+              "reason": {
+                "code": "candidate.grouped_bar",
+                "params": {
+                  "task": "dynamics",
+                  "source_rows": 18,
+                  "metric_count": 2,
+                  "dimension": "c1",
+                  "distinct_categories": 18,
+                  "periodicity": "monthly"
+                }
+              }
+            },
+            {
+              "kind": "table",
+              "rank": 3,
+              "reason": {
+                "code": "candidate.table",
+                "params": {
+                  "task": "dynamics",
+                  "source_rows": 18,
+                  "metric_count": 2,
+                  "dimension": "c1",
+                  "distinct_categories": 18,
+                  "periodicity": "monthly"
+                }
+              }
+            }
+          ]
+        },
+        "data": {
+          "categories": [
+            "2025-01-01",
+            "2025-02-01",
+            "2025-03-01",
+            "2025-04-01",
+            "2025-05-01",
+            "2025-06-01",
+            "2025-07-01",
+            "2025-08-01",
+            "2025-09-01",
+            "2025-10-01",
+            "2025-11-01",
+            "2025-12-01",
+            "2026-01-01",
+            "2026-02-01",
+            "2026-03-01",
+            "2026-04-01",
+            "2026-05-01",
+            "2026-06-01"
+          ],
+          "series": [
+            {
+              "name": "net_revenue_rub",
+              "unit": "RUB",
+              "values": [
+                19764160.0,
+                20943747.0,
+                24640193.0,
+                25673443.0,
+                27146873.0,
+                29003891.0,
+                27537139.0,
+                28899137.0,
+                32650726.0,
+                31990601.0,
+                35516621.0,
+                40214590.0,
+                22728624.0,
+                24085800.0,
+                28228574.0,
+                29781721.0,
+                31470181.0,
+                33571796.0
+              ],
+              "fact_ids": [
+                "f1",
+                "f2",
+                "f3",
+                "f4",
+                "f5",
+                "f6",
+                "f7",
+                "f8",
+                "f9",
+                "f10",
+                "f11",
+                "f12",
+                "f13",
+                "f14",
+                "f15",
+                "f16",
+                "f17",
+                "f18"
+              ]
+            },
+            {
+              "name": "gross_profit_rub",
+              "unit": "RUB",
+              "values": [
+                5951166.0,
+                6342800.0,
+                7507092.0,
+                7872269.0,
+                8373836.0,
+                8985135.0,
+                8582111.0,
+                9062816.0,
+                10291001.0,
+                10120445.0,
+                11304854.0,
+                12873742.0,
+                7306716.0,
+                7766607.0,
+                9143656.0,
+                9891258.0,
+                10480731.0,
+                11198695.0
+              ],
+              "fact_ids": [
+                "f19",
+                "f20",
+                "f21",
+                "f22",
+                "f23",
+                "f24",
+                "f25",
+                "f26",
+                "f27",
+                "f28",
+                "f29",
+                "f30",
+                "f31",
+                "f32",
+                "f33",
+                "f34",
+                "f35",
+                "f36"
+              ]
+            }
+          ],
+          "points": [],
+          "columns": [],
+          "rows": [],
+          "row_ids": [],
+          "pages": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17
+            ]
+          ],
+          "series_pages": [
+            [
+              0,
+              1
+            ]
+          ],
+          "bins": [],
+          "kpi_fact_ids": []
+        },
+        "facts": [
+          {
+            "id": "f1",
+            "value": 19764160.0,
+            "exact": "19764160.0",
+            "unit": "RUB",
+            "period": [
+              "2025-01-01",
+              "2025-01-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                1
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-01-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f2",
+            "value": 20943747.0,
+            "exact": "20943747.0",
+            "unit": "RUB",
+            "period": [
+              "2025-02-01",
+              "2025-02-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                2
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-02-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f3",
+            "value": 24640193.0,
+            "exact": "24640193.0",
+            "unit": "RUB",
+            "period": [
+              "2025-03-01",
+              "2025-03-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                3
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-03-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f4",
+            "value": 25673443.0,
+            "exact": "25673443.0",
+            "unit": "RUB",
+            "period": [
+              "2025-04-01",
+              "2025-04-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                4
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-04-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f5",
+            "value": 27146873.0,
+            "exact": "27146873.0",
+            "unit": "RUB",
+            "period": [
+              "2025-05-01",
+              "2025-05-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                5
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-05-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f6",
+            "value": 29003891.0,
+            "exact": "29003891.0",
+            "unit": "RUB",
+            "period": [
+              "2025-06-01",
+              "2025-06-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                6
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-06-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f7",
+            "value": 27537139.0,
+            "exact": "27537139.0",
+            "unit": "RUB",
+            "period": [
+              "2025-07-01",
+              "2025-07-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                7
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-07-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f8",
+            "value": 28899137.0,
+            "exact": "28899137.0",
+            "unit": "RUB",
+            "period": [
+              "2025-08-01",
+              "2025-08-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                8
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-08-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f9",
+            "value": 32650726.0,
+            "exact": "32650726.0",
+            "unit": "RUB",
+            "period": [
+              "2025-09-01",
+              "2025-09-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                9
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-09-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f10",
+            "value": 31990601.0,
+            "exact": "31990601.0",
+            "unit": "RUB",
+            "period": [
+              "2025-10-01",
+              "2025-10-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                10
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-10-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f11",
+            "value": 35516621.0,
+            "exact": "35516621.0",
+            "unit": "RUB",
+            "period": [
+              "2025-11-01",
+              "2025-11-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                11
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-11-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f12",
+            "value": 40214590.0,
+            "exact": "40214590.0",
+            "unit": "RUB",
+            "period": [
+              "2025-12-01",
+              "2025-12-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                12
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-12-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f13",
+            "value": 22728624.0,
+            "exact": "22728624.0",
+            "unit": "RUB",
+            "period": [
+              "2026-01-01",
+              "2026-01-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                13
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-01-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f14",
+            "value": 24085800.0,
+            "exact": "24085800.0",
+            "unit": "RUB",
+            "period": [
+              "2026-02-01",
+              "2026-02-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                14
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-02-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f15",
+            "value": 28228574.0,
+            "exact": "28228574.0",
+            "unit": "RUB",
+            "period": [
+              "2026-03-01",
+              "2026-03-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                15
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-03-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f16",
+            "value": 29781721.0,
+            "exact": "29781721.0",
+            "unit": "RUB",
+            "period": [
+              "2026-04-01",
+              "2026-04-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                16
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-04-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f17",
+            "value": 31470181.0,
+            "exact": "31470181.0",
+            "unit": "RUB",
+            "period": [
+              "2026-05-01",
+              "2026-05-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                17
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-05-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f18",
+            "value": 33571796.0,
+            "exact": "33571796.0",
+            "unit": "RUB",
+            "period": [
+              "2026-06-01",
+              "2026-06-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                18
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-06-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f19",
+            "value": 5951166.0,
+            "exact": "5951166.0",
+            "unit": "RUB",
+            "period": [
+              "2025-01-01",
+              "2025-01-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                1
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-01-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f20",
+            "value": 6342800.0,
+            "exact": "6342800.0",
+            "unit": "RUB",
+            "period": [
+              "2025-02-01",
+              "2025-02-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                2
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-02-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f21",
+            "value": 7507092.0,
+            "exact": "7507092.0",
+            "unit": "RUB",
+            "period": [
+              "2025-03-01",
+              "2025-03-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                3
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-03-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f22",
+            "value": 7872269.0,
+            "exact": "7872269.0",
+            "unit": "RUB",
+            "period": [
+              "2025-04-01",
+              "2025-04-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                4
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-04-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f23",
+            "value": 8373836.0,
+            "exact": "8373836.0",
+            "unit": "RUB",
+            "period": [
+              "2025-05-01",
+              "2025-05-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                5
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-05-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f24",
+            "value": 8985135.0,
+            "exact": "8985135.0",
+            "unit": "RUB",
+            "period": [
+              "2025-06-01",
+              "2025-06-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                6
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-06-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f25",
+            "value": 8582111.0,
+            "exact": "8582111.0",
+            "unit": "RUB",
+            "period": [
+              "2025-07-01",
+              "2025-07-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                7
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-07-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f26",
+            "value": 9062816.0,
+            "exact": "9062816.0",
+            "unit": "RUB",
+            "period": [
+              "2025-08-01",
+              "2025-08-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                8
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-08-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f27",
+            "value": 10291001.0,
+            "exact": "10291001.0",
+            "unit": "RUB",
+            "period": [
+              "2025-09-01",
+              "2025-09-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                9
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-09-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f28",
+            "value": 10120445.0,
+            "exact": "10120445.0",
+            "unit": "RUB",
+            "period": [
+              "2025-10-01",
+              "2025-10-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                10
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-10-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f29",
+            "value": 11304854.0,
+            "exact": "11304854.0",
+            "unit": "RUB",
+            "period": [
+              "2025-11-01",
+              "2025-11-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                11
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-11-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f30",
+            "value": 12873742.0,
+            "exact": "12873742.0",
+            "unit": "RUB",
+            "period": [
+              "2025-12-01",
+              "2025-12-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                12
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2025-12-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f31",
+            "value": 7306716.0,
+            "exact": "7306716.0",
+            "unit": "RUB",
+            "period": [
+              "2026-01-01",
+              "2026-01-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                13
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-01-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f32",
+            "value": 7766607.0,
+            "exact": "7766607.0",
+            "unit": "RUB",
+            "period": [
+              "2026-02-01",
+              "2026-02-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                14
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-02-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f33",
+            "value": 9143656.0,
+            "exact": "9143656.0",
+            "unit": "RUB",
+            "period": [
+              "2026-03-01",
+              "2026-03-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                15
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-03-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f34",
+            "value": 9891258.0,
+            "exact": "9891258.0",
+            "unit": "RUB",
+            "period": [
+              "2026-04-01",
+              "2026-04-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                16
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-04-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f35",
+            "value": 10480731.0,
+            "exact": "10480731.0",
+            "unit": "RUB",
+            "period": [
+              "2026-05-01",
+              "2026-05-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                17
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-05-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f36",
+            "value": 11198695.0,
+            "exact": "11198695.0",
+            "unit": "RUB",
+            "period": [
+              "2026-06-01",
+              "2026-06-01"
+            ],
+            "evidence": {
+              "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+              "row_ids": [
+                18
+              ],
+              "column_ids": [
+                "c1",
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "2026-06-01",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          }
+        ],
+        "presentation": {
+          "title": "net_revenue_rub на 2026-06-01: 3,35718e+07",
+          "x_label": "month",
+          "y_label": "net_revenue_rub, gross_profit_rub",
+          "x_unit": "",
+          "y_unit": "RUB",
+          "unit": "RUB",
+          "period": [
+            "2025-01-01",
+            "2026-06-01"
+          ],
+          "source_label": "monthly_trend.json / 1",
+          "conclusion_fact_ids": [
+            "f18"
+          ]
+        },
+        "status": "ok",
+        "warnings": [],
+        "refusal": null
+      },
+      "analysis_request": {
+        "goal": "dynamics",
+        "task": "dynamics",
+        "dimension": "c1",
+        "series_dimension": null,
+        "series_additive": false,
+        "metrics": [
+          "c2",
+          "c3"
+        ],
+        "aggregation": "sum",
+        "unit": "RUB",
+        "locale": "ru",
+        "bins": null,
+        "page_size": 10,
+        "slide_budget": 30,
+        "column_types": {},
+        "number_locale": null,
+        "filters": {}
+      },
+      "analysis_id": "f2e3770361d3ade6e3efcc6f",
+      "dataset_id": "50456d438f63ba703b60016c",
+      "source_file": "sales.csv + plan.csv",
+      "sheet": "monthly_trend",
+      "source_hash": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+      "profile": {
+        "row_count": 18,
+        "column_count": 3,
+        "columns": [
+          {
+            "id": "c1",
+            "name": "month",
+            "kind": "date",
+            "role": "time",
+            "unit": "",
+            "missing": 0,
+            "distinct": 18,
+            "outlier_row_ids": [],
+            "period": [
+              "2025-01-01",
+              "2026-06-01"
+            ],
+            "periodicity": "monthly",
+            "missing_periods": []
+          },
+          {
+            "id": "c2",
+            "name": "net_revenue_rub",
+            "kind": "number",
+            "role": "metric",
+            "unit": "",
+            "missing": 0,
+            "distinct": 18,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c3",
+            "name": "gross_profit_rub",
+            "kind": "number",
+            "role": "metric",
+            "unit": "",
+            "missing": 0,
+            "distinct": 18,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          }
+        ],
+        "hierarchies": [],
+        "dimension_count": 1,
+        "metric_count": 2,
+        "warnings": []
+      },
+      "goal": "dynamics",
+      "task": "dynamics",
+      "status": "ok",
+      "warnings": [
+        "216 строк продаж вне выбранной истории сохранены, но не включены в расчёт."
+      ],
+      "facts": [
+        {
+          "id": "f1",
+          "value": 19764160.0,
+          "exact": "19764160.0",
+          "unit": "RUB",
+          "period": [
+            "2025-01-01",
+            "2025-01-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              1
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-01-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f2",
+          "value": 20943747.0,
+          "exact": "20943747.0",
+          "unit": "RUB",
+          "period": [
+            "2025-02-01",
+            "2025-02-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              2
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-02-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f3",
+          "value": 24640193.0,
+          "exact": "24640193.0",
+          "unit": "RUB",
+          "period": [
+            "2025-03-01",
+            "2025-03-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              3
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-03-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f4",
+          "value": 25673443.0,
+          "exact": "25673443.0",
+          "unit": "RUB",
+          "period": [
+            "2025-04-01",
+            "2025-04-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              4
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-04-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f5",
+          "value": 27146873.0,
+          "exact": "27146873.0",
+          "unit": "RUB",
+          "period": [
+            "2025-05-01",
+            "2025-05-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              5
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-05-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f6",
+          "value": 29003891.0,
+          "exact": "29003891.0",
+          "unit": "RUB",
+          "period": [
+            "2025-06-01",
+            "2025-06-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              6
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-06-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f7",
+          "value": 27537139.0,
+          "exact": "27537139.0",
+          "unit": "RUB",
+          "period": [
+            "2025-07-01",
+            "2025-07-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              7
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-07-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f8",
+          "value": 28899137.0,
+          "exact": "28899137.0",
+          "unit": "RUB",
+          "period": [
+            "2025-08-01",
+            "2025-08-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              8
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-08-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f9",
+          "value": 32650726.0,
+          "exact": "32650726.0",
+          "unit": "RUB",
+          "period": [
+            "2025-09-01",
+            "2025-09-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              9
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-09-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f10",
+          "value": 31990601.0,
+          "exact": "31990601.0",
+          "unit": "RUB",
+          "period": [
+            "2025-10-01",
+            "2025-10-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              10
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-10-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f11",
+          "value": 35516621.0,
+          "exact": "35516621.0",
+          "unit": "RUB",
+          "period": [
+            "2025-11-01",
+            "2025-11-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              11
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-11-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f12",
+          "value": 40214590.0,
+          "exact": "40214590.0",
+          "unit": "RUB",
+          "period": [
+            "2025-12-01",
+            "2025-12-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              12
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-12-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f13",
+          "value": 22728624.0,
+          "exact": "22728624.0",
+          "unit": "RUB",
+          "period": [
+            "2026-01-01",
+            "2026-01-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              13
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-01-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f14",
+          "value": 24085800.0,
+          "exact": "24085800.0",
+          "unit": "RUB",
+          "period": [
+            "2026-02-01",
+            "2026-02-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              14
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-02-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f15",
+          "value": 28228574.0,
+          "exact": "28228574.0",
+          "unit": "RUB",
+          "period": [
+            "2026-03-01",
+            "2026-03-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              15
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-03-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f16",
+          "value": 29781721.0,
+          "exact": "29781721.0",
+          "unit": "RUB",
+          "period": [
+            "2026-04-01",
+            "2026-04-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              16
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-04-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f17",
+          "value": 31470181.0,
+          "exact": "31470181.0",
+          "unit": "RUB",
+          "period": [
+            "2026-05-01",
+            "2026-05-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              17
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-05-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f18",
+          "value": 33571796.0,
+          "exact": "33571796.0",
+          "unit": "RUB",
+          "period": [
+            "2026-06-01",
+            "2026-06-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              18
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-06-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f19",
+          "value": 5951166.0,
+          "exact": "5951166.0",
+          "unit": "RUB",
+          "period": [
+            "2025-01-01",
+            "2025-01-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              1
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-01-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f20",
+          "value": 6342800.0,
+          "exact": "6342800.0",
+          "unit": "RUB",
+          "period": [
+            "2025-02-01",
+            "2025-02-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              2
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-02-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f21",
+          "value": 7507092.0,
+          "exact": "7507092.0",
+          "unit": "RUB",
+          "period": [
+            "2025-03-01",
+            "2025-03-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              3
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-03-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f22",
+          "value": 7872269.0,
+          "exact": "7872269.0",
+          "unit": "RUB",
+          "period": [
+            "2025-04-01",
+            "2025-04-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              4
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-04-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f23",
+          "value": 8373836.0,
+          "exact": "8373836.0",
+          "unit": "RUB",
+          "period": [
+            "2025-05-01",
+            "2025-05-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              5
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-05-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f24",
+          "value": 8985135.0,
+          "exact": "8985135.0",
+          "unit": "RUB",
+          "period": [
+            "2025-06-01",
+            "2025-06-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              6
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-06-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f25",
+          "value": 8582111.0,
+          "exact": "8582111.0",
+          "unit": "RUB",
+          "period": [
+            "2025-07-01",
+            "2025-07-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              7
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-07-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f26",
+          "value": 9062816.0,
+          "exact": "9062816.0",
+          "unit": "RUB",
+          "period": [
+            "2025-08-01",
+            "2025-08-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              8
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-08-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f27",
+          "value": 10291001.0,
+          "exact": "10291001.0",
+          "unit": "RUB",
+          "period": [
+            "2025-09-01",
+            "2025-09-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              9
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-09-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f28",
+          "value": 10120445.0,
+          "exact": "10120445.0",
+          "unit": "RUB",
+          "period": [
+            "2025-10-01",
+            "2025-10-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              10
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-10-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f29",
+          "value": 11304854.0,
+          "exact": "11304854.0",
+          "unit": "RUB",
+          "period": [
+            "2025-11-01",
+            "2025-11-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              11
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-11-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f30",
+          "value": 12873742.0,
+          "exact": "12873742.0",
+          "unit": "RUB",
+          "period": [
+            "2025-12-01",
+            "2025-12-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              12
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2025-12-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f31",
+          "value": 7306716.0,
+          "exact": "7306716.0",
+          "unit": "RUB",
+          "period": [
+            "2026-01-01",
+            "2026-01-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              13
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-01-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f32",
+          "value": 7766607.0,
+          "exact": "7766607.0",
+          "unit": "RUB",
+          "period": [
+            "2026-02-01",
+            "2026-02-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              14
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-02-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f33",
+          "value": 9143656.0,
+          "exact": "9143656.0",
+          "unit": "RUB",
+          "period": [
+            "2026-03-01",
+            "2026-03-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              15
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-03-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f34",
+          "value": 9891258.0,
+          "exact": "9891258.0",
+          "unit": "RUB",
+          "period": [
+            "2026-04-01",
+            "2026-04-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              16
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-04-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f35",
+          "value": 10480731.0,
+          "exact": "10480731.0",
+          "unit": "RUB",
+          "period": [
+            "2026-05-01",
+            "2026-05-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              17
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-05-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f36",
+          "value": 11198695.0,
+          "exact": "11198695.0",
+          "unit": "RUB",
+          "period": [
+            "2026-06-01",
+            "2026-06-01"
+          ],
+          "evidence": {
+            "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+            "row_ids": [
+              18
+            ],
+            "column_ids": [
+              "c1",
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "2026-06-01",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        }
+      ],
+      "provenance": [
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            1
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-01-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            2
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-02-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            3
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-03-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            4
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-04-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            5
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-05-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            6
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-06-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            7
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-07-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            8
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-08-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            9
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-09-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            10
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-10-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            11
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-11-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            12
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-12-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            13
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-01-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            14
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-02-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            15
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-03-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            16
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-04-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            17
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-05-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            18
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-06-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            1
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-01-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            2
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-02-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            3
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-03-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            4
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-04-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            5
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-05-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            6
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-06-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            7
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-07-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            8
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-08-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            9
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-09-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            10
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-10-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            11
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-11-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            12
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2025-12-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            13
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-01-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            14
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-02-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            15
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-03-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            16
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-04-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            17
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-05-01",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "635fef5f47f76ccb045e997efdb013f78ada2994249d4b720ce1352da6700334",
+          "row_ids": [
+            18
+          ],
+          "column_ids": [
+            "c1",
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "2026-06-01",
+            "series": null
+          }
+        }
+      ],
+      "transformations": [
+        "group_by_dimension",
+        "sum",
+        "sort_dimension"
+      ],
+      "candidates": [
+        {
+          "kind": "line",
+          "rank": 1,
+          "reason": "Временная ось позволяет показать динамику линией"
+        },
+        {
+          "kind": "grouped_bar",
+          "rank": 2,
+          "reason": "Несколько сопоставимых метрик сравниваются по общей категории"
+        },
+        {
+          "kind": "table",
+          "rank": 3,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "selected": "line",
+      "title": "Линии показывают 18 закрытых месяцев. Выручка и прибыль в рублях без НДС; пропущенные периоды не заменяются нулями.",
+      "visual": {
+        "kind": "line",
+        "source": "monthly_trend.json / 1",
+        "unit": "RUB",
+        "x_label": "month",
+        "y_label": "net_revenue_rub, gross_profit_rub",
+        "categories": [
+          "2025-01-01",
+          "2025-02-01",
+          "2025-03-01",
+          "2025-04-01",
+          "2025-05-01",
+          "2025-06-01",
+          "2025-07-01",
+          "2025-08-01",
+          "2025-09-01",
+          "2025-10-01",
+          "2025-11-01",
+          "2025-12-01",
+          "2026-01-01",
+          "2026-02-01",
+          "2026-03-01",
+          "2026-04-01",
+          "2026-05-01",
+          "2026-06-01"
+        ],
+        "series": [
+          {
+            "name": "net_revenue_rub",
+            "values": [
+              19764160.0,
+              20943747.0,
+              24640193.0,
+              25673443.0,
+              27146873.0,
+              29003891.0,
+              27537139.0,
+              28899137.0,
+              32650726.0,
+              31990601.0,
+              35516621.0,
+              40214590.0,
+              22728624.0,
+              24085800.0,
+              28228574.0,
+              29781721.0,
+              31470181.0,
+              33571796.0
+            ]
+          },
+          {
+            "name": "gross_profit_rub",
+            "values": [
+              5951166.0,
+              6342800.0,
+              7507092.0,
+              7872269.0,
+              8373836.0,
+              8985135.0,
+              8582111.0,
+              9062816.0,
+              10291001.0,
+              10120445.0,
+              11304854.0,
+              12873742.0,
+              7306716.0,
+              7766607.0,
+              9143656.0,
+              9891258.0,
+              10480731.0,
+              11198695.0
+            ]
+          }
+        ]
+      },
+      "business_view": "monthly_trend",
+      "packId": "sales",
+      "business_explanation": {
+        "metric": "Линии показывают 18 закрытых месяцев. Выручка и прибыль в рублях без НДС; пропущенные периоды не заменяются нулями.",
+        "formula": "Чистая выручка = до корректировок − скидки − возвраты. Прибыль = чистая выручка − себестоимость. Маржа = сумма прибыли / сумма чистой выручки. План учитывается один раз по месяцу, региону и продукту.",
+        "period": "2026-04 – 2026-06; сравнение: 2026-01 – 2026-03; год назад: 2025-04 – 2025-06",
+        "unit": "Рубли без НДС; доли и маржа — проценты; изменение маржи — процентные пункты",
+        "source": "sales.csv + plan.csv",
+        "exclusions": "Вне выбранной истории: 216 строк продаж. Они сохранены в исходнике и исключены из расчёта. Пропуски и несопоставимые ключи не заменяются нулями.",
+        "filters": "Закрытые месяцы; история 2025-01 – 2026-06 (18 мес.); план 2026-01 – 2026-12"
+      }
+    },
+    {
+      "version": 1,
+      "source_id": "sales",
+      "contract": {
+        "schema_version": "1.0",
+        "dataset_ref": {
+          "dataset_id": "70cebbc0bdb4fd742f973dde",
+          "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+          "filename": "region_plan_gap.json",
+          "archive_path": null,
+          "table": "1"
+        },
+        "profile": {
+          "row_count": 6,
+          "column_count": 2,
+          "columns": [
+            {
+              "id": "c1",
+              "name": "region",
+              "kind": "category",
+              "role": "dimension",
+              "unit": "",
+              "missing": 0,
+              "distinct": 6,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c2",
+              "name": "plan_gap_rub",
+              "kind": "number",
+              "role": "metric",
+              "unit": "",
+              "missing": 0,
+              "distinct": 6,
+              "outlier_row_ids": [
+                1,
+                6
+              ],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            }
+          ],
+          "hierarchies": [],
+          "dimension_count": 1,
+          "metric_count": 1,
+          "warnings": [
+            {
+              "code": "profile.outliers_retained",
+              "params": {
+                "column": "c2"
+              }
+            }
+          ]
+        },
+        "analysis": {
+          "goal": "comparison",
+          "task": "comparison",
+          "dimension": "c1",
+          "series_dimension": null,
+          "metrics": [
+            "c2"
+          ],
+          "aggregation": "sum",
+          "missing_policy": "preserve_gaps_exclude_from_aggregate",
+          "transformations": [
+            "group_by_dimension",
+            "sum",
+            "sort_dimension"
+          ]
+        },
+        "visualization": {
+          "selected": "bar",
+          "candidates": [
+            {
+              "kind": "bar",
+              "rank": 1,
+              "reason": {
+                "code": "candidate.bar",
+                "params": {
+                  "task": "comparison",
+                  "source_rows": 6,
+                  "metric_count": 1,
+                  "dimension": "c1",
+                  "distinct_categories": 6,
+                  "periodicity": null
+                }
+              }
+            },
+            {
+              "kind": "table",
+              "rank": 2,
+              "reason": {
+                "code": "candidate.table",
+                "params": {
+                  "task": "comparison",
+                  "source_rows": 6,
+                  "metric_count": 1,
+                  "dimension": "c1",
+                  "distinct_categories": 6,
+                  "periodicity": null
+                }
+              }
+            }
+          ]
+        },
+        "data": {
+          "categories": [
+            "Москва и Московская область",
+            "Санкт-Петербург и Ленинградская область",
+            "Поволжье",
+            "Уральский федеральный округ",
+            "Сибирь и Дальневосточный федеральный округ",
+            "Южный и Северо-Кавказский федеральные округа"
+          ],
+          "series": [
+            {
+              "name": "plan_gap_rub",
+              "unit": "RUB",
+              "values": [
+                838635.0,
+                -1842513.0,
+                -1936253.0,
+                -2047708.0,
+                -2189391.0,
+                -6967022.0
+              ],
+              "fact_ids": [
+                "f1",
+                "f3",
+                "f2",
+                "f5",
+                "f4",
+                "f6"
+              ]
+            }
+          ],
+          "points": [],
+          "columns": [],
+          "rows": [],
+          "row_ids": [],
+          "pages": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "series_pages": [
+            [
+              0
+            ]
+          ],
+          "bins": [],
+          "kpi_fact_ids": []
+        },
+        "facts": [
+          {
+            "id": "f1",
+            "value": 838635.0,
+            "exact": "838635.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+              "row_ids": [
+                1
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Москва и Московская область",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f2",
+            "value": -1936253.0,
+            "exact": "-1936253.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+              "row_ids": [
+                3
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Поволжье",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f3",
+            "value": -1842513.0,
+            "exact": "-1842513.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+              "row_ids": [
+                2
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Санкт-Петербург и Ленинградская область",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f4",
+            "value": -2189391.0,
+            "exact": "-2189391.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+              "row_ids": [
+                5
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Сибирь и Дальневосточный федеральный округ",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f5",
+            "value": -2047708.0,
+            "exact": "-2047708.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+              "row_ids": [
+                4
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Уральский федеральный округ",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f6",
+            "value": -6967022.0,
+            "exact": "-6967022.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+              "row_ids": [
+                6
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Южный и Северо-Кавказский федеральные округа",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          }
+        ],
+        "presentation": {
+          "title": "«Москва и Московская область» лидирует по plan_gap_rub: 838635,0",
+          "x_label": "region",
+          "y_label": "plan_gap_rub",
+          "x_unit": "",
+          "y_unit": "RUB",
+          "unit": "RUB",
+          "period": [],
+          "source_label": "region_plan_gap.json / 1",
+          "conclusion_fact_ids": [
+            "f1"
+          ]
+        },
+        "status": "warning",
+        "warnings": [
+          {
+            "code": "profile.outliers_retained",
+            "params": {
+              "column": "c2"
+            }
+          }
+        ],
+        "refusal": null
+      },
+      "analysis_request": {
+        "goal": "comparison",
+        "task": "comparison",
+        "dimension": "c1",
+        "series_dimension": null,
+        "series_additive": false,
+        "metrics": [
+          "c2"
+        ],
+        "aggregation": "sum",
+        "unit": "RUB",
+        "locale": "ru",
+        "bins": null,
+        "page_size": 10,
+        "slide_budget": 30,
+        "column_types": {
+          "c1": "category"
+        },
+        "number_locale": null,
+        "filters": {}
+      },
+      "analysis_id": "6611290cb922095a815b839c",
+      "dataset_id": "70cebbc0bdb4fd742f973dde",
+      "source_file": "sales.csv + plan.csv",
+      "sheet": "region_plan_gap",
+      "source_hash": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+      "profile": {
+        "row_count": 6,
+        "column_count": 2,
+        "columns": [
+          {
+            "id": "c1",
+            "name": "region",
+            "kind": "category",
+            "role": "dimension",
+            "unit": "",
+            "missing": 0,
+            "distinct": 6,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c2",
+            "name": "plan_gap_rub",
+            "kind": "number",
+            "role": "metric",
+            "unit": "",
+            "missing": 0,
+            "distinct": 6,
+            "outlier_row_ids": [
+              1,
+              6
+            ],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          }
+        ],
+        "hierarchies": [],
+        "dimension_count": 1,
+        "metric_count": 1,
+        "warnings": [
+          {
+            "code": "profile.outliers_retained",
+            "params": {
+              "column": "c2"
+            }
+          }
+        ]
+      },
+      "goal": "comparison",
+      "task": "comparison",
+      "status": "warning",
+      "warnings": [
+        "Выбросы по правилу 1,5 IQR отмечены и сохранены",
+        "216 строк продаж вне выбранной истории сохранены, но не включены в расчёт."
+      ],
+      "facts": [
+        {
+          "id": "f1",
+          "value": 838635.0,
+          "exact": "838635.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+            "row_ids": [
+              1
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Москва и Московская область",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f2",
+          "value": -1936253.0,
+          "exact": "-1936253.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+            "row_ids": [
+              3
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Поволжье",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f3",
+          "value": -1842513.0,
+          "exact": "-1842513.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+            "row_ids": [
+              2
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Санкт-Петербург и Ленинградская область",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f4",
+          "value": -2189391.0,
+          "exact": "-2189391.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+            "row_ids": [
+              5
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Сибирь и Дальневосточный федеральный округ",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f5",
+          "value": -2047708.0,
+          "exact": "-2047708.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+            "row_ids": [
+              4
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Уральский федеральный округ",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f6",
+          "value": -6967022.0,
+          "exact": "-6967022.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+            "row_ids": [
+              6
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Южный и Северо-Кавказский федеральные округа",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        }
+      ],
+      "provenance": [
+        {
+          "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+          "row_ids": [
+            1
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Москва и Московская область",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+          "row_ids": [
+            3
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Поволжье",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+          "row_ids": [
+            2
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Санкт-Петербург и Ленинградская область",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+          "row_ids": [
+            5
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Сибирь и Дальневосточный федеральный округ",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+          "row_ids": [
+            4
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Уральский федеральный округ",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "a9d699af79614095230941ca0949492e0b1ad2572881d953c51bb3bfbd1a670a",
+          "row_ids": [
+            6
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Южный и Северо-Кавказский федеральные округа",
+            "series": null
+          }
+        }
+      ],
+      "transformations": [
+        "group_by_dimension",
+        "sum",
+        "sort_dimension"
+      ],
+      "candidates": [
+        {
+          "kind": "bar",
+          "rank": 1,
+          "reason": "Столбцы позволяют сравнить значения категорий"
+        },
+        {
+          "kind": "table",
+          "rank": 2,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "selected": "bar",
+      "title": "Столбцы показывают факт минус план периода 2026-04 – 2026-06 по регионам в рублях. Отрицательный столбец означает недовыполнение.",
+      "visual": {
+        "kind": "bar",
+        "source": "region_plan_gap.json / 1",
+        "unit": "RUB",
+        "x_label": "region",
+        "y_label": "plan_gap_rub",
+        "categories": [
+          "Москва и Московская область",
+          "Санкт-Петербург и Ленинградская область",
+          "Поволжье",
+          "Уральский федеральный округ",
+          "Сибирь и Дальневосточный федеральный округ",
+          "Южный и Северо-Кавказский федеральные округа"
+        ],
+        "series": [
+          {
+            "name": "plan_gap_rub",
+            "values": [
+              838635.0,
+              -1842513.0,
+              -1936253.0,
+              -2047708.0,
+              -2189391.0,
+              -6967022.0
+            ]
+          }
+        ]
+      },
+      "business_view": "region_plan_gap",
+      "packId": "sales",
+      "business_explanation": {
+        "metric": "Столбцы показывают факт минус план периода 2026-04 – 2026-06 по регионам в рублях. Отрицательный столбец означает недовыполнение.",
+        "formula": "Чистая выручка = до корректировок − скидки − возвраты. Прибыль = чистая выручка − себестоимость. Маржа = сумма прибыли / сумма чистой выручки. План учитывается один раз по месяцу, региону и продукту.",
+        "period": "2026-04 – 2026-06; сравнение: 2026-01 – 2026-03; год назад: 2025-04 – 2025-06",
+        "unit": "Рубли без НДС; доли и маржа — проценты; изменение маржи — процентные пункты",
+        "source": "sales.csv + plan.csv",
+        "exclusions": "Вне выбранной истории: 216 строк продаж. Они сохранены в исходнике и исключены из расчёта. Пропуски и несопоставимые ключи не заменяются нулями.",
+        "filters": "Закрытые месяцы; история 2025-01 – 2026-06 (18 мес.); план 2026-01 – 2026-12"
+      }
+    },
+    {
+      "version": 1,
+      "source_id": "sales",
+      "contract": {
+        "schema_version": "1.0",
+        "dataset_ref": {
+          "dataset_id": "11d0a073c4004dc0fc370c0d",
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "filename": "product_structure.json",
+          "archive_path": null,
+          "table": "1"
+        },
+        "profile": {
+          "row_count": 4,
+          "column_count": 2,
+          "columns": [
+            {
+              "id": "c1",
+              "name": "product",
+              "kind": "category",
+              "role": "dimension",
+              "unit": "",
+              "missing": 0,
+              "distinct": 4,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c2",
+              "name": "net_revenue_rub",
+              "kind": "number",
+              "role": "metric",
+              "unit": "",
+              "missing": 0,
+              "distinct": 4,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            }
+          ],
+          "hierarchies": [],
+          "dimension_count": 1,
+          "metric_count": 1,
+          "warnings": []
+        },
+        "analysis": {
+          "goal": "shares",
+          "task": "shares",
+          "dimension": "c1",
+          "series_dimension": null,
+          "metrics": [
+            "c2"
+          ],
+          "aggregation": "sum",
+          "missing_policy": "preserve_gaps_exclude_from_aggregate",
+          "transformations": [
+            "group_by_dimension",
+            "sum",
+            "sort_dimension"
+          ]
+        },
+        "visualization": {
+          "selected": "pie",
+          "candidates": [
+            {
+              "kind": "pie",
+              "rank": 1,
+              "reason": {
+                "code": "candidate.pie",
+                "params": {
+                  "task": "shares",
+                  "source_rows": 4,
+                  "metric_count": 1,
+                  "dimension": "c1",
+                  "distinct_categories": 4,
+                  "periodicity": null
+                }
+              }
+            },
+            {
+              "kind": "bar",
+              "rank": 2,
+              "reason": {
+                "code": "candidate.bar",
+                "params": {
+                  "task": "shares",
+                  "source_rows": 4,
+                  "metric_count": 1,
+                  "dimension": "c1",
+                  "distinct_categories": 4,
+                  "periodicity": null
+                }
+              }
+            },
+            {
+              "kind": "table",
+              "rank": 3,
+              "reason": {
+                "code": "candidate.table",
+                "params": {
+                  "task": "shares",
+                  "source_rows": 4,
+                  "metric_count": 1,
+                  "dimension": "c1",
+                  "distinct_categories": 4,
+                  "periodicity": null
+                }
+              }
+            }
+          ]
+        },
+        "data": {
+          "categories": [
+            "Аналитика сделок",
+            "Интеграционный шлюз",
+            "Командный портал",
+            "Сервис сопровождения"
+          ],
+          "series": [
+            {
+              "name": "net_revenue_rub",
+              "unit": "RUB",
+              "values": [
+                30759557.0,
+                23971150.0,
+                20368733.0,
+                19724258.0
+              ],
+              "fact_ids": [
+                "f1",
+                "f2",
+                "f3",
+                "f4"
+              ]
+            }
+          ],
+          "points": [],
+          "columns": [],
+          "rows": [],
+          "row_ids": [],
+          "pages": [
+            [
+              0,
+              1,
+              2,
+              3
+            ]
+          ],
+          "series_pages": [
+            [
+              0
+            ]
+          ],
+          "bins": [],
+          "kpi_fact_ids": []
+        },
+        "facts": [
+          {
+            "id": "f1",
+            "value": 30759557.0,
+            "exact": "30759557.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                2
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Аналитика сделок",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f2",
+            "value": 23971150.0,
+            "exact": "23971150.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                3
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Интеграционный шлюз",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f3",
+            "value": 20368733.0,
+            "exact": "20368733.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                1
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Командный портал",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f4",
+            "value": 19724258.0,
+            "exact": "19724258.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                4
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "category": "Сервис сопровождения",
+                "series": null
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f5",
+            "value": 94823698.0,
+            "exact": "94823698.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                1,
+                2,
+                3,
+                4
+              ],
+              "column_ids": [
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {
+                "scope": "whole"
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f6",
+            "value": 32.43868109847393,
+            "exact": "32.438681098473927899331662850778082921845127786515982534239489373215543650280333930870318936517325025649178963680576979817851018634603345674200556911416806376819431783814210662823970438275883313472967485406443439908871725293818429228524709086962628266195650796069986639837649023137654892978335436780792919508370154473410222832693152296169676909246885",
+            "unit": "%",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                2
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "share_percent",
+              "parameters": {
+                "category": "Аналитика сделок",
+                "numerator": "30759557.0",
+                "denominator": "94823698.0",
+                "numerator_fact_id": "f1",
+                "denominator_fact_id": "f5"
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f7",
+            "value": 25.27970381412461,
+            "exact": "25.279703814124608386397248502162402482974245530900935755532335387299491314924250264949590976719764715356281506760050636287144169382636817222631414353825348595875263164699609163101822921945102794873070653709371258648866446866478461955786622031973484096770830431017360238365730051996073808469271046568970554175180976384194592368671384235615868936054361",
+            "unit": "%",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                3
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "share_percent",
+              "parameters": {
+                "category": "Интеграционный шлюз",
+                "numerator": "23971150.0",
+                "denominator": "94823698.0",
+                "numerator_fact_id": "f2",
+                "denominator_fact_id": "f5"
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f8",
+            "value": 21.48063556854743,
+            "exact": "21.480635568547432098672211665906554287726681994621217999745169187559000282819596426201391133258692357684679203293674541146876596185902810919692248239464358371680463252972901352149332965267817334017072398927112081201473496635830422897027281091695031763051468420900437778750202296476562219710098207728620750479484569353116770451200922368583431538390329",
+            "unit": "%",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                1
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "share_percent",
+              "parameters": {
+                "category": "Командный портал",
+                "numerator": "20368733.0",
+                "denominator": "94823698.0",
+                "numerator_fact_id": "f3",
+                "denominator_fact_id": "f5"
+              }
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f9",
+            "value": 20.80097951885403,
+            "exact": "20.800979518854031615598876981152960307453944687961863710483006051925964751975819377978698953504217901309860326265697842748128215796857026183475780495293486655624841798513278821924873674511196557636889461957073220240788331203872685918661387789368855873982050352012215343046418628389709078842295308921615775836964299789278414347434541099631022616308425",
+            "unit": "%",
+            "period": [],
+            "evidence": {
+              "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+              "row_ids": [
+                4
+              ],
+              "column_ids": [
+                "c1",
+                "c2"
+              ],
+              "operation": "share_percent",
+              "parameters": {
+                "category": "Сервис сопровождения",
+                "numerator": "19724258.0",
+                "denominator": "94823698.0",
+                "numerator_fact_id": "f4",
+                "denominator_fact_id": "f5"
+              }
+            },
+            "rounding_digits": null
+          }
+        ],
+        "presentation": {
+          "title": "Доля «Аналитика сделок» составляет 32,4387%",
+          "x_label": "product",
+          "y_label": "net_revenue_rub",
+          "x_unit": "",
+          "y_unit": "RUB",
+          "unit": "RUB",
+          "period": [],
+          "source_label": "product_structure.json / 1",
+          "conclusion_fact_ids": [
+            "f6",
+            "f5"
+          ]
+        },
+        "status": "ok",
+        "warnings": [],
+        "refusal": null
+      },
+      "analysis_request": {
+        "goal": "shares",
+        "task": "shares",
+        "dimension": "c1",
+        "series_dimension": null,
+        "series_additive": false,
+        "metrics": [
+          "c2"
+        ],
+        "aggregation": "sum",
+        "unit": "RUB",
+        "locale": "ru",
+        "bins": null,
+        "page_size": 10,
+        "slide_budget": 30,
+        "column_types": {
+          "c1": "category"
+        },
+        "number_locale": null,
+        "filters": {}
+      },
+      "analysis_id": "281b1386d990b53954d87b3c",
+      "dataset_id": "11d0a073c4004dc0fc370c0d",
+      "source_file": "sales.csv + plan.csv",
+      "sheet": "product_structure",
+      "source_hash": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+      "profile": {
+        "row_count": 4,
+        "column_count": 2,
+        "columns": [
+          {
+            "id": "c1",
+            "name": "product",
+            "kind": "category",
+            "role": "dimension",
+            "unit": "",
+            "missing": 0,
+            "distinct": 4,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c2",
+            "name": "net_revenue_rub",
+            "kind": "number",
+            "role": "metric",
+            "unit": "",
+            "missing": 0,
+            "distinct": 4,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          }
+        ],
+        "hierarchies": [],
+        "dimension_count": 1,
+        "metric_count": 1,
+        "warnings": []
+      },
+      "goal": "shares",
+      "task": "shares",
+      "status": "ok",
+      "warnings": [
+        "216 строк продаж вне выбранной истории сохранены, но не включены в расчёт."
+      ],
+      "facts": [
+        {
+          "id": "f1",
+          "value": 30759557.0,
+          "exact": "30759557.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              2
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Аналитика сделок",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f2",
+          "value": 23971150.0,
+          "exact": "23971150.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              3
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Интеграционный шлюз",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f3",
+          "value": 20368733.0,
+          "exact": "20368733.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              1
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Командный портал",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f4",
+          "value": 19724258.0,
+          "exact": "19724258.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              4
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "category": "Сервис сопровождения",
+              "series": null
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f5",
+          "value": 94823698.0,
+          "exact": "94823698.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "column_ids": [
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {
+              "scope": "whole"
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f6",
+          "value": 32.43868109847393,
+          "exact": "32.438681098473927899331662850778082921845127786515982534239489373215543650280333930870318936517325025649178963680576979817851018634603345674200556911416806376819431783814210662823970438275883313472967485406443439908871725293818429228524709086962628266195650796069986639837649023137654892978335436780792919508370154473410222832693152296169676909246885",
+          "unit": "%",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              2
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "share_percent",
+            "parameters": {
+              "category": "Аналитика сделок",
+              "numerator": "30759557.0",
+              "denominator": "94823698.0",
+              "numerator_fact_id": "f1",
+              "denominator_fact_id": "f5"
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f7",
+          "value": 25.27970381412461,
+          "exact": "25.279703814124608386397248502162402482974245530900935755532335387299491314924250264949590976719764715356281506760050636287144169382636817222631414353825348595875263164699609163101822921945102794873070653709371258648866446866478461955786622031973484096770830431017360238365730051996073808469271046568970554175180976384194592368671384235615868936054361",
+          "unit": "%",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              3
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "share_percent",
+            "parameters": {
+              "category": "Интеграционный шлюз",
+              "numerator": "23971150.0",
+              "denominator": "94823698.0",
+              "numerator_fact_id": "f2",
+              "denominator_fact_id": "f5"
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f8",
+          "value": 21.48063556854743,
+          "exact": "21.480635568547432098672211665906554287726681994621217999745169187559000282819596426201391133258692357684679203293674541146876596185902810919692248239464358371680463252972901352149332965267817334017072398927112081201473496635830422897027281091695031763051468420900437778750202296476562219710098207728620750479484569353116770451200922368583431538390329",
+          "unit": "%",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              1
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "share_percent",
+            "parameters": {
+              "category": "Командный портал",
+              "numerator": "20368733.0",
+              "denominator": "94823698.0",
+              "numerator_fact_id": "f3",
+              "denominator_fact_id": "f5"
+            }
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f9",
+          "value": 20.80097951885403,
+          "exact": "20.800979518854031615598876981152960307453944687961863710483006051925964751975819377978698953504217901309860326265697842748128215796857026183475780495293486655624841798513278821924873674511196557636889461957073220240788331203872685918661387789368855873982050352012215343046418628389709078842295308921615775836964299789278414347434541099631022616308425",
+          "unit": "%",
+          "period": [],
+          "evidence": {
+            "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+            "row_ids": [
+              4
+            ],
+            "column_ids": [
+              "c1",
+              "c2"
+            ],
+            "operation": "share_percent",
+            "parameters": {
+              "category": "Сервис сопровождения",
+              "numerator": "19724258.0",
+              "denominator": "94823698.0",
+              "numerator_fact_id": "f4",
+              "denominator_fact_id": "f5"
+            }
+          },
+          "rounding_digits": null
+        }
+      ],
+      "provenance": [
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            2
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Аналитика сделок",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            3
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Интеграционный шлюз",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            1
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Командный портал",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            4
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "category": "Сервис сопровождения",
+            "series": null
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "column_ids": [
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {
+            "scope": "whole"
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            2
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "share_percent",
+          "parameters": {
+            "category": "Аналитика сделок",
+            "numerator": "30759557.0",
+            "denominator": "94823698.0",
+            "numerator_fact_id": "f1",
+            "denominator_fact_id": "f5"
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            3
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "share_percent",
+          "parameters": {
+            "category": "Интеграционный шлюз",
+            "numerator": "23971150.0",
+            "denominator": "94823698.0",
+            "numerator_fact_id": "f2",
+            "denominator_fact_id": "f5"
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            1
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "share_percent",
+          "parameters": {
+            "category": "Командный портал",
+            "numerator": "20368733.0",
+            "denominator": "94823698.0",
+            "numerator_fact_id": "f3",
+            "denominator_fact_id": "f5"
+          }
+        },
+        {
+          "source_sha256": "e45d96e476937da589b3ef6b105c32965ad8d87a7fcc5b025eaf2e199567f561",
+          "row_ids": [
+            4
+          ],
+          "column_ids": [
+            "c1",
+            "c2"
+          ],
+          "operation": "share_percent",
+          "parameters": {
+            "category": "Сервис сопровождения",
+            "numerator": "19724258.0",
+            "denominator": "94823698.0",
+            "numerator_fact_id": "f4",
+            "denominator_fact_id": "f5"
+          }
+        }
+      ],
+      "transformations": [
+        "group_by_dimension",
+        "sum",
+        "sort_dimension"
+      ],
+      "candidates": [
+        {
+          "kind": "pie",
+          "rank": 1,
+          "reason": "Неотрицательные части полного итога; не более шести категорий"
+        },
+        {
+          "kind": "bar",
+          "rank": 2,
+          "reason": "Столбцы позволяют сравнить значения категорий"
+        },
+        {
+          "kind": "table",
+          "rank": 3,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "selected": "pie",
+      "title": "Доли продуктов рассчитаны от общей net-выручки периода 2026-04 – 2026-06. Знаменатель включает все продукты; нулевая или отрицательная база не допускает процентный вывод.",
+      "visual": {
+        "kind": "pie",
+        "source": "product_structure.json / 1",
+        "unit": "RUB",
+        "x_label": "product",
+        "y_label": "net_revenue_rub",
+        "categories": [
+          "Аналитика сделок",
+          "Интеграционный шлюз",
+          "Командный портал",
+          "Сервис сопровождения"
+        ],
+        "series": [
+          {
+            "name": "net_revenue_rub",
+            "values": [
+              30759557.0,
+              23971150.0,
+              20368733.0,
+              19724258.0
+            ]
+          }
+        ]
+      },
+      "business_view": "product_structure",
+      "packId": "sales",
+      "business_explanation": {
+        "metric": "Доли продуктов рассчитаны от общей net-выручки периода 2026-04 – 2026-06. Знаменатель включает все продукты; нулевая или отрицательная база не допускает процентный вывод.",
+        "formula": "Чистая выручка = до корректировок − скидки − возвраты. Прибыль = чистая выручка − себестоимость. Маржа = сумма прибыли / сумма чистой выручки. План учитывается один раз по месяцу, региону и продукту.",
+        "period": "2026-04 – 2026-06; сравнение: 2026-01 – 2026-03; год назад: 2025-04 – 2025-06",
+        "unit": "Рубли без НДС; доли и маржа — проценты; изменение маржи — процентные пункты",
+        "source": "sales.csv + plan.csv",
+        "exclusions": "Вне выбранной истории: 216 строк продаж. Они сохранены в исходнике и исключены из расчёта. Пропуски и несопоставимые ключи не заменяются нулями.",
+        "filters": "Закрытые месяцы; история 2025-01 – 2026-06 (18 мес.); план 2026-01 – 2026-12"
+      }
+    },
+    {
+      "version": 1,
+      "source_id": "sales",
+      "contract": {
+        "schema_version": "1.0",
+        "dataset_ref": {
+          "dataset_id": "615ae639ef986be5b7dfa336",
+          "source_sha256": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+          "filename": "quarter_kpi.json",
+          "archive_path": null,
+          "table": "1"
+        },
+        "profile": {
+          "row_count": 1,
+          "column_count": 3,
+          "columns": [
+            {
+              "id": "c1",
+              "name": "period",
+              "kind": "category",
+              "role": "dimension",
+              "unit": "",
+              "missing": 0,
+              "distinct": 1,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c2",
+              "name": "net_revenue_rub",
+              "kind": "number",
+              "role": "metric",
+              "unit": "",
+              "missing": 0,
+              "distinct": 1,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c3",
+              "name": "gross_profit_rub",
+              "kind": "number",
+              "role": "metric",
+              "unit": "",
+              "missing": 0,
+              "distinct": 1,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            }
+          ],
+          "hierarchies": [],
+          "dimension_count": 1,
+          "metric_count": 2,
+          "warnings": []
+        },
+        "analysis": {
+          "goal": "summary",
+          "task": "summary",
+          "dimension": "c1",
+          "series_dimension": null,
+          "metrics": [
+            "c2",
+            "c3"
+          ],
+          "aggregation": "sum",
+          "missing_policy": "preserve_gaps_exclude_from_aggregate",
+          "transformations": [
+            "sum"
+          ]
+        },
+        "visualization": {
+          "selected": "kpi",
+          "candidates": [
+            {
+              "kind": "kpi",
+              "rank": 1,
+              "reason": {
+                "code": "candidate.kpi",
+                "params": {
+                  "task": "summary",
+                  "source_rows": 1,
+                  "metric_count": 2,
+                  "dimension": "c1",
+                  "distinct_categories": 1,
+                  "periodicity": null
+                }
+              }
+            },
+            {
+              "kind": "table",
+              "rank": 2,
+              "reason": {
+                "code": "candidate.table",
+                "params": {
+                  "task": "summary",
+                  "source_rows": 1,
+                  "metric_count": 2,
+                  "dimension": "c1",
+                  "distinct_categories": 1,
+                  "periodicity": null
+                }
+              }
+            }
+          ]
+        },
+        "data": {
+          "categories": [],
+          "series": [],
+          "points": [],
+          "columns": [],
+          "rows": [],
+          "row_ids": [],
+          "pages": [],
+          "series_pages": [],
+          "bins": [],
+          "kpi_fact_ids": [
+            "f1",
+            "f2"
+          ]
+        },
+        "facts": [
+          {
+            "id": "f1",
+            "value": 94823698.0,
+            "exact": "94823698.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+              "row_ids": [
+                1
+              ],
+              "column_ids": [
+                "c2"
+              ],
+              "operation": "sum",
+              "parameters": {}
+            },
+            "rounding_digits": null
+          },
+          {
+            "id": "f2",
+            "value": 31570684.0,
+            "exact": "31570684.0",
+            "unit": "RUB",
+            "period": [],
+            "evidence": {
+              "source_sha256": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+              "row_ids": [
+                1
+              ],
+              "column_ids": [
+                "c3"
+              ],
+              "operation": "sum",
+              "parameters": {}
+            },
+            "rounding_digits": null
+          }
+        ],
+        "presentation": {
+          "title": "Рассчитаны ключевые показатели: 2",
+          "x_label": "period",
+          "y_label": "net_revenue_rub, gross_profit_rub",
+          "x_unit": "",
+          "y_unit": "RUB",
+          "unit": "RUB",
+          "period": [],
+          "source_label": "quarter_kpi.json / 1",
+          "conclusion_fact_ids": [
+            "f1",
+            "f2"
+          ]
+        },
+        "status": "ok",
+        "warnings": [],
+        "refusal": null
+      },
+      "analysis_request": {
+        "goal": "summary",
+        "task": "summary",
+        "dimension": "c1",
+        "series_dimension": null,
+        "series_additive": false,
+        "metrics": [
+          "c2",
+          "c3"
+        ],
+        "aggregation": "sum",
+        "unit": "RUB",
+        "locale": "ru",
+        "bins": null,
+        "page_size": 10,
+        "slide_budget": 30,
+        "column_types": {
+          "c1": "category"
+        },
+        "number_locale": null,
+        "filters": {}
+      },
+      "analysis_id": "4bdc7652e561bf585d535b42",
+      "dataset_id": "615ae639ef986be5b7dfa336",
+      "source_file": "sales.csv + plan.csv",
+      "sheet": "quarter_kpi",
+      "source_hash": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+      "profile": {
+        "row_count": 1,
+        "column_count": 3,
+        "columns": [
+          {
+            "id": "c1",
+            "name": "period",
+            "kind": "category",
+            "role": "dimension",
+            "unit": "",
+            "missing": 0,
+            "distinct": 1,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c2",
+            "name": "net_revenue_rub",
+            "kind": "number",
+            "role": "metric",
+            "unit": "",
+            "missing": 0,
+            "distinct": 1,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c3",
+            "name": "gross_profit_rub",
+            "kind": "number",
+            "role": "metric",
+            "unit": "",
+            "missing": 0,
+            "distinct": 1,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          }
+        ],
+        "hierarchies": [],
+        "dimension_count": 1,
+        "metric_count": 2,
+        "warnings": []
+      },
+      "goal": "summary",
+      "task": "summary",
+      "status": "ok",
+      "warnings": [
+        "216 строк продаж вне выбранной истории сохранены, но не включены в расчёт."
+      ],
+      "facts": [
+        {
+          "id": "f1",
+          "value": 94823698.0,
+          "exact": "94823698.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+            "row_ids": [
+              1
+            ],
+            "column_ids": [
+              "c2"
+            ],
+            "operation": "sum",
+            "parameters": {}
+          },
+          "rounding_digits": null
+        },
+        {
+          "id": "f2",
+          "value": 31570684.0,
+          "exact": "31570684.0",
+          "unit": "RUB",
+          "period": [],
+          "evidence": {
+            "source_sha256": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+            "row_ids": [
+              1
+            ],
+            "column_ids": [
+              "c3"
+            ],
+            "operation": "sum",
+            "parameters": {}
+          },
+          "rounding_digits": null
+        }
+      ],
+      "provenance": [
+        {
+          "source_sha256": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+          "row_ids": [
+            1
+          ],
+          "column_ids": [
+            "c2"
+          ],
+          "operation": "sum",
+          "parameters": {}
+        },
+        {
+          "source_sha256": "b8680b58a85ca6d93cfb11f67a26ababcaf66b6a6b170495e05e18bcadeb74b6",
+          "row_ids": [
+            1
+          ],
+          "column_ids": [
+            "c3"
+          ],
+          "operation": "sum",
+          "parameters": {}
+        }
+      ],
+      "transformations": [
+        "sum"
+      ],
+      "candidates": [
+        {
+          "kind": "kpi",
+          "rank": 1,
+          "reason": "Агрегированные показатели подходят для отдельных карточек"
+        },
+        {
+          "kind": "table",
+          "rank": 2,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "selected": "kpi",
+      "title": "KPI показывают чистую выручку и прибыль периода 2026-04 – 2026-06 в RUB. Маржа в содержательном блоке рассчитана как отношение сумм, а не среднее процентов.",
+      "visual": {
+        "kind": "kpi",
+        "source": "quarter_kpi.json / 1",
+        "unit": "RUB",
+        "x_label": "period",
+        "y_label": "net_revenue_rub, gross_profit_rub",
+        "categories": [
+          "f1"
+        ],
+        "series": [
+          {
+            "name": "net_revenue_rub",
+            "values": [
+              94823698.0
+            ]
+          }
+        ]
+      },
+      "business_view": "quarter_kpi",
+      "packId": "sales",
+      "business_explanation": {
+        "metric": "KPI показывают чистую выручку и прибыль периода 2026-04 – 2026-06 в RUB. Маржа в содержательном блоке рассчитана как отношение сумм, а не среднее процентов.",
+        "formula": "Чистая выручка = до корректировок − скидки − возвраты. Прибыль = чистая выручка − себестоимость. Маржа = сумма прибыли / сумма чистой выручки. План учитывается один раз по месяцу, региону и продукту.",
+        "period": "2026-04 – 2026-06; сравнение: 2026-01 – 2026-03; год назад: 2025-04 – 2025-06",
+        "unit": "Рубли без НДС; доли и маржа — проценты; изменение маржи — процентные пункты",
+        "source": "sales.csv + plan.csv",
+        "exclusions": "Вне выбранной истории: 216 строк продаж. Они сохранены в исходнике и исключены из расчёта. Пропуски и несопоставимые ключи не заменяются нулями.",
+        "filters": "Закрытые месяцы; история 2025-01 – 2026-06 (18 мес.); план 2026-01 – 2026-12"
+      }
+    },
+    {
+      "version": 1,
+      "source_id": "sales",
+      "contract": {
+        "schema_version": "1.0",
+        "dataset_ref": {
+          "dataset_id": "b9a1bf1786ea16efc0f64dc5",
+          "source_sha256": "8af732ba01f0f7fe099fab8ae023270d86b9f0bee22a229c9d38dc1dca3b7598",
+          "filename": "action-priorities.json",
+          "archive_path": null,
+          "table": "1"
+        },
+        "profile": {
+          "row_count": 3,
+          "column_count": 6,
+          "columns": [
+            {
+              "id": "c1",
+              "name": "Действие",
+              "kind": "category",
+              "role": "dimension",
+              "unit": "",
+              "missing": 0,
+              "distinct": 3,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c2",
+              "name": "Основание",
+              "kind": "category",
+              "role": "dimension",
+              "unit": "",
+              "missing": 0,
+              "distinct": 3,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c3",
+              "name": "Ответственный",
+              "kind": "category",
+              "role": "dimension",
+              "unit": "",
+              "missing": 0,
+              "distinct": 3,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c4",
+              "name": "Срок",
+              "kind": "date",
+              "role": "time",
+              "unit": "",
+              "missing": 0,
+              "distinct": 3,
+              "outlier_row_ids": [],
+              "period": [
+                "2026-07-31",
+                "2026-09-30"
+              ],
+              "periodicity": "irregular",
+              "missing_periods": []
+            },
+            {
+              "id": "c5",
+              "name": "Лимит, RUB",
+              "kind": "number",
+              "role": "metric",
+              "unit": "",
+              "missing": 0,
+              "distinct": 3,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            },
+            {
+              "id": "c6",
+              "name": "Критерий",
+              "kind": "text",
+              "role": "unknown",
+              "unit": "",
+              "missing": 0,
+              "distinct": 3,
+              "outlier_row_ids": [],
+              "period": [],
+              "periodicity": null,
+              "missing_periods": []
+            }
+          ],
+          "hierarchies": [],
+          "dimension_count": 4,
+          "metric_count": 1,
+          "warnings": []
+        },
+        "analysis": {
+          "goal": "Приоритеты на 90 дней",
+          "task": "reference",
+          "dimension": null,
+          "series_dimension": null,
+          "metrics": [
+            "c5"
+          ],
+          "aggregation": "identity",
+          "missing_policy": "preserve_gaps_exclude_from_aggregate",
+          "transformations": [
+            "paginate_without_truncation"
+          ]
+        },
+        "visualization": {
+          "selected": "table",
+          "candidates": [
+            {
+              "kind": "table",
+              "rank": 1,
+              "reason": {
+                "code": "candidate.table",
+                "params": {
+                  "task": "reference",
+                  "source_rows": 3,
+                  "metric_count": 1,
+                  "dimension": null,
+                  "distinct_categories": null,
+                  "periodicity": null
+                }
+              }
+            }
+          ]
+        },
+        "data": {
+          "categories": [],
+          "series": [],
+          "points": [],
+          "columns": [
+            "Действие",
+            "Основание",
+            "Ответственный",
+            "Срок",
+            "Лимит, RUB",
+            "Критерий"
+          ],
+          "rows": [
+            [
+              "Проверить партнёрские скидки и себестоимость",
+              "Рост выручки партнёров: 29,71 %; Изменение маржи партнёров: 2,45 п.п.",
+              "Коммерческий директор",
+              "2026-07-31",
+              600000,
+              "Согласованы определения и условия; представлены маржа до и после изменений без причинных обещаний"
+            ],
+            [
+              "Проверить готовность внедрения аналитики",
+              "Наибольший вклад продукта: 8 086 827,00 ₽",
+              "Руководитель продукта",
+              "2026-08-31",
+              900000,
+              "Согласована очередь внедрений; одновременно не более 1 интеграционных проектов; доступно инженеров: 3, аналитиков: 2"
+            ],
+            [
+              "Проверить региональные предпосылки плана",
+              "Наименьшее отклонение региона от плана: -6 967 022,00 ₽",
+              "Региональные руководители",
+              "2026-09-30",
+              500000,
+              "Подготовлены предпосылки по всем 6 регионам; исходный план сохранён для сравнения"
+            ]
+          ],
+          "row_ids": [
+            1,
+            2,
+            3
+          ],
+          "pages": [
+            [
+              0,
+              1,
+              2
+            ]
+          ],
+          "series_pages": [],
+          "bins": [],
+          "kpi_fact_ids": []
+        },
+        "facts": [],
+        "presentation": {
+          "title": "Количество строк в справочной таблице: 3",
+          "x_label": "",
+          "y_label": "Лимит, RUB",
+          "x_unit": "",
+          "y_unit": "",
+          "unit": "",
+          "period": [
+            "2026-07-31",
+            "2026-09-30"
+          ],
+          "source_label": "action-priorities.json / 1",
+          "conclusion_fact_ids": []
+        },
+        "status": "warning",
+        "warnings": [
+          {
+            "code": "analysis.only_one_candidate",
+            "params": {}
+          }
+        ],
+        "refusal": null
+      },
+      "analysis_request": {
+        "goal": "Приоритеты на 90 дней",
+        "task": "reference",
+        "dimension": null,
+        "series_dimension": null,
+        "series_additive": false,
+        "metrics": [],
+        "aggregation": "sum",
+        "unit": "",
+        "locale": "ru",
+        "bins": null,
+        "page_size": 10,
+        "slide_budget": 30,
+        "column_types": {},
+        "number_locale": null,
+        "filters": {}
+      },
+      "analysis_id": "e1eb2563f0e175751517bfdb",
+      "dataset_id": "b9a1bf1786ea16efc0f64dc5",
+      "source_file": "sales.csv + plan.csv",
+      "sheet": "decision_table",
+      "source_hash": "8af732ba01f0f7fe099fab8ae023270d86b9f0bee22a229c9d38dc1dca3b7598",
+      "profile": {
+        "row_count": 3,
+        "column_count": 6,
+        "columns": [
+          {
+            "id": "c1",
+            "name": "Действие",
+            "kind": "category",
+            "role": "dimension",
+            "unit": "",
+            "missing": 0,
+            "distinct": 3,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c2",
+            "name": "Основание",
+            "kind": "category",
+            "role": "dimension",
+            "unit": "",
+            "missing": 0,
+            "distinct": 3,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c3",
+            "name": "Ответственный",
+            "kind": "category",
+            "role": "dimension",
+            "unit": "",
+            "missing": 0,
+            "distinct": 3,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c4",
+            "name": "Срок",
+            "kind": "date",
+            "role": "time",
+            "unit": "",
+            "missing": 0,
+            "distinct": 3,
+            "outlier_row_ids": [],
+            "period": [
+              "2026-07-31",
+              "2026-09-30"
+            ],
+            "periodicity": "irregular",
+            "missing_periods": []
+          },
+          {
+            "id": "c5",
+            "name": "Лимит, RUB",
+            "kind": "number",
+            "role": "metric",
+            "unit": "",
+            "missing": 0,
+            "distinct": 3,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          },
+          {
+            "id": "c6",
+            "name": "Критерий",
+            "kind": "text",
+            "role": "unknown",
+            "unit": "",
+            "missing": 0,
+            "distinct": 3,
+            "outlier_row_ids": [],
+            "period": [],
+            "periodicity": null,
+            "missing_periods": []
+          }
+        ],
+        "hierarchies": [],
+        "dimension_count": 4,
+        "metric_count": 1,
+        "warnings": []
+      },
+      "goal": "Приоритеты на 90 дней",
+      "task": "reference",
+      "status": "warning",
+      "warnings": [
+        "Для этих данных допустима только таблица",
+        "216 строк продаж вне выбранной истории сохранены, но не включены в расчёт."
+      ],
+      "facts": [],
+      "provenance": [],
+      "transformations": [
+        "paginate_without_truncation"
+      ],
+      "candidates": [
+        {
+          "kind": "table",
+          "rank": 1,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "selected": "table",
+      "title": "Действия связаны с проверенными фактами и бюджетом из контекста; эффект не прогнозируется.",
+      "visual": {
+        "kind": "table",
+        "source": "action-priorities.json / 1",
+        "unit": "",
+        "x_label": "",
+        "y_label": "Лимит, RUB",
+        "columns": [
+          "Действие",
+          "Основание",
+          "Ответственный"
+        ],
+        "rows": [
+          [
+            "Проверить партнёрские скидки и себестоимость",
+            "Рост выручки партнёров: 29,71 %; Изменение маржи партнёров: 2,45 п.п.",
+            "Коммерческий директор"
+          ],
+          [
+            "Проверить готовность внедрения аналитики",
+            "Наибольший вклад продукта: 8 086 827,00 ₽",
+            "Руководитель продукта"
+          ],
+          [
+            "Проверить региональные предпосылки плана",
+            "Наименьшее отклонение региона от плана: -6 967 022,00 ₽",
+            "Региональные руководители"
+          ]
+        ]
+      },
+      "business_view": "decision_table",
+      "packId": "sales",
+      "business_explanation": {
+        "metric": "Действия связаны с проверенными фактами и бюджетом из контекста; эффект не прогнозируется.",
+        "formula": "Чистая выручка = до корректировок − скидки − возвраты. Прибыль = чистая выручка − себестоимость. Маржа = сумма прибыли / сумма чистой выручки. План учитывается один раз по месяцу, региону и продукту.",
+        "period": "2026-04 – 2026-06; сравнение: 2026-01 – 2026-03; год назад: 2025-04 – 2025-06",
+        "unit": "Рубли без НДС; доли и маржа — проценты; изменение маржи — процентные пункты",
+        "source": "sales.csv + plan.csv",
+        "exclusions": "Вне выбранной истории: 216 строк продаж. Они сохранены в исходнике и исключены из расчёта. Пропуски и несопоставимые ключи не заменяются нулями.",
+        "filters": "Закрытые месяцы; история 2025-01 – 2026-06 (18 мес.); план 2026-01 – 2026-12"
+      }
+    }
+  ]
+}

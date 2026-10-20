@@ -1,5 +1,10 @@
 # Развёртывание на сервере
 
+Текущий рабочий автодеплой доставляет GitHub `main` на **оба стенда**.
+Основной — 158.160.225.35, второй — auto-sell.site.
+Настройки CI, закрытый override, резервирование и откат описаны в
+[dual-stand-deploy.md](dual-stand-deploy.md). Ниже сохранены общие инструкции установки.
+
 Текущая рабочая установка — **https://auto-sell.site/presentations/**. Для неё используются
 `deploy/compose.autosell.yml`, `deploy/autosell-deploy.sh` и существующий nginx сервера.
 Пути, ключ CI, тома, модель, проверка и откат описаны в [autosell.md](autosell.md).

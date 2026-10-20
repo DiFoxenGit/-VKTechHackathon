@@ -31,7 +31,8 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
 
     async def one(index, content, item):
         prompt = (f'{item.prompt}. Visual style: {item.style}. Palette: {palette}. Keep the entire subject inside the frame. '
-                  'No text, letters, numbers, logos or watermarks.' if item else
+                  'No text, letters, numbers, logos or watermarks. '
+                  'Avoid screens, monitors, posters, signs, documents and charts; use a scene without writing surfaces.' if item else
                   illustration_prompt(content.get("title"), content.get("bullets"), palette))
         try:
             async with concurrency:
@@ -74,7 +75,7 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
     return metas
 
 
-async def drop_lettered(metas, folder: Path):
+async def drop_lettered(metas, folder: Path, *, reports=None):
     """Убрать картинки, на которых генератор всё-таки написал текст.
 
     Буквы на иллюстрации — это чужой язык, опечатки и бессмысленные слова рядом
@@ -83,28 +84,43 @@ async def drop_lettered(metas, folder: Path):
     """
     import asyncio
 
-    from .ai import PROMPTS, vision_available, vision_completion, workflow
+    from .ai import PROMPTS, vision_available, vision_completion, vision_provider, workflow
 
-    if not metas or not vision_available():
+    if not metas:
         return metas
-    agent = workflow()["agents"].get("image_check")
-    if not agent:
-        return metas
-    prompt = (PROMPTS / agent).read_text(encoding="utf-8")
+    available = vision_available()
+    agent = workflow()["agents"].get("image_check") if available else None
+    prompt = (PROMPTS / agent).read_text(encoding="utf-8") if agent else None
+    model = vision_provider()[1] if available else None
+    limit = asyncio.Semaphore(2)
 
     async def check(meta):
-        try:
-            answer = await vision_completion(
-                prompt, {"id": meta["id"]}, (folder / meta["file"]).read_bytes()
-            )
-        except Exception as exc:  # noqa: BLE001 - проверка не должна ронять колоду
-            LOGGER.warning("Cannot check illustration %s: %s", meta["id"], exc)
+        blob = (folder / meta['file']).read_bytes()
+        report = dict(status='unavailable', scope='visible_text_only', mode='vlm_pixels',
+                      model=model, attempted=False, has_text=None,
+                      image_sha256=hashlib.sha256(blob).hexdigest())
+        meta['quality_check'] = report
+        if not prompt:
             return True
-        return not bool(answer.get("has_text"))
+        try:
+            report['attempted'] = True
+            async with limit:
+                answer = await vision_completion(prompt, {"id": meta["id"]}, blob, attempts=1)
+            if not isinstance(answer, dict) or type(answer.get('has_text')) is not bool:
+                raise ValueError('image_check requires a boolean has_text')
+        except Exception as exc:  # noqa: BLE001 - проверка не должна ронять колоду
+            report['status'] = 'failed'
+            report['error_type'] = type(exc).__name__
+            LOGGER.warning("Cannot check illustration %s (%s)", meta["id"], type(exc).__name__)
+            return True
+        report.update(status='rejected' if answer['has_text'] else 'passed', has_text=answer['has_text'])
+        return not answer['has_text']
 
     keep = await asyncio.gather(*(check(meta) for meta in metas))
     clean = []
     for meta, ok in zip(metas, keep):
+        if reports is not None:
+            reports.append({'id': meta['id'], **meta['quality_check']})
         if ok:
             clean.append(meta)
             continue
