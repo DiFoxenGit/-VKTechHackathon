@@ -30,6 +30,7 @@ def deployment(tmp_path):
     (app / 'deploy').mkdir()
     shutil.copy(ROOT / 'deploy/primary-deploy.sh', app / 'deploy/primary-deploy.sh')
     shutil.copy(ROOT / 'deploy/runtime_profile.py', app / 'deploy/runtime_profile.py')
+    shutil.copy(ROOT / 'deploy/backup_database.py', app / 'deploy/backup_database.py')
     (app / 'deploy/autosell-nginx.conf').write_text('new nginx')
     (app / '.env.autosell').write_text('DESIGNER_LLM_PROVIDER=openai\nDESIGNER_LLM_API_KEY=old-value\n')
     (app / 'nginx.conf').write_text('old nginx')
@@ -133,3 +134,13 @@ def test_autosell_applies_profile_and_restores_original_env_on_failure(deploymen
     backup = next((app / 'tmp/deploy-backups').glob('*/server.env'))
     assert backup.read_bytes() == original
     assert backup.stat().st_mode & 0o777 == 0o600
+
+
+@pytest.mark.parametrize('failure', ['FAIL_BUILD', 'ACTIVE'])
+def test_autosell_pre_restart_failure_preserves_running_containers_and_env(deployment, failure):
+    run, app, _ = deployment
+    original = (app / '.env.autosell').read_bytes()
+    result, log = run(script='autosell-deploy.sh', input_text='{"DESIGNER_LLM_PROVIDER":"vk"}', **{failure: '1'})
+    assert result.returncode != 0
+    assert 'up -d' not in log
+    assert (app / '.env.autosell').read_bytes() == original

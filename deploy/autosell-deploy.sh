@@ -17,11 +17,12 @@ cp "$NGINX_SNIPPET" "$BACKUP/nginx.conf"
 COMPOSE=(docker compose -p vk-presentations-main --env-file .env.autosell -f deploy/compose.autosell.yml)
 for service in backend frontend; do
     image="vk-presentations-main-$service"
-    if docker image inspect "$image:latest" >/dev/null 2>&1; then
-        docker tag "$image:latest" "$image:previous"
-    fi
+    running_id="$("${COMPOSE[@]}" ps -q "$service")"
+    test -n "$running_id"
+    docker tag "$(docker inspect --format '{{.Image}}' "$running_id")" "$image:previous"
 done
 
+switched=0
 rollback() {
     local status=$?
     trap - ERR
@@ -35,7 +36,7 @@ rollback() {
             docker tag "$image:previous" "$image:latest"
         fi
     done
-    "${COMPOSE[@]}" up -d --no-build || true
+    if [ "$switched" = 1 ]; then "${COMPOSE[@]}" up -d --no-build || true; fi
     echo "Deployment failed; restored $PREVIOUS_SHA and nginx configuration" >&2
     exit "$status"
 }
@@ -44,6 +45,8 @@ git checkout --quiet --detach "$SHA"
 python3 deploy/runtime_profile.py .env.autosell
 "${COMPOSE[@]}" build backend
 "${COMPOSE[@]}" build frontend
+"${COMPOSE[@]}" exec -T backend python - "$SHA" < deploy/backup_database.py
+switched=1
 "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 240
 curl -fsS http://127.0.0.1:8078/health >/dev/null
 curl -fsS http://127.0.0.1:8079/presentations/ >/dev/null

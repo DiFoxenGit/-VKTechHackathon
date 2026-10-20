@@ -47,25 +47,7 @@ git checkout --quiet --detach "$SHA"
 "${COMPOSE[@]}" build backend
 "${COMPOSE[@]}" build frontend
 # Do not interrupt active generation. Back up SQLite consistently before restart.
-"${COMPOSE[@]}" exec -T backend python - "$SHA" <<'PY'
-import json
-import os
-import sqlite3
-import sys
-import tempfile
-from pathlib import Path
-
-with sqlite3.connect('/data/designer.sqlite3') as source:
-    jobs = (json.loads(row[0]) for row in source.execute('SELECT data FROM records WHERE kind=?', ('jobs',)))
-    if any(job.get('status') in {'queued', 'running'} for job in jobs):
-        raise SystemExit('Active generation; deployment deferred. Retry CI after completion.')
-    folder = Path('/data/deploy-backups')
-    folder.mkdir(mode=0o700, exist_ok=True)
-    descriptor, target = tempfile.mkstemp(prefix=sys.argv[1] + '-', suffix='.sqlite3', dir=folder)
-    os.close(descriptor)
-    with sqlite3.connect(target) as destination:
-        source.backup(destination)
-PY
+"${COMPOSE[@]}" exec -T backend python - "$SHA" < deploy/backup_database.py
 sha256sum --status -c "$BACKUP/runtime.sha256"
 switched=1
 "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 240
