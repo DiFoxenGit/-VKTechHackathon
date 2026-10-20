@@ -64,7 +64,7 @@ def main():
                     assert trend['categories'][-1]=='2026-06-01'
                     assert not any('III квартал' in s['title'] for s in slides)
                     edit={'revision':1,'title':f'Q2 {version}: сохранённый отчёт','variant':record['variant'],'slides':slides}
-                    changed=json.loads(json.dumps(edit));changed['slides'][0]['title']='Подмена'
+                    changed=json.loads(json.dumps(edit));changed['slides'][1]['title']='Подмена'
                     assert client.patch('/presentations/'+identifier,json=changed).status_code==422
                     saved=req('PATCH','/presentations/'+identifier,json=edit).json();assert saved['revision']==2
                     assert req('GET','/presentations/'+identifier).json()['business_request']==record['business_request']
@@ -73,7 +73,7 @@ def main():
                     raw_pdf=req('GET',f'/presentations/{identifier}/export/pdf?revision=2').content
                     base.with_suffix('.pptx').write_bytes(raw_pptx);base.with_suffix('.pdf').write_bytes(raw_pdf)
                     native=Presentation(io.BytesIO(raw_pptx));pdf=PdfReader(io.BytesIO(raw_pdf))
-                    assert len(native.slides)==len(pdf.pages)==12
+                    assert len(native.slides)==len(pdf.pages)==13
                     charts=tables=0
                     for page,content in zip(native.slides,slides):
                         visual=content['visual']

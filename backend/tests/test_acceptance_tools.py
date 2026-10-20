@@ -16,7 +16,7 @@ from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 from acceptance_evidence import (response_summary, sanitized_inference, validate_inference,
-    verify_business, verify_independent_jobs, verify_office_exports)
+    verify_business, verify_independent_jobs, verify_office_exports, verify_slide_evidence)
 from check_inference import probe_profile, validate_probe
 from check_parallel_generation import business_inputs
 
@@ -218,3 +218,25 @@ def test_native_chart_numbers_are_compared_instead_of_only_object_counts():
         verify_office_exports(pptx, pdf, record)
     record["deck"]["slides"][0]["content"]["visual"] = {"kind": "table", "rows": [["93563698.25"]]}
     assert verify_office_exports(pptx, pdf, record)["native_tables"] == 1
+
+
+def test_business_cover_is_separate_from_model_and_fact_provenance():
+    cover = {'content': {'title': 'Итоги', 'analysis_id': '', 'visual': {'kind': 'none'},
+                         'source_refs': ['brief'], 'notes': ''}}
+    page = {'content': {'analysis_id': 'business:decision:fixture', 'source_refs': ['data'],
+                        'notes': json.dumps({'fact_ids': ['revenue'], 'context_refs': ['context#1'],
+                                            'editorial': {'origin': 'validated_model'}})}}
+    record = {'business_proof': {'facts': {'revenue': {}}}, 'deck': {'slides': [cover, page]},
+              'generation': {'editorial': [{'before': 'До', 'after': 'После'}] * 3}}
+    checked = verify_slide_evidence(record, live=True)
+    assert checked['cover_verified'] and checked['slide_evidence_links_verified'] == 1
+    assert checked['model_provenance_on_every_analytical_slide']
+    assert not checked['model_provenance_on_every_slide']
+    broken = copy.deepcopy(record)
+    broken['deck']['slides'].pop(0)
+    with pytest.raises(ValueError, match='title slide'):
+        verify_slide_evidence(broken, live=True)
+    broken = copy.deepcopy(record)
+    broken['deck']['slides'][1]['content']['notes'] = '{}'
+    with pytest.raises(ValueError, match='missing fact'):
+        verify_slide_evidence(broken, live=True)

@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
 from . import ai
 from .inference_trace import new_trace, capture_inference, current_trace, publish, validated_content
-from .models import Outline
+from .models import Outline, SlideContent
 from .workflow import narrative
 from .algorithms.context import select_context
 from .algorithms.validation import validate_outline
@@ -166,6 +166,15 @@ async def _run_generation(request, template, sources, *, outline_factory, balanc
     if validated_content(current_trace()):
         current_trace()['content_reused_for_variants'] = len(variants)
         publish()
+    # The business planner/editor owns twelve verified content pages. Keep them
+    # intact and add the presentation title after editorial validation, so the
+    # cover cannot displace the decision page or enter the model's page mapping.
+    if sources and sources[0].get('_business') and outline.slides[0].analysis_id:
+        cover = SlideContent(title=outline.title, source_refs=['brief'])
+        outline = Outline.model_validate({**outline.model_dump(),
+            'slides': [cover.model_dump(), *[s.model_dump() for s in outline.slides]]})
+        if len(outline.slides) > request.slide_count:
+            warnings.append(f'Добавлен титульный слайд: всего {len(outline.slides)} слайдов, включая все проверенные страницы бизнес-отчёта.')
     on_outline(outline.model_dump())
     if label_assets is not None:
         on_stage("assets", 14)

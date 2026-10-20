@@ -47,7 +47,8 @@ def main():
                 record=req('GET','/presentations/'+identifier).json()
                 base=OUT/('updated-' if args.updated else '')/(template['name'].replace('.pptx','')+'-'+record['variant'])
                 base.parent.mkdir(exist_ok=True,parents=True)
-                assert len(record['deck']['slides'])==12
+                assert len(record['deck']['slides'])==13
+                assert not record['deck']['slides'][0]['content']['analysis_id']
                 assert record['image_generation']['status']=='unavailable',record['image_generation']
                 results=record['analysis'];assert len(results)==12
                 kpi=next(r for r in results if r.get('business_view')=='quarter_kpi')
@@ -55,7 +56,7 @@ def main():
                 for fmt in ('pptx','pdf'):
                     base.with_suffix('.'+fmt).write_bytes(req('GET',f'/presentations/{identifier}/export/{fmt}').content)
                 prs=Presentation(base.with_suffix('.pptx'));pdf=PdfReader(base.with_suffix('.pdf'))
-                assert len(prs.slides)==len(pdf.pages)==12
+                assert len(prs.slides)==len(pdf.pages)==13
                 charts=0;tables=0
                 for native,planned in zip(prs.slides,record['deck']['slides']):
                     v=planned['content']['visual']
@@ -67,7 +68,7 @@ def main():
                 slides=[s['content'] for s in record['deck']['slides']]
                 saved=req('PATCH','/presentations/'+identifier,json={'revision':1,'title':record['title'],'variant':record['variant'],'slides':slides}).json()
                 assert saved['revision']==2
-                bad=json.loads(json.dumps(slides));bad[0]['title']='Подменённый вывод'
+                bad=json.loads(json.dumps(slides));bad[1]['title']='Подменённый вывод'
                 rejected=c.patch('/presentations/'+identifier,json={'revision':2,'title':record['title'],'variant':record['variant'],'slides':bad})
                 assert rejected.status_code==422
                 used={e['asset']['id'] for s in record['deck']['slides'] for e in s['elements'] if e.get('asset',{}).get('source')=='pack'}

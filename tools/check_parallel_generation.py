@@ -212,7 +212,7 @@ async def run_scenario(args):
                         base.with_suffix("." + fmt).write_bytes(exports[fmt])
                     checks.update(verify_office_exports(exports["pptx"], exports["pdf"], reopened))
                     if expected:
-                        require(checks["slides"] == 12 and checks["native_charts"] == 5 and checks["native_tables"] == 2, "Wrong business story structure")
+                        require(checks["slides"] == 13 and checks["native_charts"] == 5 and checks["native_tables"] == 2, "Wrong business story structure (cover + twelve content pages)")
                     comparisons = record.get("generation", {}).get("editorial", []) if args.live else []
                     item = {"template": template["name"], "variant": record["variant"], "id": identifier,
                             "job_id": job["id"], "revision": saved["revision"], "save_reopen_verified": True,

@@ -14,7 +14,10 @@ def compose_analytics(outline, template, variant, assets=None):
     narrative = {}
     if any(is_narrative(s) for s in outline['slides']):
         ordinary = copy.deepcopy(outline)
-        ordinary['content_pages'] = any(s.get('analysis_id', '').startswith('business:') for s in outline['slides'])
+        # Older business decks start directly with a verified decision page.
+        # A new deck has a separate editable cover: let compose use its native
+        # title layout, including when the presentation is saved again.
+        ordinary['content_pages'] = outline['slides'][0].get('analysis_id', '').startswith('business:')
         for slide in ordinary['slides']:
             slide.pop('analysis_id', None)
         rich = compose(ordinary, template, variant, assets)

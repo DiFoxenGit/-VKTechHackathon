@@ -100,7 +100,9 @@ def test_http_analysis_outline_and_explained_refusals(tmp_path,monkeypatch):
 def test_generation_save_reopen_native_exports_and_preview(tmp_path,monkeypatch):
     monkeypatch.delenv('DESIGNER_TEMPLATE_DIR',raising=False)
     monkeypatch.delenv('DESIGNER_IMAGE_BASE_URL',raising=False)
-    prs=Presentation();slide=prs.slides.add_slide(prs.slide_layouts[1]);slide.shapes.title.text='Тема';slide.placeholders[1].text='Образец'
+    prs=Presentation()
+    cover=prs.slides.add_slide(prs.slide_layouts[0]);cover.shapes.title.text='Титул';cover.placeholders[1].text='Подзаголовок'
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);slide.shapes.title.text='Тема';slide.placeholders[1].text='Образец'
     stream=io.BytesIO();prs.save(stream)
     with TestClient(create_app(tmp_path)) as client:
         template=client.post('/api/v1/templates',files={'file':('template.pptx',stream.getvalue())}).json()
@@ -111,28 +113,40 @@ def test_generation_save_reopen_native_exports_and_preview(tmp_path,monkeypatch)
         while job['status'] not in {'completed','failed'} and time.monotonic()<deadline:
             time.sleep(.05);job=client.get('/api/v1/jobs/'+job['id']).json()
         assert job['status']=='completed',job
+        # The planner's twelve verified pages survive after an editable title.
+        for variant_id in job['presentation_ids']:
+            variant=client.get('/api/v1/presentations/'+variant_id).json()
+            first=variant['deck']['slides'][0]
+            assert len(variant['deck']['slides'])==13
+            assert first['native_cover'] and not first['content']['analysis_id']
+            assert first['content']['title']==variant['title']
+            assert variant['deck']['slides'][1]['content']['analysis_id'].startswith('business:decision:')
+            assert sum(bool(s['content']['analysis_id']) for s in variant['deck']['slides'])==12
         identifier=job['presentation_ids'][0]
         record=client.get('/api/v1/presentations/'+identifier).json()
         assert record['business_request']['settings']==request['business_settings']
         assert record['business_request']['conditions']==request['business_conditions']
         slides=[s['content'] for s in record['deck']['slides']]
-        changed=copy.deepcopy(slides);changed[0]['title']='Подменённый вывод'
+        changed=copy.deepcopy(slides);changed[1]['title']='Подменённый вывод'
         edit={'revision':1,'title':'Сохранённый отчёт Q2','variant':'focus','slides':changed}
         assert client.patch('/api/v1/presentations/'+identifier,json=edit).status_code==422
-        edit['slides']=slides[1:]+slides[:1]
+        edit['slides']=copy.deepcopy(slides)
+        edit['slides'][0]['title']='Итоги для руководства'
         response=client.patch('/api/v1/presentations/'+identifier,json=edit)
         assert response.status_code==200,response.text
         assert response.json()['revision']==2
+        assert response.json()['deck']['slides'][0]['native_cover']
         assert client.patch('/api/v1/presentations/'+identifier,json=edit).status_code==409
         pptx=client.get(f'/api/v1/presentations/{identifier}/export/pptx?revision=2')
         native=Presentation(io.BytesIO(pptx.content))
-        assert len(native.slides)==12 and sum(s.has_chart for p in native.slides for s in p.shapes)==5
+        assert len(native.slides)==13 and sum(s.has_chart for p in native.slides for s in p.shapes)==5
+        assert any(s.has_text_frame and s.text=='Итоги для руководства' for s in native.slides[0].shapes)
         assert sum(s.has_table for p in native.slides for s in p.shapes)==2
         if os.getenv('DESIGNER_SOFFICE'):
             from pypdf import PdfReader
             pdf=client.get(f'/api/v1/presentations/{identifier}/export/pdf?revision=2')
             assert pdf.status_code==200,pdf.text[:200] if pdf.status_code!=200 else ''
-            assert len(PdfReader(io.BytesIO(pdf.content)).pages)==12
+            assert len(PdfReader(io.BytesIO(pdf.content)).pages)==13
             preview=client.get(f'/api/v1/presentations/{identifier}/slides/0/thumbnail?revision=2&width=640')
             assert preview.status_code==200 and preview.content.startswith(b'\x89PNG')
             assert client.get(f'/api/v1/presentations/{identifier}/slides/0/thumbnail?revision=1').status_code==409
