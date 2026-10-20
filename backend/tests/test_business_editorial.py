@@ -410,3 +410,37 @@ def test_browser_job_shares_one_actual_validated_answer_and_safe_retry(tmp_path,
         reopened = client.get('/api/v1/presentations/' + original['id']).json()
         assert reopened['revision'] == 2 and reopened['generation']['inference']['response_id'] == 'business-fixture'
         assert reopened['deck']['slides'][0]['content']['title'] == slides[0]['title']
+
+
+def test_compact_title_choices_preserve_verified_content():
+    from designer.business_editorial import validate_draft
+    sources, _, outline = prepared()
+    payload = editor_payload(sources, outline, sources[0]['text'])
+    choices = dict(input_sha256=payload['input_sha256'], pages=[
+        dict(id=p['id'], title_index=i % len(p['approved_titles']), hypothesis=None)
+        for i, p in enumerate(payload['pages'])])
+    selected, response = validate_draft(choices, sources, outline)
+    expected = response_for(payload)
+    for i, page in enumerate(payload['pages']):
+        expected['pages'][i]['title'] = page['approved_titles'][choices['pages'][i]['title_index']]
+    canonical, _ = validate_editorial(expected, sources, outline)
+    assert selected.model_dump() == canonical.model_dump()
+    assert response == expected
+
+
+@pytest.mark.parametrize('tamper', ['negative', 'outside', 'bool', 'reorder', 'stale', 'extra', 'mixed'])
+def test_compact_title_choices_reject_invalid_binding(tamper):
+    from designer.business_editorial import validate_draft
+    sources, _, outline = prepared()
+    payload = editor_payload(sources, outline, sources[0]['text'])
+    choices = dict(input_sha256=payload['input_sha256'], pages=[
+        dict(id=p['id'], title_index=0, hypothesis=None) for p in payload['pages']])
+    if tamper == 'negative': choices['pages'][0]['title_index'] = -1
+    if tamper == 'outside': choices['pages'][0]['title_index'] = 999
+    if tamper == 'bool': choices['pages'][0]['title_index'] = True
+    if tamper == 'reorder': choices['pages'][0]['id'] = choices['pages'][1]['id']
+    if tamper == 'stale': choices['input_sha256'] = '0' * 64
+    if tamper == 'extra': choices['pages'][0]['title'] = 'Непроверенный вывод'
+    if tamper == 'mixed': choices['pages'][0].pop('title_index')
+    with pytest.raises(ValueError):
+        validate_draft(choices, sources, outline)
