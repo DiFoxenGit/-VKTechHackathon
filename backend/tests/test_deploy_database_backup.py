@@ -37,3 +37,28 @@ def test_missing_database_is_not_created(tmp_path):
     with pytest.raises(sqlite3.Error):
         module.backup(missing, 'a' * 40)
     assert not missing.exists()
+
+
+def test_diagnostics_report_counts_and_statuses_without_secrets(tmp_path, monkeypatch):
+    source = tmp_path / 'designer.sqlite3'
+    with sqlite3.connect(source) as db:
+        db.execute('CREATE TABLE records (kind TEXT, id TEXT, data TEXT)')
+        db.execute('INSERT INTO records VALUES (?,?,?)', ('jobs', 'job', 'private-dataset-text'))
+    monkeypatch.setenv('DESIGNER_API_KEY', 'private-api-key')
+    class Response:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+    calls = []
+    def open_request(request, timeout):
+        calls.append(request.full_url)
+        assert timeout == 3 and request.get_header('Authorization') == 'Bearer private-api-key'
+        if request.full_url.endswith('workflow'):
+            raise TimeoutError('private-provider-details')
+        return Response()
+    monkeypatch.setattr(module.urllib.request, 'urlopen', open_request)
+    result = module.diagnostic_snapshot(source)
+    assert len(calls) == 3 and result['records'] == [{'kind': 'jobs', 'count': 1, 'bytes': 20}]
+    assert result['api'][1]['error_type'] == 'TimeoutError'
+    assert result['api'][0]['http'] == result['api'][2]['http'] == 200
+    assert 'private' not in json.dumps(result)

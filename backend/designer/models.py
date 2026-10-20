@@ -5,6 +5,8 @@ from .analytics.models import AnalysisRequest
 from .analytics.business_periods import BusinessPeriods
 from .analytics.business_conditions import ContextConditions
 
+STEP_VISUAL_KINDS = ('process', 'icon', 'cycle', 'pyramid', 'timeline')
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -22,6 +24,13 @@ class Visual(StrictModel):
     (table size, series count, missing units) are quality findings, so they are
     raised by the audit where the user can see and decide on them.
     """
+
+    # Pydantic's after-validator is invisible in the schema sent to the model.
+    # Publish its conditional requirement, rather than silently inventing steps.
+    model_config = ConfigDict(extra='forbid', json_schema_extra={'allOf': [{
+        'if': {'required': ['kind'], 'properties': {'kind': {'enum': list(STEP_VISUAL_KINDS)}}},
+        'then': {'required': ['steps'], 'properties': {'steps': {'minItems': 1}}},
+    }]})
 
     kind: Literal[
         "none",
@@ -73,8 +82,8 @@ class Visual(StrictModel):
             or any(len(r) != len(self.columns) for r in self.rows)
         ):
             raise ValueError("Table rows must match columns")
-        if self.kind in ("process", "icon", "cycle", "pyramid", "timeline") and not self.steps:
-            raise ValueError("Step diagrams require steps")
+        if self.kind in STEP_VISUAL_KINDS and not self.steps:
+            raise ValueError('Step diagrams require steps: supply a nonempty steps array from source material, or use kind=none')
         if self.kind == "comparison" and (
             len(self.columns) != 2 or not self.rows or any(len(r) != 2 for r in self.rows)
         ):
