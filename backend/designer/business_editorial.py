@@ -215,7 +215,12 @@ def validate_editorial(value, sources, outline):
         if edit.interpretation_kind == 'hypothesis' and not edit.interpretation.startswith('Гипотеза (не доказана):'):
             raise ValueError('Гипотезе нужна явная оговорка об отсутствии доказательства')
         for field, text in (('title', edit.title), ('interpretation', edit.interpretation)):
-            _validate_directions(text, payload['analysis']['facts'], require_change=field == 'title')
+            try:
+                _validate_directions(text, payload['analysis']['facts'], require_change=field == 'title')
+            except ValueError as exc:
+                # Point the retry at the exact spot instead of the whole deck.
+                raise ValueError(f'{exc}: страница {page["id"]}, поле {field}. Убери слово направления '
+                                 f'(рост/снижение/выше/ниже) или поставь рядом факт изменения этой метрики') from None
         slide.title = rendered[0]
         # Replace narrative in its existing slot. Numbers, metric statements,
         # capacity/budget caveats and action blocks remain server-owned. In
@@ -251,7 +256,7 @@ async def edit_business(sources, outline, brief):
     result = await ai.complete_json([
         {'role': 'system', 'content': PROMPT},
         {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}],
-        validate=lambda value: validate_draft(value, sources, outline), agent='business_editorial', attempts=2)
+        validate=lambda value: validate_draft(value, sources, outline), agent='business_editorial', attempts=3)
     candidate, response = result
     sources[0]['_business_editorial'] = dict(version=EDITORIAL_VERSION, response=response,
         before_after=[dict(page=page.id, before=old.title, after=new.title)
