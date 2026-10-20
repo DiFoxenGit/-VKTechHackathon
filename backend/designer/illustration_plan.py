@@ -3,7 +3,7 @@ import hashlib
 import json
 from typing import Literal
 
-from pydantic import Field, StrictInt, model_validator
+from pydantic import Field, StrictInt, model_validator, field_validator
 
 from .models import StrictModel
 
@@ -13,6 +13,13 @@ class Illustration(StrictModel):
     prompt: str = Field(min_length=20, max_length=1600)
     placement: Literal['left', 'right']
     style: Literal['illustration', 'photo']
+
+    @field_validator('style', mode='before')
+    @classmethod
+    def normalize_photo_style(cls, value):
+        aliases = {'photorealistic': 'photo', 'photograph': 'photo', 'photography': 'photo',
+                   'photorealistic photograph': 'photo', 'фото': 'photo', 'фотография': 'photo'}
+        return aliases.get(value.casefold().strip(), value) if isinstance(value, str) else value
 
 
 class IllustrationPlan(StrictModel):
@@ -55,6 +62,7 @@ async def plan_illustrations(brief, slides, limit, requested=None, language='ru'
     from .ai import complete_json, PROMPTS, workflow
     prompt = (PROMPTS / workflow()['agents']['illustration_plan']).read_text(encoding='utf-8')
     payload = dict(brief=brief, language=language, max_images=limit,
+                   response_schema=IllustrationPlan.model_json_schema(),
                    mode='required' if requested is True else 'auto',
                    slides=[dict(number=i + 1, title=s['title'], bullets=s.get('bullets', []),
                                 eligible=eligible(s), visual=(s.get('visual') or {}).get('kind', 'none'))

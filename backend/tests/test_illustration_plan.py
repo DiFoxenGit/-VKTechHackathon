@@ -27,6 +27,12 @@ def test_validated_plan_keeps_count_scene_and_placement():
     assert validate_plan({'images': [], 'reason': 'No new imagery requested'}, slides, 2).images == []
 
 
+@pytest.mark.parametrize('style', ['photorealistic', 'photograph', 'photography', 'Фотография'])
+def test_unambiguous_photo_names_are_normalized(style):
+    plan = validate_plan(dict(images=[{**image(), 'style': style}], reason='Photo'), [content()], 1)
+    assert plan.images[0].style == 'photo'
+
+
 @pytest.mark.parametrize('images,limit', [([image(3)], 2), ([image()], 0),
     ([image(), image()], 2), ([image(placement='background')], 2),
     ([image(), image(placement='right')], 2), ([{**image(), 'slide': True}], 2),
@@ -57,6 +63,7 @@ def test_planner_receives_brief_budget_and_eligibility_once(monkeypatch):
     payload, kwargs = calls[0]
     assert payload['brief'].startswith('One photo') and payload['slides'][0]['eligible']
     assert payload['max_images'] == 2 and kwargs['attempts'] == 1
+    assert payload['response_schema']['$defs']['Illustration']['properties']['style']['enum'] == ['illustration', 'photo']
 
 
 def test_optional_plan_cannot_change_content_inference_route():
