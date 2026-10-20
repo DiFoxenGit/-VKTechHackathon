@@ -24,7 +24,8 @@ def test_qualitative_words_are_not_number_literals(word):
     sources, _, outline = prepared()
     response = response_for(editor_payload(sources, outline, 'Отчёт'))
     response['pages'][1]['title'] = word + ' ориентир: {{fact:q3_net}}'
-    validate_editorial(response, sources, outline)
+    # Historical v3 prose still accepts qualitative words; v4 uses fact menus.
+    validate_editorial(response, sources, outline, conclusions=False)
 
 
 @pytest.mark.parametrize('word', ['первый', 'первая', 'первую', 'первых', 'первым', 'третья', 'третьих', 'третий', 'треть', 'трети', 'третей', 'третям', 'третями', 'третях'])
