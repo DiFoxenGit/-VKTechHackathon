@@ -90,9 +90,11 @@ def test_generation_uses_planned_scenes_without_changing_source(tmp_path, monkey
     monkeypatch.setattr(ai, 'draw_image', draw)
     slides = [content(), content('Final')]; original = copy.deepcopy(slides)
     plan = dict(images=[image(), image(2, 'right')], reason='Two scenes')
-    metas = asyncio.run(generate_illustrations(slides, {'accent': '#0077FF'}, tmp_path, 'a' * 32, limit=2, plan=plan))
+    metas = asyncio.run(generate_illustrations(slides, {'accent': '#0077FF'}, tmp_path, 'a' * 32, limit=2, plan=plan, backgrounds=['000000','FFFFFF']))
     assert len(prompts) == len(metas) == 2 and slides == original
     assert 'entire building visible' in prompts[0] and 'photo' in prompts[0]
+    assert 'background exactly to #000000' in prompts[0]
+    assert 'background exactly to #FFFFFF' in prompts[1]
     assert metas[0]['placement'] == 'left' and metas[1]['target_key'] == target_key(slides[1])
     assert asyncio.run(generate_illustrations(slides, {}, tmp_path, 'a' * 32, plan=dict(images=[], reason='No images'))) == []
     assert len(prompts) == 2

@@ -452,6 +452,10 @@ def create_app(data_dir=None, seed_dir=None):
             "accent": "#" + (accents[0] if accents else tokens.get("theme", {}).get("accent1", "1478F4")),
             "secondary": "#" + (accents[1] if len(accents) > 1 else (accents[0] if accents else "1478F4")),
         }
+        # Derive image backgrounds from the same composer used by the export,
+        # including dark colour-map themes and explicit brandbook overrides.
+        preview = compose({'title':outline.get('title',''), 'slides':slides}, template, 'classic', assets=[])
+        image_backgrounds = [slide['background'] for slide in preview['slides']]
         quality_checks = []
         try:
             async with asyncio.timeout(180):
@@ -462,6 +466,7 @@ def create_app(data_dir=None, seed_dir=None):
                     owner,
                     limit=IMAGE_LIMIT,
                     plan=planned,
+                    backgrounds=image_backgrounds,
                 )
                 metas = await drop_lettered(metas, folder, reports=quality_checks)
         except TimeoutError:
