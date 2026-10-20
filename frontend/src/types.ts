@@ -13,7 +13,8 @@ export type Template = {
 
 export type Slide = { blockRoles?: string[]; role?: 'auto' | 'cover' | 'content' | 'closing'; previewUrl?: string; rawVisual?: Record<string, unknown>; id: string; title: string; body: string; kind: 'cover' | 'content' | 'closing'; notes?: string; visual?: import('./analytics').Visual; analysisId?: string; sourceRefs?: string[] };
 export type Layout = 'classic' | 'story' | 'focus';
-export type ImageGeneration = {status: 'not_requested' | 'ready' | 'partial' | 'unavailable' | 'failed'; message: string; count?: number; requested_count?: number; plan?: {reason: string; images: {slide: number; prompt: string; placement: 'left' | 'right'; style: 'photo' | 'illustration'}[]}};
+export type ImageQualityCheck = {id: string; status: 'passed' | 'rejected' | 'unavailable' | 'failed'; scope: 'visible_text_only'; attempted: boolean; has_text: boolean | null; model?: string};
+export type ImageGeneration = {quality_checks?: ImageQualityCheck[]; status: 'not_requested' | 'ready' | 'partial' | 'unavailable' | 'failed'; message: string; count?: number; requested_count?: number; plan?: {reason: string; images: {slide: number; prompt: string; placement: 'left' | 'right'; style: 'photo' | 'illustration'}[]}};
 export type Brief = { business?: import('./business').BusinessRequest; generateImages?: boolean; narrative?: boolean; text: string; audience: string; goal: string; slideCount: number; templateId: string; materials: string; materialName?: string; contentPackIds?: string[]; materialFiles?: import('./analytics').Material[]; brandbook?: import('./analytics').Brandbook };
 export type Deck = {
   inference?: import('./inference').ModelInference;

@@ -40,3 +40,16 @@ assert.equal(reopened.undoRevision,2);
 assert.deepEqual(reopened.serverIssues[0].box,[-10,20,60,40]);
 assert.equal(reopened.auditChecks.contextual.provider,'vk');
 console.log('PASS: cover/block role round-trip, revision previews, audit selection and undo persistence');
+
+const {normalizeImageGeneration}=await loadModule('src/imagePlan.ts');
+const imageState=normalizeImageGeneration({status:'ready',message:'Created',count:1,quality_checks:[
+  {id:'a',status:'passed',scope:'visible_text_only',attempted:true,has_text:false},
+  {id:'b',status:'passed',scope:'visible_text_only',attempted:false,has_text:false},
+  {id:'c',status:'unavailable',scope:'visible_text_only',attempted:false,has_text:null},
+]});
+assert.equal(imageState.quality_checks[0].status,'passed');
+assert.equal(imageState.quality_checks[1].status,'failed','Unattempted check cannot pass');
+assert.equal(imageState.quality_checks[2].status,'unavailable');
+globalThis.localStorage={getItem:()=>JSON.stringify({brief,decks:[{...fixed,imageGeneration:imageState}]})};
+assert.deepEqual(readSaved().decks[0].imageGeneration.quality_checks,imageState.quality_checks);
+console.log('PASS: image quality scope, honest status validation and reopening');

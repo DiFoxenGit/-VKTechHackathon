@@ -8,6 +8,21 @@ export function normalizeImageGeneration(value: unknown): ImageGeneration | unde
   for (const key of ['count', 'requested_count'] as const) {
     if (typeof v[key] === 'number' && Number.isInteger(v[key]) && v[key] >= 0 && v[key] <= 12) result[key] = v[key];
   }
+  if (Array.isArray(v.quality_checks)) {
+    result.quality_checks = v.quality_checks.slice(0, 12).flatMap(raw => {
+      if (!raw || typeof raw !== 'object') return [];
+      const q = raw as Record<string, unknown>;
+      if (typeof q.id !== 'string' || q.scope !== 'visible_text_only' ||
+          !['passed','rejected','unavailable','failed'].includes(String(q.status))) return [];
+      const attempted = q.attempted === true;
+      const has_text = typeof q.has_text === 'boolean' ? q.has_text : null;
+      let status = q.status as NonNullable<ImageGeneration['quality_checks']>[number]['status'];
+      if ((status === 'passed' && (!attempted || has_text !== false)) ||
+          (status === 'rejected' && (!attempted || has_text !== true))) status = 'failed';
+      return [{id:q.id.slice(0,100),scope:'visible_text_only' as const,status,attempted,has_text,
+        ...(typeof q.model === 'string' ? {model:q.model.slice(0,120)} : {})}];
+    });
+  }
   if (v.plan && typeof v.plan === 'object') {
     const plan = v.plan as Record<string, unknown>;
     if (typeof plan.reason === 'string' && Array.isArray(plan.images) && plan.images.length <= 12) {

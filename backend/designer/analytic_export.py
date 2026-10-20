@@ -153,6 +153,9 @@ def add_chart(slide, visual, box, font, palette, text_color, background=None):
             chart.category_axis._element.append(skip)
         if horizontal:
             chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+            # Long horizontal labels need one line per row. At 12 pt Office
+            # silently hides alternate categories even with tickLblSkip=1.
+            chart.category_axis.tick_labels.font.size = Pt(10)
         if kind in {'bar', 'grouped_bar', 'histogram'}:
             readable_value_axis(chart.value_axis, visual, horizontal)
         chart.value_axis.has_major_gridlines = True
