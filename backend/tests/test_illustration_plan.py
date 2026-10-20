@@ -93,8 +93,9 @@ def test_generation_uses_planned_scenes_without_changing_source(tmp_path, monkey
     metas = asyncio.run(generate_illustrations(slides, {'accent': '#0077FF'}, tmp_path, 'a' * 32, limit=2, plan=plan, backgrounds=['000000','FFFFFF']))
     assert len(prompts) == len(metas) == 2 and slides == original
     assert 'entire building visible' in prompts[0] and 'photo' in prompts[0]
-    assert 'background exactly to #000000' in prompts[0]
-    assert 'background exactly to #FFFFFF' in prompts[1]
+    assert 'black background' in prompts[0]
+    assert 'white background' in prompts[1]
+    assert all('#0077FF' not in prompt and 'Palette:' not in prompt for prompt in prompts)
     assert metas[0]['placement'] == 'left' and metas[1]['target_key'] == target_key(slides[1])
     assert asyncio.run(generate_illustrations(slides, {}, tmp_path, 'a' * 32, plan=dict(images=[], reason='No images'))) == []
     assert len(prompts) == 2
@@ -158,3 +159,14 @@ def test_service_plans_once_shares_images_and_exports(client, monkeypatch, mode,
             pptx = client.get(f'/api/v1/presentations/{identifier}/export/pptx')
             assert pptx.status_code == 200
             assert len(Presentation(io.BytesIO(pptx.content)).slides) == 3
+
+
+def test_image_prompts_describe_palette_without_literal_codes():
+    from designer.ai_assets import color_words,without_color_codes
+    assert color_words('#111111')=='black'
+    assert color_words('#FFFFFF')=='white'
+    assert 'blue' in color_words('#1F497D')
+    assert 'amber' in color_words('#F5A700')
+    result=without_color_codes('matte shapes in #1F497D and #F5A700 on #111111')
+    assert '#' not in result and '1F497D' not in result
+    assert 'blue' in result and 'amber' in result and 'black' in result

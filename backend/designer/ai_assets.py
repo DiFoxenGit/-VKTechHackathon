@@ -1,10 +1,36 @@
 """Optional model enrichment for the deterministic asset library."""
 import hashlib
+import colorsys
+import re
 import logging
 from pathlib import Path
 from .assets import (illustration_targets, illustration_prompt, inspect_image,
                      words, tag_roots, save_assets, contact_sheet, TAG_BATCH)
 LOGGER = logging.getLogger("designer.ai_assets")
+
+def color_words(value):
+    """Describe a colour without asking an image model to draw its RGB code."""
+    raw = str(value).lstrip('#')
+    if not re.fullmatch(r'[0-9a-fA-F]{6}',raw):
+        return 'neutral'
+    r,g,b=(int(raw[i:i+2],16)/255 for i in (0,2,4))
+    hue,light,saturation=colorsys.rgb_to_hls(r,g,b)
+    if light < .1:return 'black'
+    if light > .94:return 'white'
+    if saturation < .15:return 'dark gray' if light < .35 else 'light gray' if light > .7 else 'gray'
+    degree=hue*360
+    family=next(name for edge,name in [(15,'red'),(35,'orange'),(55,'amber'),(75,'yellow'),
+        (155,'green'),(185,'teal'),(205,'cyan'),(255,'blue'),(285,'purple'),(330,'pink'),(361,'red')] if degree < edge)
+    modifier='deep ' if light < .35 else 'pale ' if light > .75 else 'muted ' if saturation < .5 else ''
+    return modifier+family
+
+
+def without_color_codes(text):
+    # Plans may repeat RGB values supplied in a user brief as well. Preserve the
+    # intended hue while omitting the literal codes which become visible text.
+    return re.sub(r'(?<![\w])#?([0-9a-fA-F]{6})(?![\w])',
+                  lambda m:color_words(m[1]),str(text))
+
 
 async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, size=None, plan=None, backgrounds=None):
     """Нарисовать иллюстрации к слайдам и сохранить их как ассеты колоды.
@@ -33,11 +59,15 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
         slide_palette = dict(palette)
         if backgrounds and index < len(backgrounds):
             slide_palette['background'] = '#' + backgrounds[index].lstrip('#')
-        background = slide_palette.get('background', 'the slide')
-        prompt = (f'{item.prompt}. Visual style: {item.style}. Palette: {slide_palette}. Match the background exactly to {background}. Keep the entire subject inside the frame. '
-                  'No text, letters, numbers, logos or watermarks. '
-                  'Avoid screens, monitors, posters, signs, documents and charts; use a scene without writing surfaces.' if item else
-                  illustration_prompt(content.get("title"), content.get("bullets"), slide_palette))
+        described={key:color_words(value) for key,value in slide_palette.items()}
+        background=described.get('background','neutral')
+        hues=', '.join(dict.fromkeys(described.get(k,described.get('accent','neutral')) for k in ('accent','secondary')))
+        prompt = (f"Use a {background} background with {hues} objects. "
+                  f"{without_color_codes(item.prompt)}. Visual style: {item.style}. "
+                  "Keep the entire subject inside the frame. No text, letters, numbers, colour codes, "
+                  "labels, captions, speech bubbles, swatches, logos or watermarks. "
+                  "Avoid screens, monitors, posters, signs, documents and charts; use a scene without writing surfaces." if item else
+                  without_color_codes(illustration_prompt(content.get("title"),content.get("bullets"),described)))
         try:
             async with concurrency:
                 blob = await draw_image(prompt, size)
