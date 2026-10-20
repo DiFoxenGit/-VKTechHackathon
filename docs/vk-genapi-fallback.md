@@ -14,7 +14,7 @@ DESIGNER_FALLBACK_PROVIDER=genapi
 DESIGNER_FALLBACK_MODEL=gemma-4-31b
 DESIGNER_FALLBACK_API_KEY=<секрет GenAPI>
 DESIGNER_FALLBACK_MAX_TOKENS=14000
-DESIGNER_FALLBACK_TIMEOUT=150
+DESIGNER_FALLBACK_TIMEOUT=220
 ```
 
 Адрес VK берётся из выданного quickstart. Адрес GenAPI зафиксирован адаптером. Старые `DESIGNER_LLM_*` сохраняются для ручного отката, но автоматически не вызываются. Image-настройки независимы от текстового резерва.

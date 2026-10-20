@@ -1,0 +1,32 @@
+{
+  "example_only": true,
+  "submit": {
+    "method": "POST",
+    "url": "https://api.gen-api.ru/api/v1/networks/z-image",
+    "body": {
+      "prompt": "A modern office with solar panels, professional architectural photo, no text or logos",
+      "model": "turbo",
+      "width": 1024,
+      "height": 1024,
+      "num_images": 1,
+      "output_format": "png",
+      "num_inference_steps": 8,
+      "guidance_scale": 0,
+      "enable_safety_checker": true,
+      "translate_input": false,
+      "enable_prompt_expansion": false
+    }
+  },
+  "accepted": {"request_id": 7, "status": "processing"},
+  "poll": {"method": "GET", "url": "https://api.gen-api.ru/api/v1/request/get/7"},
+  "success": {"request_id": 7, "status": "success", "result": ["https://gen-api.storage.yandexcloud.net/example.png"]},
+  "service_image_generation": {
+    "status": "ready",
+    "count": 1,
+    "requested_count": 1,
+    "plan": {
+      "images": [{"slide": 2, "prompt": "A modern office with solar panels, no text or logos", "placement": "left", "style": "photo"}],
+      "reason": "Одна фотография на втором слайде по запросу пользователя"
+    }
+  }
+}
