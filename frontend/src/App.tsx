@@ -483,7 +483,7 @@ export default function App() {
         {exportError && dialog !== 'export' && <div className="error-banner" role="alert"><AlertCircle size={18} /><span>{exportError}</span><button className="secondary-button" onClick={() => setDialog('export')}>Повторить скачивание</button></div>}
         {error && <div className="error-banner" role="alert"><AlertCircle size={18} /><span>{error}</span>{generationRetry && <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={() => void (generationRetry === 'model' ? retryModel() : startDeck())}>Повторить</button>}<IconButton label="Закрыть сообщение" onClick={() => { setError(''); setGenerationRetry(null); }}><X size={16} /></IconButton></div>}
 
-        {batchSummary && <p className="batch-summary" role="status">{batchSummary}</p>}
+        {batchSummary && busy !== 'generation' && <p className="batch-summary" role="status">{batchSummary}</p>}
         {screen === 'create' && <section className="creation-home">
           <div className="home-title"><div className="home-kicker"><span />Меньше рутины. Больше ваших идей.</div><h1>{busy === 'generation' ? <>Создаём <span>вашу историю</span></> : <>О чём <span>расскажем?</span></>}</h1><p>{busy === 'generation' ? 'Следите за этапами — готовая презентация откроется автоматически.' : 'Добавьте идею — получите презентацию в фирменном стиле.'}</p></div>
           {busy === 'generation' ? progressPanel : <>
