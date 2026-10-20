@@ -1,0 +1,71 @@
+{
+  "synthetic_defective_copy": true,
+  "never_mutate_original": true,
+  "mode": "contextual_text_audit; not visual",
+  "original": {
+    "title": "Проверка партнёрской экономики",
+    "bullets": [
+      "Чистая выручка: 94 823 698 RUB. Валовая прибыль: 31 570 684 RUB.",
+      "Причины изменения маржи требуют проверки."
+    ],
+    "visual": {
+      "kind": "none"
+    },
+    "source_refs": [
+      "verified"
+    ]
+  },
+  "defective": {
+    "title": "Реклама доказанно увеличила выручку вдвое",
+    "bullets": [
+      "Чистая выручка: 94 823 698 RUB. Валовая прибыль: 31 570 684 RUB.",
+      "Причины изменения маржи требуют проверки."
+    ],
+    "visual": {
+      "kind": "none"
+    },
+    "source_refs": [
+      "verified"
+    ]
+  },
+  "after_semantic_fix": {
+    "title": "Проверка партнёрской экономики",
+    "bullets": [
+      "Чистая выручка: 94 823 698 RUB. Валовая прибыль: 31 570 684 RUB.",
+      "Причины изменения маржи требуют проверки."
+    ],
+    "visual": {
+      "kind": "none"
+    },
+    "source_refs": [
+      "verified"
+    ]
+  },
+  "protected_before_sha256": "5341e4c6b40a803213d454d60d3e7761506e9343bc4d6b93a7d0be22ab69942d",
+  "protected_after_sha256": "5341e4c6b40a803213d454d60d3e7761506e9343bc4d6b93a7d0be22ab69942d",
+  "protected_facts_unchanged": true,
+  "sources": [
+    {
+      "id": "verified",
+      "text": "Выручка 94 823 698 RUB; прибыль 31 570 684 RUB. Причинный эффект рекламы не оценивался. Удвоение выручки не доказано."
+    }
+  ],
+  "expected_codes": [
+    "unsupported_fact",
+    "title_mismatch"
+  ],
+  "safe_fix": {
+    "title": "Проверка партнёрской экономики",
+    "preserve": [
+      "bullets",
+      "visual",
+      "source_refs"
+    ]
+  },
+  "geometry_fixture": {
+    "owner": "Stepa",
+    "defect": "Move the synthetic title beyond the safe area in a COPY",
+    "user_choice_required": true,
+    "change_original": false
+  }
+}

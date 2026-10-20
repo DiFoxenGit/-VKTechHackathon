@@ -36,7 +36,8 @@ def response_for(payload):
     for page in payload['pages']:
         key = page['fact_ids'][0]
         name = page['id']
-        pages.append(dict(id=name, title=f'Приоритет {name}: {{{{fact:{key}}}}}',
+        title = page['approved_titles'][0] if name in {'risks', 'actions'} else f'Приоритет {name}: {{{{fact:{key}}}}}'
+        pages.append(dict(id=name, title=title,
             interpretation=f'{{{{interpretation:{name}}}}}',
             interpretation_kind='observation',
             next_step=f'{{{{next_step:{name}}}}}',
@@ -142,10 +143,13 @@ def test_protected_narrative_preserves_current_verified_text_and_card_count():
     response = response_for(payload)
     for page in payload['pages']:
         original = next(item for item in sources[0]['_business']['story']['slides'] if item['id'] == page['id'])
-        assert page['verified_interpretation'] == original['interpretation']
+        from designer.business_semantics import protected_interpretation
+        assert page['verified_interpretation'] == protected_interpretation(original)
         assert all(token.startswith('fact:') for token in page['allowed_tokens'])
     edited, _ = validate_editorial(response, sources, outline)
-    assert [slide.bullets for slide in edited.slides] == [slide.bullets for slide in outline.slides]
+    assert [slide.bullets for slide in edited.slides[1:]] == [slide.bullets for slide in outline.slides[1:]]
+    assert edited.slides[0].bullets[1] == 'Причины изменения показателей не установлены.'
+    assert edited.slides[0].bullets[2:] == outline.slides[0].bullets[2:]
     assert all('{{' not in slide.title for slide in edited.slides)
 
 

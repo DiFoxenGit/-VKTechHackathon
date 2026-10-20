@@ -1,0 +1,106 @@
+{
+  "mode": "Deterministic chart selection and calculated values; model edits business prose separately",
+  "examples": [
+    {
+      "view": "monthly_trend",
+      "input_properties": "18 закрытых месяцев, упорядоченная временная ось; выручка и прибыль в RUB без НДС.",
+      "selected": "line",
+      "selected_reason": "Линия сохраняет порядок времени и позволяет сопоставить динамику сопоставимых денежных рядов.",
+      "alternatives": [
+        {
+          "kind": "grouped_bar",
+          "rank": 2,
+          "reason": "Несколько сопоставимых метрик сравниваются по общей категории"
+        },
+        {
+          "kind": "table",
+          "rank": 3,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "verified_conclusion_facts": [
+        {
+          "id": "qoq_net_growth",
+          "exact": "26.359154787499294737664931776846122272460383312511",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        },
+        {
+          "id": "yoy_net_growth",
+          "exact": "15.887096834314569037008815740799052290234844561341",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 216
+        }
+      ],
+      "caveat": "Не прогноз; не считать связь во времени доказательством причинности.",
+      "computed_contract_ref": "semantic-review.json#examples/monthly_trend"
+    },
+    {
+      "view": "region_plan_gap",
+      "input_properties": "6 регионов; одна денежная метрика — факт минус план; отрицательные значения допустимы.",
+      "selected": "bar",
+      "selected_reason": "Столбцы показывают знак и размер отклонения относительно нуля; таблица сохраняет точные значения.",
+      "alternatives": [
+        {
+          "kind": "table",
+          "rank": 2,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "verified_conclusion_facts": [
+        {
+          "id": "worst_region_plan_gap",
+          "exact": "-6967022",
+          "unit": "RUB",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 36
+        }
+      ],
+      "caveat": "Это отклонение от плана, не вклад в рост. Круговая диаграмма непригодна для отрицательных отклонений.",
+      "computed_contract_ref": "semantic-review.json#examples/region_plan_gap"
+    },
+    {
+      "view": "product_structure",
+      "input_properties": "4 продукта; неотрицательные части полного итога net-выручки; один период и общий знаменатель.",
+      "selected": "pie",
+      "selected_reason": "Круговая диаграмма допустима для небольшого числа частей целого; столбцы точнее для близких долей.",
+      "alternatives": [
+        {
+          "kind": "bar",
+          "rank": 2,
+          "reason": "Столбцы позволяют сравнить значения категорий"
+        },
+        {
+          "kind": "table",
+          "rank": 3,
+          "reason": "Таблица сохраняет точные справочные значения и подписи"
+        }
+      ],
+      "verified_conclusion_facts": [
+        {
+          "id": "top_product_revenue_share",
+          "exact": "32.438681098473927899331662850778082921845127786516",
+          "unit": "%",
+          "period": [
+            "2026-04",
+            "2026-06"
+          ],
+          "source_rows": 54
+        }
+      ],
+      "caveat": "Доля не доказывает отток или инвестиционный эффект; нельзя убирать продукт из знаменателя.",
+      "computed_contract_ref": "semantic-review.json#examples/product_structure"
+    }
+  ]
+}

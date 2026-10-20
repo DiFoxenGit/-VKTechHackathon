@@ -452,6 +452,7 @@ def create_app(data_dir=None, seed_dir=None):
             "accent": "#" + (accents[0] if accents else tokens.get("theme", {}).get("accent1", "1478F4")),
             "secondary": "#" + (accents[1] if len(accents) > 1 else (accents[0] if accents else "1478F4")),
         }
+        quality_checks = []
         try:
             async with asyncio.timeout(180):
                 metas = await generate_illustrations(
@@ -462,17 +463,23 @@ def create_app(data_dir=None, seed_dir=None):
                     limit=IMAGE_LIMIT,
                     plan=planned,
                 )
-                metas = await drop_lettered(metas, folder)
+                metas = await drop_lettered(metas, folder, reports=quality_checks)
         except TimeoutError:
             LOGGER.warning("Illustration generation timed out; deck goes without drawn pictures")
             return None, [], {'status': 'failed', 'message': 'Провайдер не успел создать иллюстрацию. Повторите генерацию.',
-                             'plan': planned, 'planning': planning_trace, 'count': 0, 'requested_count': len(plan.images)}
+                             'plan': planned, 'planning': planning_trace, 'quality_checks': quality_checks,
+                             'count': 0, 'requested_count': len(plan.images)}
         if not metas:
             return None, [], {'status': 'failed', 'message': 'Иллюстрация не создана: проверьте доступ к image-модели и наличие смыслового слайда для картинки. Можно повторить.',
-                             'plan': planned, 'planning': planning_trace, 'count': 0, 'requested_count': len(plan.images)}
+                             'plan': planned, 'planning': planning_trace, 'quality_checks': quality_checks,
+                             'count': 0, 'requested_count': len(plan.images)}
         store.put("illustrations", {"id": owner, "assets": metas})
         return owner, metas, {'status': 'ready' if len(metas) == len(plan.images) else 'partial',
-                             'message': plan.reason, 'count': len(metas), 'requested_count': len(plan.images),
+                             'message': ('Иллюстрации созданы; проверка видимого текста выполнена / Images created; visible text checked'
+                                         if all(m['quality_check']['status'] == 'passed' for m in metas) else
+                                         'Иллюстрации созданы; качество требует проверки / Images created; quality review required'),
+                             'quality_checks': quality_checks,
+                             'count': len(metas), 'requested_count': len(plan.images),
                              'plan': planned, 'planning': planning_trace}
 
     @api.get("/templates/{template_id}/assets", tags=["Templates"])
