@@ -152,6 +152,16 @@ def stretched_pictures(pattern, fixes=None):
     return found
 
 
+def fitting_scale_sizes(element, scale, elements):
+    """Only offer a template size that will remain readable in this frame."""
+    title = next((e for e in elements if e.get('role') == 'title'), None)
+    longest = max((len(w) for w in element.get('text','').split()),default=0)
+    return [size for size in scale if size >= MIN_FONT_SIZE
+            and (not subordinate(element) or title is None or size < title['font_size'])
+            and estimated_text_height(dict(element,font_size=size)) <= element['box'][3]
+            and longest*size*CHAR_WIDTH <= element['box'][2]-12]
+
+
 def audit(deck, template, sources, language=None):
     """language — язык, который запросил пользователь; без него берётся язык
     большинства слайдов колоды."""
@@ -171,6 +181,12 @@ def audit(deck, template, sources, language=None):
     slide_area = width * height
     scale = [s for s in template["tokens"]["font_sizes"] if s > 0]
     palette = {c.upper() for c in template["tokens"]["colors"]}
+    if not template.get('brandbook'):
+        # Foreground/background neutrals inherited from the original theme are
+        # legitimate template colours even when absent from explicit fills.
+        palette.update(template['tokens'].get('theme',{}).get(key,'').upper()
+                       for key in ('dk1','dk2','lt1','lt2'))
+        palette.discard('')
     known_layouts = {item["index"] for item in template.get("layouts", [])}
     patterns = {p["index"]: p for p in template["patterns"]}
     families = set()
@@ -681,16 +697,12 @@ def audit(deck, template, sources, language=None):
                 if scale and not any(
                     abs(element["font_size"] - size) < 0.6 for size in scale
                 ):
-                    issues.append(
-                        issue(
-                            index,
-                            element["id"],
-                            "font_size_off_scale",
-                            f"Кегль {element['font_size']} pt отсутствует в типографической шкале шаблона",
-                            element["box"],
-                            True,
-                        )
-                    )
+                    choices = fitting_scale_sizes(element,scale,elements)
+                    message = f"Кегль {element['font_size']} pt отсутствует в типографической шкале шаблона"
+                    if not choices:
+                        message += "; автоматическая замена не предлагается: размеры шкалы не помещают текст в рамку"
+                    issues.append(issue(index,element['id'],"font_size_off_scale",message,
+                                        element['box'],bool(choices)))
                 color = (element.get("color") or "").upper()
                 if palette and color and color not in palette:
                     issues.append(
@@ -1020,9 +1032,10 @@ def apply_fixes(deck, report, issue_ids, template):
             targets.append(width * safe["x"])
             element["box"][0] = min(targets, key=lambda t: abs(t - element["box"][0]))
         elif finding["code"] == "font_size_off_scale" and scale:
-            element["font_size"] = min(
-                scale, key=lambda s: abs(s - element["font_size"])
-            )
+            choices = fitting_scale_sizes(element,scale,slide['elements'])
+            if not choices:
+                raise ValueError('No template font size fits this frame safely')
+            element["font_size"] = min(choices,key=lambda s:abs(s-element["font_size"]))
         elif finding["code"] == "color_not_in_palette" and palette:
             background = slide.get("background") or template["tokens"]["theme"].get(
                 "lt1", "FFFFFF"
