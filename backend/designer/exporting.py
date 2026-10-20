@@ -193,7 +193,7 @@ def _adapt_inherited_layout(slide, elements, width, height, analytic=False):
     from pptx.parts.slide import SlideLayoutPart
     from pptx.opc.constants import RELATIONSHIP_TYPE as RT
     layout = slide.slide_layout
-    remove = []
+    remove, relocate = [], {}
     for shape in layout.shapes:
         if analytic and shape.is_placeholder and shape.width * shape.height >= width * height * .25:
             remove.append(shape.shape_id)
@@ -204,11 +204,20 @@ def _adapt_inherited_layout(slide, elements, width, height, analytic=False):
         interior = height*.18 < shape.top < height*.8
         if not shape.is_placeholder and thin and interior:
             sx, sy, sw, sh = (v/12700 for v in (shape.left,shape.top,shape.width,shape.height))
-            if any(e['kind']=='text' and e['box'][0] < sx+sw and e['box'][0]+e['box'][2] > sx
-                   and e['box'][1] < sy+max(sh,1) and e['box'][1]+min(e['box'][3],estimated_text_height(e)) > sy
+            def ink_height(e):
+                return min(e['box'][3],estimated_text_height(e)) if e['kind']=='text' else e['box'][3]
+            if any(e['box'][0] < sx+sw and e['box'][0]+e['box'][2] > sx
+                   and e['box'][1] < sy+max(sh,1) and e['box'][1]+ink_height(e) > sy
                    for e in elements):
-                remove.append(shape.shape_id)
-    if not remove:
+                titles=[e for e in elements if e.get('role')=='title']
+                body=[e for e in elements if e.get('role')!='title']
+                after=max((e['box'][1]+ink_height(e) for e in titles),default=0)+6
+                before=min((e['box'][1] for e in body),default=0)
+                if titles and after+max(sh,1)+2 < before:
+                    relocate[shape.shape_id]=after
+                else:
+                    remove.append(shape.shape_id)
+    if not remove and not relocate:
         return
     part = layout.part
     cloned = SlideLayoutPart.load(part.package.next_partname('/ppt/slideLayouts/slideLayout%d.xml'),
@@ -221,6 +230,7 @@ def _adapt_inherited_layout(slide, elements, width, height, analytic=False):
                 node.set(attr,mapping[value])
     for shape in list(cloned.slide_layout.shapes):
         if shape.shape_id in remove:shape._element.getparent().remove(shape._element)
+        elif shape.shape_id in relocate:shape.top=Pt(relocate[shape.shape_id])
     old = next(rel.rId for rel in slide.part.rels.values() if rel.reltype==RT.SLIDE_LAYOUT)
     slide.part.drop_rel(old)
     slide.part.relate_to(cloned,RT.SLIDE_LAYOUT)

@@ -1075,7 +1075,7 @@ def align_to_picture(elements):
     return elements
 
 
-def picture_box(asset, box):
+def picture_box(asset, box, align="center"):
     """Рамка картинки по её пропорциям: по вертикали по центру, по правому краю.
 
     Правый край области — направляющая шаблона; картинка, повисшая между
@@ -1087,7 +1087,7 @@ def picture_box(asset, box):
         cw, ch = h * ratio, h
     else:
         cw, ch = w, w / ratio
-    return [x + w - cw, y + (h - ch) / 2, cw, ch]
+    return [x + w - cw, y if align == "top" else y + (h - ch) / 2, cw, ch]
 
 
 def compose(outline, template, variant, assets=None):
@@ -1224,6 +1224,10 @@ def compose(outline, template, variant, assets=None):
             if b["w"] * b["h"] < 0.6
             and not b.get("icons")
             and not (staged and stage_clutter(b, branding))
+            # Interior specimen rules follow a reflowed picture/text stage.
+            # The exporter isolates the layout and places them below the title.
+            and not (mode and mode.get('kind') == 'picture' and b.get('h',1) <= .006
+                     and b.get('w',0) >= .25 and .18 < b.get('y',0) < .8)
         ]
         special_region = None
         if pattern.get('role') in ('cover', 'closing') and (has_visual or mode or len(content['bullets']) > 1):
@@ -1415,7 +1419,7 @@ def compose(outline, template, variant, assets=None):
             cell_height = (h - gap * (len(pictures) - 1)) / len(pictures)
             for n, asset in enumerate(pictures):
                 box = [image_x, top + n * (cell_height + gap), image_width, cell_height]
-                fitted = picture_box(asset, box)
+                fitted = picture_box(asset, box, align="top")
                 if mode.get('placement') == 'left':
                     fitted[0] = image_x
                 elements.append(dict(id='picture' if n == 0 else f'picture_{n}', kind='image',
