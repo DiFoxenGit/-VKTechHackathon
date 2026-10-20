@@ -248,6 +248,8 @@ function mapTemplate(item: BackendTemplate): Template {
     layoutCount: item.layouts?.length || known?.layoutCount || 0,
     slideCount: known?.slideCount || 0,
     tag: label.tag,
+    custom: !known,
+    previewUrl: `${API_BASE}/templates/${encodeURIComponent(item.id)}/thumbnail?width=640`,
   };
 }
 

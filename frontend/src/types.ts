@@ -9,6 +9,7 @@ export type Template = {
   slideCount: number;
   tag: string;
   custom?: boolean;
+  previewUrl?: string;
 };
 
 export type Slide = { blockRoles?: string[]; role?: 'auto' | 'cover' | 'content' | 'closing'; previewUrl?: string; rawVisual?: Record<string, unknown>; id: string; title: string; body: string; kind: 'cover' | 'content' | 'closing'; notes?: string; visual?: import('./analytics').Visual; analysisId?: string; sourceRefs?: string[] };

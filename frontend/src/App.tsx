@@ -61,6 +61,7 @@ function Modal({ title, children, onClose, wide = false }: { title: string; chil
 }
 
 function TemplateArt({ template, compact = false }: { template: Template; compact?: boolean }) {
+  if (template.previewUrl) return <div className={`template-art ${compact ? 'compact' : ''}`} aria-hidden="true"><img src={template.previewUrl} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'contain'}} /></div>;
   return <div className={`template-art ${compact ? 'compact' : ''} art-${template.id}`} style={{ '--template-color': template.color, '--template-secondary': template.secondary } as CSSProperties} aria-hidden="true">
     <div className="mini-brand"><span className="vk-mark">vk</span>{template.name.replace('VK ', '')}</div>
     <div className="mini-title">{template.id === 'education' ? <>Знания.<br />Возможности.<br />Будущее.</> : template.id === 'workspace' ? <>Работаем<br />лучше.<br />Вместе.</> : <>Технологии,<br />которые<br />двигают вперёд.</>}</div>
