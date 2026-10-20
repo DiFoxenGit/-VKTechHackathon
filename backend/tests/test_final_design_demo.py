@@ -88,4 +88,6 @@ def test_selected_fix_retains_other_issue_exports_and_undo(client):
     assert restored.status_code==200,restored.text
     assert restored.json()['revision']==3
     assert restored.json()['deck']==record['deck']
+    assert semantic in restored.json()['audit']['issues']
+    assert not restored.json()['audit'].get('model_checks')
     assert client.get(path).json()['revision']==3

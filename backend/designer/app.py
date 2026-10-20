@@ -978,7 +978,11 @@ def create_app(data_dir=None, seed_dir=None):
                 raise HTTPException(422, 'Выберите предыдущую ревизию этой презентации.')
             restored = copy.deepcopy(store.get('revisions', f'{presentation_id}_{target_revision}'))
             restored.update(id=presentation_id, revision=revision)
-            return save_revision(restored)
+            # Restoring geometry does not disprove the semantic findings saved
+            # with that revision. Recheck rules, but keep those warnings visible.
+            retained = [copy.deepcopy(i) for i in restored.get('audit', {}).get('issues', [])
+                        if i.get('category') == 'contextual']
+            return save_revision(restored, retained)
 
     @api.patch("/presentations/{presentation_id}", tags=["Presentations"])
     def edit_presentation(presentation_id: str, request: PresentationEdit):
