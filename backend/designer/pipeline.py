@@ -185,14 +185,13 @@ async def _run_generation(request, template, sources, *, outline_factory, balanc
     if draw_illustrations is not None:
         on_stage("illustrations", 15)
         requested = getattr(request, 'generate_images', None)
-        if requested is None:
-            requested = bool(re.search(r'(?:сгенерир\w*|созда\w* нов\w*)[^.\n]{0,100}(?:иллюстрац|картин|изображ)|generate[^.\n]{0,100}(?:image|illustration)', request.brief, re.I))
         drawn = await draw_illustrations(
-            {"slides": [{"content": slide.model_dump()} for slide in outline.slides], 'image_requested': requested}, template)
+            {"slides": [{"content": slide.model_dump()} for slide in outline.slides],
+             'image_requested': requested, 'brief': request.brief, 'language': request.language}, template)
         owner, metas = drawn[:2]
         status = drawn[2] if len(drawn) > 2 else {'status': 'ready' if metas else 'failed', 'message': 'Иллюстрации готовы' if metas else 'Изображение не создано'}
         illustrations = (owner, metas, status)
-        if status['status'] in {'unavailable', 'failed'}:
+        if status['status'] in {'unavailable', 'failed', 'partial'}:
             warnings.append(status['message'])
     findings = None
     if request.contextual_audit and contextual_check is not None:

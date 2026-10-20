@@ -121,6 +121,12 @@ def test_negative_bar_sign_survives_pdf_render(tmp_path):
 
 
 def test_generated_fixture_is_shared_placed_saved_and_reopened(tmp_path,monkeypatch):
+    from designer import illustration_plan
+    async def plan(brief, slides, limit, requested, language):
+        target = next(i for i, s in enumerate(slides) if illustration_plan.eligible(s) and i > 0)
+        return illustration_plan.validate_plan(dict(images=[dict(slide=target + 1, placement='right',
+            style='illustration', prompt=slides[target]['title'] + ', detailed illustration')], reason='Requested scene'), slides, limit)
+    monkeypatch.setattr(illustration_plan, 'plan_illustrations', plan)
     import io,time
     from fastapi.testclient import TestClient
     from pptx import Presentation

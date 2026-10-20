@@ -55,7 +55,7 @@ LOGGER = logging.getLogger(__name__)
 MAX_UPLOAD = 50 * 1024 * 1024
 # Сколько картинок рисовать на колоду: каждая — отдельный платный запрос,
 # а иллюстрация нужна не всякому слайду.
-IMAGE_LIMIT = max(0, min(2, int(os.getenv("DESIGNER_IMAGE_LIMIT", "1"))))
+IMAGE_LIMIT = max(0, min(12, int(os.getenv("DESIGNER_IMAGE_LIMIT", "6"))))
 # Ширины миниатюр: лента и карточки, холст редактора, крупный просмотр.
 # Набор фиксированный, чтобы кеш на диске не рос от произвольных запросов.
 THUMB_WIDTHS = (320, 640, 1280)
@@ -421,10 +421,26 @@ def create_app(data_dir=None, seed_dir=None):
         Картинки рисуются один раз на колоду и достаются всем трём вариантам:
         так они не разъезжаются между вариантами и не тратится лишний запрос.
         """
-        if not outline.get('image_requested'):
+        if outline.get('image_requested') is False:
             return None, [], {'status': 'not_requested', 'message': 'Генерация иллюстрации не запрашивалась'}
         if not image_available():
             return None, [], {'status': 'unavailable', 'message': 'Иллюстрация не создана: провайдер изображений не настроен. Подключите его на сервере и повторите.'}
+        from .illustration_plan import plan_illustrations
+        from .inference_trace import capture_inference
+        from .inference import isolated_inference_route
+        slides = [s.get('content', s) for s in outline['slides']]
+        try:
+            # Planning evidence must not replace the main content model trace.
+            with capture_inference() as planning_trace, isolated_inference_route():
+                async with asyncio.timeout(180):
+                    plan = await plan_illustrations(outline.get('brief', ''), slides, IMAGE_LIMIT,
+                                                    outline.get('image_requested'), outline.get('language', 'ru'))
+        except (HTTPException, ValueError, TimeoutError):
+            LOGGER.warning('Illustration plan unavailable; no image request submitted')
+            return None, [], {'status': 'failed', 'message': 'Не удалось проверить план иллюстраций / Image plan could not be validated', 'planning': planning_trace}
+        planned = plan.model_dump()
+        if not plan.images:
+            return None, [], {'status': 'not_requested', 'message': plan.reason, 'plan': planned, 'planning': planning_trace}
         owner = store.new_id()
         folder = store.directory("illustrations", owner) / "assets"
         tokens = template["tokens"]
@@ -444,15 +460,20 @@ def create_app(data_dir=None, seed_dir=None):
                     folder,
                     owner,
                     limit=IMAGE_LIMIT,
+                    plan=planned,
                 )
                 metas = await drop_lettered(metas, folder)
         except TimeoutError:
             LOGGER.warning("Illustration generation timed out; deck goes without drawn pictures")
-            return None, [], {'status': 'failed', 'message': 'Провайдер не успел создать иллюстрацию. Повторите генерацию.'}
+            return None, [], {'status': 'failed', 'message': 'Провайдер не успел создать иллюстрацию. Повторите генерацию.',
+                             'plan': planned, 'planning': planning_trace, 'count': 0, 'requested_count': len(plan.images)}
         if not metas:
-            return None, [], {'status': 'failed', 'message': 'Иллюстрация не создана: проверьте доступ к image-модели и наличие смыслового слайда для картинки. Можно повторить.'}
+            return None, [], {'status': 'failed', 'message': 'Иллюстрация не создана: проверьте доступ к image-модели и наличие смыслового слайда для картинки. Можно повторить.',
+                             'plan': planned, 'planning': planning_trace, 'count': 0, 'requested_count': len(plan.images)}
         store.put("illustrations", {"id": owner, "assets": metas})
-        return owner, metas, {'status': 'ready', 'message': 'Новая иллюстрация создана моделью', 'count': len(metas)}
+        return owner, metas, {'status': 'ready' if len(metas) == len(plan.images) else 'partial',
+                             'message': plan.reason, 'count': len(metas), 'requested_count': len(plan.images),
+                             'plan': planned, 'planning': planning_trace}
 
     @api.get("/templates/{template_id}/assets", tags=["Templates"])
     def template_assets(template_id: str):
@@ -886,7 +907,9 @@ def create_app(data_dir=None, seed_dir=None):
             return public_presentation(record)
         template = apply_style(store.get('templates', record['template_id']), record.get('style'))
         outline = {'slides': [s['content'] for s in record['deck']['slides']]}
-        owner, metas, status = await draw_illustrations({**outline, 'image_requested': True}, template)
+        owner, metas, status = await draw_illustrations({**outline, 'image_requested': True,
+            'brief': (record.get('sources') or [{}])[0].get('text', ''),
+            'language': record.get('generation', {}).get('language', 'ru')}, template)
         with store.lock:
             current = store.get('presentations', presentation_id)
             if current['revision'] != revision:

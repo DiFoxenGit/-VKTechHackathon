@@ -3,6 +3,7 @@
 import math
 import os
 from contextvars import ContextVar
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from fastapi import HTTPException
@@ -16,6 +17,16 @@ def inference_route():
 
 def reset_inference_route():
     _route.set(None)
+
+
+@contextmanager
+def isolated_inference_route():
+    """An optional planning call must not relabel the content model."""
+    token = _route.set(None)
+    try:
+        yield
+    finally:
+        _route.reset(token)
 
 
 def record_inference(settings, primary):

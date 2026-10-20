@@ -1,3 +1,4 @@
+import { normalizeImageGeneration } from './imagePlan';
 import type { AuditIssue, Brief, Deck, Layout, Slide, Template } from './types';
 import { parseVisual } from './analytics';
 import { restoreBusinessRequest } from './business';
@@ -110,7 +111,7 @@ function normalizeDeck(value: unknown): Deck | null {
     ...(exports ? { exports } : {}),
     ...(inference ? { inference } : {}),
     ...(serverIssues ? { serverIssues } : {}),
-    ...(isRecord(value.imageGeneration) && ['not_requested','ready','unavailable','failed'].includes(text(value.imageGeneration.status)) ? {imageGeneration:{status:value.imageGeneration.status as import('./types').ImageGeneration['status'],message:text(value.imageGeneration.message)}} : {}),
+    ...(normalizeImageGeneration(value.imageGeneration) ? {imageGeneration: normalizeImageGeneration(value.imageGeneration)} : {}),
     ...(Array.isArray(value.analysis)?{analysis:value.analysis.filter(isRecord).filter(a=>identifier(a.analysis_id)&&isRecord(a.profile)&&Array.isArray(a.profile.columns)&&Array.isArray(a.candidates)&&Array.isArray(a.warnings)) as unknown as AnalysisResult[]} : {}),
   };
 }
