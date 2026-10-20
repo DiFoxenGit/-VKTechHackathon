@@ -1,5 +1,6 @@
 """Readable native data slides with the template's content page, fonts and palette."""
 import copy
+import json
 from .parsing import best_text_color
 
 
@@ -14,7 +15,8 @@ def compose_analytics(outline, template, variant, assets=None):
     narrative = {}
     if any(is_narrative(s) for s in outline['slides']):
         ordinary = copy.deepcopy(outline)
-        ordinary['content_pages'] = any(s.get('analysis_id', '').startswith('business:') for s in outline['slides'])
+        ordinary['content_pages'] = (any(s.get('analysis_id', '').startswith('business:') for s in outline['slides'])
+                                     and not any(s.get('role') == 'cover' for s in outline['slides']))
         for slide in ordinary['slides']:
             slide.pop('analysis_id', None)
         rich = compose(ordinary, template, variant, assets)
@@ -31,6 +33,11 @@ def compose_analytics(outline, template, variant, assets=None):
     candidates = branded or candidates
     pattern=min(candidates,key=lambda p:(p.get("image_cover",0),p.get("decoration_area",0),p["index"]))
     background=pattern.get("background") or tokens.get("theme",{}).get("lt1","FFFFFF")
+    if not template.get('brandbook') and pattern.get('bg_luma') is not None:
+        from .parsing import relative_luminance
+        measured=pattern['bg_luma']; declared=relative_luminance(background)
+        if measured < .25 and declared > .6:background='111111'
+        elif measured > .85 and declared < .25:background='FFFFFF'
     if template.get("brandbook"):
         background=template["brandbook"].get("background","FFFFFF")
     color=best_text_color(background,[*tokens["colors"],"000000","FFFFFF"],minimum=4.5)
@@ -128,7 +135,7 @@ def compose_analytics(outline, template, variant, assets=None):
                     elif variant!='split' or wide_evidence:elements[0]['box'][2] -= side + width*.02
             elements.append(dict(defaults,id="visual",kind=kind,role="body",data=copy.deepcopy(content["visual"]),box=visual_box))
             if caveats:
-                elements.append(dict(defaults,id="caveats",kind="text",role="body",text="\n".join(content["bullets"]),font_size=12,box=note_box))
+                elements.append(dict(defaults,id="caveats",kind="text",role="body",text="\n".join(content["bullets"]),paragraph_roles=content.get('block_roles', []),font_size=12,box=note_box))
         elif content["bullets"]:
             body_box=[width*left,height*(top+.21),width*usable,height*(bottom-top-.23)]
             if variant == "split":
@@ -139,12 +146,33 @@ def compose_analytics(outline, template, variant, assets=None):
             while size>14 and sum(max(1,math.ceil(len(p)*size*.5/(body_box[2]-8)))+1 for p in content["bullets"])*size*1.25>body_box[3]:
                 size-=1
             elements.append(dict(defaults,id="body",kind="text",role="body",text=text,font_size=size,box=body_box))
+        notes = json.loads(content.get('notes') or '{}') if content.get('analysis_id','').startswith('business:') else {}
+        if kind == 'kpi' and notes.get('semantic_blocks', {}).get('role') == 'summary':
+            # One summary, with an explicit hierarchy, rather than a seven-line
+            # footnote under two repeated KPI values. No new decorative system.
+            elements = [dict(defaults,id='title',kind='text',role='title',text=content['title'],
+                             box=[width*left,height*top,width*usable,height*.16],font_size=title_size,bold=True)]
+            gap=width*.04;column=(width*usable-gap)/2
+            for index,series in enumerate(content['visual']['series']):
+                data=copy.deepcopy(content['visual']);data['series']=[series];data['source']=''
+                elements.append(dict(defaults,id=f'summary_metric_{index}',kind='kpi',role='body',data=data,
+                    box=[width*left+index*(column+gap),height*(top+.18),column,height*.22]))
+            groups=[('lead',{'lead','evidence'},top+.43,.12,18),
+                    ('actions',{'action'},top+.57,.12,14),
+                    ('limitations',{'caveat'},top+.71,max(.07,bottom-top-.76),12)]
+            for identifier,roles,y,h,size in groups:
+                text='\n'.join(text for text,role in zip(content['bullets'],content.get('block_roles',[])) if role in roles)
+                if text:
+                    elements.append(dict(defaults,id=identifier,kind='text',role='body',text=text,
+                        font_size=size,bold=identifier=='lead',box=[width*left,height*y,width*usable,height*h]))
+            elements.append(dict(defaults,id='source',kind='text',role='body',text=content['visual'].get('source',''),
+                font_size=11,box=[width*left,height*bottom-24,width*usable,24]))
         from .layout import estimated_text_height
         for element in elements:
             if element['kind']=='text':
                 while element['font_size']> (16 if element['role']=='title' else 11) and (estimated_text_height(element)>element['box'][3] or max((len(w) for w in element['text'].split()),default=0)*element['font_size']*.78>element['box'][2]-12):
                     element['font_size']=max(16 if element['role']=='title' else 11,element['font_size']-1)
         slides.append(dict(analytic_layout=True,purpose=kind,source_refs=content.get('source_refs',[]),asset_usage=[dict(asset=e['asset'],reason='Смысловая иконка показателя') for e in elements if e.get('asset')],pattern_choice=dict(reason=f'Редактируемые данные: {kind}; композиция {variant}',pattern_index=pattern['index']),index=i,pattern_index=pattern["index"],layout_index=pattern["layout_index"],background=background,
-                           background_kind=pattern.get("background_kind","solid"),image_cover=pattern.get("image_cover",0),needs_scrim=False,native_cover=False,clear_stage=True,
+                           background_kind=pattern.get("background_kind","solid"),image_cover=pattern.get("image_cover",0),needs_scrim=not bool(template.get('brandbook')) and pattern.get('background_kind','solid')!='solid' and pattern.get('bg_spread',0)>.12,native_cover=False,clear_stage=True,
                            content=copy.deepcopy(content),elements=elements))
     return dict(width=width,height=height,variant=variant,slides=slides)

@@ -190,3 +190,16 @@ def test_api_offline_pipeline_keeps_original_in_exported_notes(client, monkeypat
     monkeypatch.setenv('DESIGNER_LLM_BASE_URL', 'https://inference.example/v1')
     monkeypatch.setenv('DESIGNER_LLM_MODEL', 'test-model')
     assert client.get('/api/v1/templates').json()['llm_configured'] is True
+
+
+def test_sparse_specimen_font_scale_does_not_clip_long_content():
+    from designer.layout import estimated_text_height, fit_text
+    text = 'Согласовать определения и критерии. ' * 24
+    element = {'text':text,'box':[20,20,600,180],'font_size':24}
+    fit_text(element,[24,28,40],minimum=12)
+    assert 12 <= element['font_size'] < 24
+    assert estimated_text_height(element) <= element['box'][3]
+    assert element['text']==text
+    roomy={'text':'Короткий вывод','box':[20,20,600,180],'font_size':28}
+    fit_text(roomy,[24,28,40],minimum=12)
+    assert roomy['font_size']==28

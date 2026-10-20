@@ -188,6 +188,67 @@ def _clone_slide(
     return target
 
 
+def _adapt_inherited_layout(slide, elements, width, height, analytic=False):
+    """Isolate per-page changes; never erase artwork in a shared template layout."""
+    from pptx.parts.slide import SlideLayoutPart
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+    layout = slide.slide_layout
+    remove = []
+    for shape in layout.shapes:
+        if analytic and shape.is_placeholder and shape.width * shape.height >= width * height * .25:
+            remove.append(shape.shape_id)
+            continue
+        # A divider that originally sat between specimen title and body must
+        # not strike through a reflowed paragraph. Keep edge rules and logos.
+        thin = shape.height <= height*.006 and shape.width >= width*.25
+        interior = height*.18 < shape.top < height*.8
+        if not shape.is_placeholder and thin and interior:
+            sx, sy, sw, sh = (v/12700 for v in (shape.left,shape.top,shape.width,shape.height))
+            if any(e['kind']=='text' and e['box'][0] < sx+sw and e['box'][0]+e['box'][2] > sx
+                   and e['box'][1] < sy+max(sh,1) and e['box'][1]+min(e['box'][3],estimated_text_height(e)) > sy
+                   for e in elements):
+                remove.append(shape.shape_id)
+    if not remove:
+        return
+    part = layout.part
+    cloned = SlideLayoutPart.load(part.package.next_partname('/ppt/slideLayouts/slideLayout%d.xml'),
+                                  part.content_type, part.package, part.blob)
+    mapping = {rel.rId:cloned.relate_to(rel.target_ref if rel.is_external else rel.target_part,
+               rel.reltype,is_external=rel.is_external) for rel in part.rels.values()}
+    for node in cloned._element.iter():
+        for attr,value in list(node.attrib.items()):
+            if attr.startswith('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}') and value in mapping:
+                node.set(attr,mapping[value])
+    for shape in list(cloned.slide_layout.shapes):
+        if shape.shape_id in remove:shape._element.getparent().remove(shape._element)
+    old = next(rel.rId for rel in slide.part.rels.values() if rel.reltype==RT.SLIDE_LAYOUT)
+    slide.part.drop_rel(old)
+    slide.part.relate_to(cloned,RT.SLIDE_LAYOUT)
+    master = cloned.slide_master
+    rid = master.part.relate_to(cloned,RT.SLIDE_LAYOUT)
+    listing = master._element.get_or_add_sldLayoutIdLst()
+    entry = OxmlElement('p:sldLayoutId')
+    entry.set('id',str(max([int(item.get('id','0')) for item in listing]+[2147483647])+1))
+    entry.set(qn('r:id'),rid)
+    listing.append(entry)
+
+
+def _set_notes(slide, text):
+    notes = slide.notes_slide
+    if notes.notes_text_frame is None:
+        # Third-party notes masters can omit the body placeholder altogether.
+        # Add a proper editable notes body rather than failing the whole export.
+        shape = OxmlElement('p:sp')
+        props = OxmlElement('p:nvSpPr')
+        identifier = OxmlElement('p:cNvPr');identifier.set('id',str(notes.shapes._next_shape_id));identifier.set('name','Notes body')
+        props.append(identifier);props.append(OxmlElement('p:cNvSpPr'))
+        nv = OxmlElement('p:nvPr');ph = OxmlElement('p:ph');ph.set('type','body');nv.append(ph);props.append(nv)
+        shape.append(props);shape.append(OxmlElement('p:spPr'))
+        body = OxmlElement('p:txBody');body.append(OxmlElement('a:bodyPr'));body.append(OxmlElement('a:lstStyle'));body.append(OxmlElement('a:p'));shape.append(body)
+        notes.shapes._spTree.insert_element_before(shape,'p:extLst')
+    notes.notes_text_frame.text = text
+
+
 def _materialize_footer(slide, layout, width, height):
     """Make inherited logos explicit on a page containing only text boxes.
 
@@ -509,13 +570,9 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
         )
         if not template.get('brandbook') and all(e['kind'] == 'text' for e in slide_data['elements']):
             _materialize_footer(slide, source.slide_layout, deck.slide_width, deck.slide_height)
-        if slide_data.get("analytic_layout") and not template.get("brandbook"):
-            # Large empty layout placeholders can carry a white fill even after
-            # their slide instances are removed (e.g. Education image slots).
-            # They are sample content, not artwork; keep real logos/pictures.
-            for inherited in list(slide.slide_layout.shapes):
-                if inherited.is_placeholder and inherited.width*inherited.height >= deck.slide_width*deck.slide_height*.25:
-                    inherited._element.getparent().remove(inherited._element)
+        if not template.get("brandbook"):
+            _adapt_inherited_layout(slide, slide_data['elements'], deck.slide_width, deck.slide_height,
+                                    analytic=bool(slide_data.get('analytic_layout')))
         if template.get("brandbook"):
             # Explicit brandbook wins over inherited template artwork and master.
             for shape in list(slide.shapes):
@@ -574,6 +631,12 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                     p.space_after = Pt(3)
                     p.alignment = align
                     line_bold = bold or (card and j == 0 and len(lines) > 1)
+                    paragraph_roles = element.get('paragraph_roles') or []
+                    if j < len(paragraph_roles):
+                        # A short main conclusion gets weight, not a whole
+                        # paragraph of numbers. Evidence/actions remain regular.
+                        line_bold = (paragraph_roles[j] == 'lead' and
+                                     len(line)*element['font_size']*.52 <= element['box'][2]-12)
                     size = element["font_size"]
                     if card and j > 0:
                         size = max(10.0, size * 0.88)
@@ -582,7 +645,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                         _font(run.font, font, size, text_color, line_bold)
             elif kind in CHARTS and (kind not in ("bar", "line") or slide_data["content"].get("analysis_id")):
                 chart_palette = [c for c in (template["tokens"].get("accents") or palette) if contrast_ratio(background,c)>=3]
-                add_chart(slide, element["data"], (x, y, w, max(Pt(60), h - Pt(24))), font, chart_palette or [text_color], text_color)
+                add_chart(slide, element["data"], (x, y, w, max(Pt(60), h - Pt(24))), font, chart_palette or [text_color], text_color, background)
                 add_source(slide, element["data"], (x, y, w, h), font, text_color)
             elif kind in ("bar", "line"):
                 visual = element["data"]
@@ -741,7 +804,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                     element["data"],
                     style,
                 )
-        slide.notes_slide.notes_text_frame.text = slide_data["content"]["notes"]
+        _set_notes(slide, slide_data["content"]["notes"])
     for identifier in original_ids:
         deck.part.drop_rel(identifier.rId)
         deck.slides._sldIdLst.remove(identifier)

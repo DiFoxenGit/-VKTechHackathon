@@ -36,3 +36,35 @@ def test_dense_table_stays_inside_its_frame_after_pdf_conversion(tmp_path):
     runs = [run for run in text_runs(pdf, 0) if 'Metric 5' in run['text'] or 'Value 5' in run['text']]
     assert runs, 'All table rows must remain visible'
     assert max(run['y'] + run['height'] for run in runs) <= 334
+
+
+def test_long_category_names_all_survive_real_pdf(tmp_path):
+    """Office must render every category, not merely keep it in chart XML."""
+    import os
+    from pathlib import Path
+    from pptx import Presentation
+    from pptx.util import Pt
+    from pypdf import PdfReader
+    from designer.analytic_export import add_chart
+    if not (os.getenv('DESIGNER_SOFFICE') or shutil.which('libreoffice') or shutil.which('soffice')
+            or Path('/Applications/LibreOffice.app/Contents/MacOS/soffice').exists()):
+        pytest.skip('LibreOffice required')
+    labels = ['Москва и Московская область', 'Санкт-Петербург и Ленинградская область',
+              'Поволжье', 'Уральский федеральный округ',
+              'Сибирь и Дальневосточный федеральный округ',
+              'Южный и Северо-Кавказский федеральные округа']
+    values = [600000, -2100000, -2100000, -2300000, -2400000, -7200000]
+    deck = Presentation()
+    deck.slide_width, deck.slide_height = Pt(720), Pt(405)
+    slide = deck.slides.add_slide(deck.slide_layouts[6])
+    add_chart(slide, {'kind':'bar', 'categories':labels, 'series':[{'name':'План-факт', 'values':values}],
+                     'unit':'Рубли'}, tuple(Pt(n) for n in (40,117,640,154)),
+              'Arial', ['0077FF'], '111111', 'FFFFFF')
+    source, pdf = tmp_path/'categories.pptx', tmp_path/'categories.pdf'
+    deck.save(source)
+    reopened = Presentation(source).slides[0].shapes[0].chart
+    assert list(reopened.series[0].values) == values
+    assert [c.label for c in reopened.plots[0].categories] == labels
+    convert_pdf(source, pdf)
+    text = ' '.join(PdfReader(pdf).pages[0].extract_text().split())
+    assert all(label in text for label in labels), text

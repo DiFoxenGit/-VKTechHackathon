@@ -6,7 +6,7 @@ from .assets import (illustration_targets, illustration_prompt, inspect_image,
                      words, tag_roots, save_assets, contact_sheet, TAG_BATCH)
 LOGGER = logging.getLogger("designer.ai_assets")
 
-async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, size=None, plan=None):
+async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, size=None, plan=None, backgrounds=None):
     """Нарисовать иллюстрации к слайдам и сохранить их как ассеты колоды.
 
     Возвращает метаданные в том же виде, в каком их отдаёт библиотека: вёрстка
@@ -30,10 +30,14 @@ async def generate_illustrations(slides, palette, folder: Path, owner, limit=3, 
     concurrency = asyncio.Semaphore(2)
 
     async def one(index, content, item):
-        prompt = (f'{item.prompt}. Visual style: {item.style}. Palette: {palette}. Keep the entire subject inside the frame. '
+        slide_palette = dict(palette)
+        if backgrounds and index < len(backgrounds):
+            slide_palette['background'] = '#' + backgrounds[index].lstrip('#')
+        background = slide_palette.get('background', 'the slide')
+        prompt = (f'{item.prompt}. Visual style: {item.style}. Palette: {slide_palette}. Match the background exactly to {background}. Keep the entire subject inside the frame. '
                   'No text, letters, numbers, logos or watermarks. '
                   'Avoid screens, monitors, posters, signs, documents and charts; use a scene without writing surfaces.' if item else
-                  illustration_prompt(content.get("title"), content.get("bullets"), palette))
+                  illustration_prompt(content.get("title"), content.get("bullets"), slide_palette))
         try:
             async with concurrency:
                 blob = await draw_image(prompt, size)

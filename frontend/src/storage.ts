@@ -53,6 +53,9 @@ function normalizeIssues(value: unknown, slides: Slide[]): AuditIssue[] | undefi
       description: item.description,
       fixable: item.fixable === true,
       rule: text(item.rule, 'review'),
+      ...(item.source === 'server' ? {source:'server' as const} : {}),
+      ...(typeof item.category === 'string' ? {category:item.category} : {}),
+      ...(Array.isArray(item.box) && item.box.length === 4 && item.box.every(v=>typeof v==='number'&&Number.isFinite(v)) ? {box:item.box as number[]} : {}),
     }];
   });
 }
@@ -88,7 +91,7 @@ function normalizeDeck(value: unknown): Deck | null {
     usedIds.add(id);
     const kind: Slide['kind'] = item.kind === 'cover' || item.kind === 'content' || item.kind === 'closing'
       ? item.kind : index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content';
-    return { id, title: item.title, body: item.body, kind, ...(typeof item.previewUrl === "string" && item.previewUrl.startsWith("/") ? {previewUrl:item.previewUrl}:{}), ...(isRecord(item.rawVisual)?{rawVisual:item.rawVisual}:{}), ...(typeof item.notes === 'string' ? { notes: item.notes } : {}), ...(parseVisual(item.visual)?{visual:parseVisual(item.visual)}:{}),...(identifier(item.analysisId)?{analysisId:item.analysisId}:{}),...(Array.isArray(item.sourceRefs)?{sourceRefs:item.sourceRefs.filter(identifier)}:{}) };
+    return { id, title: item.title, body: item.body, kind, ...(Array.isArray(item.blockRoles)&&item.blockRoles.every((v:unknown)=>typeof v==='string')?{blockRoles:item.blockRoles as string[]}:{}), ...(["auto","cover","content","closing"].includes(String(item.role))?{role:item.role as Slide["role"]}:{}), ...(typeof item.previewUrl === "string" && item.previewUrl.startsWith("/") ? {previewUrl:item.previewUrl}:{}), ...(isRecord(item.rawVisual)?{rawVisual:item.rawVisual}:{}), ...(typeof item.notes === 'string' ? { notes: item.notes } : {}), ...(parseVisual(item.visual)?{visual:parseVisual(item.visual)}:{}),...(identifier(item.analysisId)?{analysisId:item.analysisId}:{}),...(Array.isArray(item.sourceRefs)?{sourceRefs:item.sourceRefs.filter(identifier)}:{}) };
   });
   const templateId = identifier(value.templateId) ? value.templateId : DEFAULT_BRIEF.templateId;
   const layout: Layout = value.layout === 'story' || value.layout === 'focus' ? value.layout : 'classic';
@@ -111,6 +114,9 @@ function normalizeDeck(value: unknown): Deck | null {
     ...(exports ? { exports } : {}),
     ...(inference ? { inference } : {}),
     ...(serverIssues ? { serverIssues } : {}),
+    ...(integer(value.undoRevision, 1) ? {undoRevision:value.undoRevision} : {}),
+    ...(isRecord(value.slideSize) && typeof value.slideSize.width === 'number' && value.slideSize.width > 0 && typeof value.slideSize.height === 'number' && value.slideSize.height > 0 ? {slideSize:{width:value.slideSize.width,height:value.slideSize.height}} : {}),
+    ...(isRecord(value.auditChecks) ? {auditChecks:Object.fromEntries(Object.entries(value.auditChecks).filter(([key,item])=>['contextual','visual'].includes(key)&&isRecord(item)&&item.status==='completed')) as Deck['auditChecks']} : {}),
     ...(normalizeImageGeneration(value.imageGeneration) ? {imageGeneration: normalizeImageGeneration(value.imageGeneration)} : {}),
     ...(Array.isArray(value.analysis)?{analysis:value.analysis.filter(isRecord).filter(a=>identifier(a.analysis_id)&&isRecord(a.profile)&&Array.isArray(a.profile.columns)&&Array.isArray(a.candidates)&&Array.isArray(a.warnings)) as unknown as AnalysisResult[]} : {}),
   };

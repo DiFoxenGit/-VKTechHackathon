@@ -7,6 +7,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from pptx.util import Pt
 from pptx.oxml.xmlchemy import OxmlElement
+from pptx.oxml.ns import qn
 
 MONTHS = ('янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек')
 
@@ -51,7 +52,7 @@ def readable_value_axis(axis, visual, horizontal=False):
     axis.major_unit = step
 
 
-def add_chart(slide, visual, box, font, palette, text_color):
+def add_chart(slide, visual, box, font, palette, text_color, background=None):
     x, y, w, h = box
     distinct = []
     def distance(a,b):return sum((int(a[i:i+2],16)-int(b[i:i+2],16))**2 for i in (0,2,4))**.5
@@ -142,17 +143,29 @@ def add_chart(slide, visual, box, font, palette, text_color):
                 for p in axis.axis_title.text_frame.paragraphs:
                     p.font.name, p.font.size = font, Pt(11)
                     p.font.color.rgb = RGBColor.from_string(text_color)
-        if horizontal:
-            chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+        if kind != 'scatter':
+            # Explicit category labels: Office/LibreOffice otherwise skip every
+            # second region on a dense axis even though all categories exist.
+            for old in list(chart.category_axis._element.findall(qn('c:tickLblSkip'))):
+                chart.category_axis._element.remove(old)
             skip = OxmlElement('c:tickLblSkip')
             skip.set('val', '1')
             chart.category_axis._element.append(skip)
+        if horizontal:
+            chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+            # Long horizontal labels need one line per row. At 12 pt Office
+            # silently hides alternate categories even with tickLblSkip=1.
+            chart.category_axis.tick_labels.font.size = Pt(10)
         if kind in {'bar', 'grouped_bar', 'histogram'}:
             readable_value_axis(chart.value_axis, visual, horizontal)
         chart.value_axis.has_major_gridlines = True
         chart.value_axis.tick_labels.number_format = number_format(visual)
         grid = chart.value_axis.major_gridlines.format.line
-        grid.color.rgb = RGBColor.from_string('DCE3EB' if text_color != 'FFFFFF' else '526071')
+        # Neutral separators inherit the actual slide colours, including dark
+        # and brandbook themes; no library-specific blue-grey grid.
+        background = background or ('111111' if text_color == 'FFFFFF' else 'FFFFFF')
+        grid.color.rgb = RGBColor.from_string(''.join(
+            f'{round(int(background[k:k+2],16)*.82+int(text_color[k:k+2],16)*.18):02X}' for k in (0,2,4)))
         grid.width = Pt(.5)
         for axis in (chart.category_axis, chart.value_axis):
             axis.format.line.fill.background()
@@ -212,7 +225,6 @@ def add_chart(slide, visual, box, font, palette, text_color):
     node.set("val", "gap")
     chart._chartSpace.chart.append(node)
     if kind == "scatter":
-        from pptx.oxml.ns import qn
         chart._chartSpace.find('.//' + qn('c:scatterStyle')).set('val', 'marker')
 
 

@@ -1,0 +1,589 @@
+{
+  "date": "2026-10-20",
+  "reviewed_commit": "5fd2633695610482c04581c0d11ec62b11f7c6c2",
+  "frontend_checks": "passed",
+  "targeted_backend_passed": 37,
+  "full_regression": "not_confirmed",
+  "images_requested": false,
+  "fresh_exports_verified": false,
+  "runs": [
+    {
+      "url": "https://auto-sell.site/presentations/api/v1",
+      "seconds": 20.924,
+      "images": false,
+      "pdf_export": false,
+      "jobs": [
+        {
+          "id": "6815f895900a49859fe5ff8daec93682",
+          "status": "completed",
+          "presentation_ids": [
+            "c012dcb918de4435afe84a2867d511bb",
+            "1db5e359d427452081e88b572e12fb50",
+            "831539d864214a338dae443962854205"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": true,
+            "completed": true,
+            "provider": "openai",
+            "model": "gpt://b1g5nlmfmdtalq4pami5/gpt-oss-20b/latest",
+            "attempts": 1,
+            "successful_calls": 1,
+            "duration_seconds": 8.416,
+            "validation": "passed",
+            "fallback_used": false,
+            "status": "completed",
+            "error_code": null,
+            "message": "Ответ модели получен и проверен",
+            "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+            "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57",
+            "usage": {
+              "prompt_tokens": 3747,
+              "total_tokens": 4821,
+              "completion_tokens": 1074,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              }
+            },
+            "calls": [
+              {
+                "attempt": 1,
+                "status_code": 200,
+                "duration_seconds": 8.377,
+                "validation": "passed",
+                "error_code": null,
+                "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+                "usage": {
+                  "prompt_tokens": 3747,
+                  "total_tokens": 4821,
+                  "completion_tokens": 1074,
+                  "prompt_tokens_details": {
+                    "cached_tokens": 0
+                  }
+                },
+                "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57"
+              }
+            ],
+            "content_reused_for_variants": 3,
+            "model_attempt": 1,
+            "model_max_attempts": 3,
+            "retry_reason": null,
+            "content_batch_id": "2a6953f8b2d84ed5b021293e331f24b2",
+            "content_source_job_id": "6815f895900a49859fe5ff8daec93682",
+            "content_input_sha256": "b39b1021dfddff64dbf4c7e0303cc53c7328dae1b1654012d3d14de0f2ce1338",
+            "content_revalidated": true
+          }
+        },
+        {
+          "id": "3ca45c52ef534e999e92fb2308e101de",
+          "status": "completed",
+          "presentation_ids": [
+            "5c2803e1e70842e2a98e0a0f8e38e724",
+            "6964cb969f9e42b98bd44b61879edd96",
+            "1e74b6796af54419862ba3c97b774ba9"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": true,
+            "provider": "openai",
+            "model": "gpt://b1g5nlmfmdtalq4pami5/gpt-oss-20b/latest",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 8.512,
+            "validation": "passed",
+            "fallback_used": false,
+            "status": "completed",
+            "error_code": null,
+            "message": "Общий текст модели проверен для этого шаблона",
+            "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+            "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57",
+            "usage": null,
+            "calls": [],
+            "content_reused_for_variants": 3,
+            "model_attempt": 1,
+            "model_max_attempts": 3,
+            "retry_reason": null,
+            "content_batch_id": "2a6953f8b2d84ed5b021293e331f24b2",
+            "content_source_job_id": "6815f895900a49859fe5ff8daec93682",
+            "content_input_sha256": "b39b1021dfddff64dbf4c7e0303cc53c7328dae1b1654012d3d14de0f2ce1338",
+            "shared_from_job_id": "6815f895900a49859fe5ff8daec93682",
+            "content_revalidated": true,
+            "shared_inference": {
+              "requested": true,
+              "attempted": true,
+              "completed": true,
+              "provider": "openai",
+              "model": "gpt://b1g5nlmfmdtalq4pami5/gpt-oss-20b/latest",
+              "attempts": 1,
+              "successful_calls": 1,
+              "duration_seconds": 8.401,
+              "validation": "passed",
+              "fallback_used": false,
+              "status": "completed",
+              "error_code": null,
+              "message": "Ответ модели получен и проверен",
+              "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+              "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57",
+              "usage": {
+                "prompt_tokens": 3747,
+                "total_tokens": 4821,
+                "completion_tokens": 1074,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                }
+              },
+              "calls": [
+                {
+                  "attempt": 1,
+                  "status_code": 200,
+                  "duration_seconds": 8.377,
+                  "validation": "passed",
+                  "error_code": null,
+                  "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+                  "usage": {
+                    "prompt_tokens": 3747,
+                    "total_tokens": 4821,
+                    "completion_tokens": 1074,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    }
+                  },
+                  "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57"
+                }
+              ],
+              "content_reused_for_variants": 0,
+              "model_attempt": 1,
+              "model_max_attempts": 3,
+              "retry_reason": null,
+              "content_batch_id": "2a6953f8b2d84ed5b021293e331f24b2",
+              "content_source_job_id": "6815f895900a49859fe5ff8daec93682",
+              "content_input_sha256": "b39b1021dfddff64dbf4c7e0303cc53c7328dae1b1654012d3d14de0f2ce1338",
+              "content_revalidated": true
+            }
+          }
+        },
+        {
+          "id": "ef80abf1cbf34a068d61948fa7d98354",
+          "status": "completed",
+          "presentation_ids": [
+            "b55af74ccf804792b924e856b9c85c30",
+            "745f88399c114fcc9687266f8fed7d7f",
+            "6dcc615a52d24bfc92f757c57e005c99"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": true,
+            "provider": "openai",
+            "model": "gpt://b1g5nlmfmdtalq4pami5/gpt-oss-20b/latest",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.025,
+            "validation": "passed",
+            "fallback_used": false,
+            "status": "completed",
+            "error_code": null,
+            "message": "Общий текст модели проверен для этого шаблона",
+            "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+            "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57",
+            "usage": null,
+            "calls": [],
+            "content_reused_for_variants": 3,
+            "model_attempt": 1,
+            "model_max_attempts": 3,
+            "retry_reason": null,
+            "content_batch_id": "2a6953f8b2d84ed5b021293e331f24b2",
+            "content_source_job_id": "6815f895900a49859fe5ff8daec93682",
+            "content_input_sha256": "b39b1021dfddff64dbf4c7e0303cc53c7328dae1b1654012d3d14de0f2ce1338",
+            "shared_from_job_id": "6815f895900a49859fe5ff8daec93682",
+            "content_revalidated": true,
+            "shared_inference": {
+              "requested": true,
+              "attempted": true,
+              "completed": true,
+              "provider": "openai",
+              "model": "gpt://b1g5nlmfmdtalq4pami5/gpt-oss-20b/latest",
+              "attempts": 1,
+              "successful_calls": 1,
+              "duration_seconds": 8.401,
+              "validation": "passed",
+              "fallback_used": false,
+              "status": "completed",
+              "error_code": null,
+              "message": "Ответ модели получен и проверен",
+              "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+              "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57",
+              "usage": {
+                "prompt_tokens": 3747,
+                "total_tokens": 4821,
+                "completion_tokens": 1074,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                }
+              },
+              "calls": [
+                {
+                  "attempt": 1,
+                  "status_code": 200,
+                  "duration_seconds": 8.377,
+                  "validation": "passed",
+                  "error_code": null,
+                  "response_id": "chatcmpl-ec72813b-c554-4541-bb1b-4feab56a2944",
+                  "usage": {
+                    "prompt_tokens": 3747,
+                    "total_tokens": 4821,
+                    "completion_tokens": 1074,
+                    "prompt_tokens_details": {
+                      "cached_tokens": 0
+                    }
+                  },
+                  "response_sha256": "2ea81154ed6abd9833c11b88b4db2df2acaba5f68715b455eee972dae37d4c57"
+                }
+              ],
+              "content_reused_for_variants": 0,
+              "model_attempt": 1,
+              "model_max_attempts": 3,
+              "retry_reason": null,
+              "content_batch_id": "2a6953f8b2d84ed5b021293e331f24b2",
+              "content_source_job_id": "6815f895900a49859fe5ff8daec93682",
+              "content_input_sha256": "b39b1021dfddff64dbf4c7e0303cc53c7328dae1b1654012d3d14de0f2ce1338",
+              "content_revalidated": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "url": "http://158.160.225.35/api/v1",
+      "seconds": 136.337,
+      "images": false,
+      "pdf_export": false,
+      "jobs": [
+        {
+          "id": "cd6e267d573448d292ae24942a753e09",
+          "status": "completed",
+          "presentation_ids": [
+            "48842463023d42c68f4ceacdf25d0d79",
+            "215bbd50fe974737bd8e5a0f81f10a14",
+            "28441ad045d24e5e982282b05924592d"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": true,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 117.108,
+            "validation": "passed",
+            "fallback_used": false,
+            "status": "completed",
+            "error_code": null,
+            "message": "Общий текст модели проверен для этого шаблона",
+            "response_id": "genapi:56128461",
+            "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8",
+            "usage": null,
+            "calls": [],
+            "content_reused_for_variants": 3,
+            "model_attempt": 1,
+            "model_max_attempts": 3,
+            "retry_reason": null,
+            "content_batch_id": "ed3b93f3465648deacdaa83b12142e63",
+            "content_source_job_id": "faefee4b0f7743d880f1ecdc35ea03c3",
+            "content_input_sha256": "92d02559cda6e88ed46518ea94a7cf6676b7ae2da6e214c0710de3c37644aeaa",
+            "shared_from_job_id": "faefee4b0f7743d880f1ecdc35ea03c3",
+            "content_revalidated": true,
+            "shared_inference": {
+              "requested": true,
+              "attempted": true,
+              "completed": true,
+              "provider": "genapi",
+              "model": "gemma-4-31b",
+              "attempts": 2,
+              "successful_calls": 1,
+              "duration_seconds": 116.971,
+              "validation": "passed",
+              "fallback_used": false,
+              "status": "completed",
+              "error_code": null,
+              "message": "Ответ модели получен и проверен",
+              "response_id": "genapi:56128461",
+              "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8",
+              "usage": {
+                "prompt_tokens": 3960,
+                "completion_tokens": 4090,
+                "total_tokens": 8050
+              },
+              "calls": [
+                {
+                  "attempt": 1,
+                  "status_code": null,
+                  "duration_seconds": 20.168,
+                  "validation": "failed",
+                  "error_code": "timeout",
+                  "response_id": null,
+                  "usage": null
+                },
+                {
+                  "attempt": 2,
+                  "provider": "genapi",
+                  "model": "gemma-4-31b",
+                  "status_code": 200,
+                  "duration_seconds": 96.7,
+                  "validation": "passed",
+                  "error_code": null,
+                  "response_id": "genapi:56128461",
+                  "usage": {
+                    "prompt_tokens": 3960,
+                    "completion_tokens": 4090,
+                    "total_tokens": 8050
+                  },
+                  "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8"
+                }
+              ],
+              "content_reused_for_variants": 0,
+              "model_attempt": 1,
+              "model_max_attempts": 3,
+              "retry_reason": null,
+              "content_batch_id": "ed3b93f3465648deacdaa83b12142e63",
+              "content_source_job_id": "faefee4b0f7743d880f1ecdc35ea03c3",
+              "content_input_sha256": "92d02559cda6e88ed46518ea94a7cf6676b7ae2da6e214c0710de3c37644aeaa",
+              "content_revalidated": true
+            },
+            "asset_tagging": {
+              "requested": false,
+              "attempted": false,
+              "completed": false,
+              "provider": null,
+              "model": null,
+              "attempts": 0,
+              "successful_calls": 0,
+              "duration_seconds": 0.0,
+              "validation": "not_run",
+              "fallback_used": false,
+              "status": "not_requested",
+              "error_code": null,
+              "message": "",
+              "response_id": null,
+              "response_sha256": null,
+              "usage": null,
+              "calls": [],
+              "content_reused_for_variants": 0,
+              "model_attempt": 0,
+              "model_max_attempts": 0,
+              "retry_reason": null
+            }
+          }
+        },
+        {
+          "id": "faefee4b0f7743d880f1ecdc35ea03c3",
+          "status": "completed",
+          "presentation_ids": [
+            "47a3c6f688d240488a7c5569f13a5b7e",
+            "7fec9359c99e45318643990f2c84204c",
+            "c5921f3b7a6443b7822a717cc8f5f1f4"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": true,
+            "completed": true,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 2,
+            "successful_calls": 1,
+            "duration_seconds": 116.998,
+            "validation": "passed",
+            "fallback_used": false,
+            "status": "completed",
+            "error_code": null,
+            "message": "Ответ модели получен и проверен",
+            "response_id": "genapi:56128461",
+            "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8",
+            "usage": {
+              "prompt_tokens": 3960,
+              "completion_tokens": 4090,
+              "total_tokens": 8050
+            },
+            "calls": [
+              {
+                "attempt": 1,
+                "status_code": null,
+                "duration_seconds": 20.168,
+                "validation": "failed",
+                "error_code": "timeout",
+                "response_id": null,
+                "usage": null
+              },
+              {
+                "attempt": 2,
+                "provider": "genapi",
+                "model": "gemma-4-31b",
+                "status_code": 200,
+                "duration_seconds": 96.7,
+                "validation": "passed",
+                "error_code": null,
+                "response_id": "genapi:56128461",
+                "usage": {
+                  "prompt_tokens": 3960,
+                  "completion_tokens": 4090,
+                  "total_tokens": 8050
+                },
+                "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8"
+              }
+            ],
+            "content_reused_for_variants": 3,
+            "model_attempt": 1,
+            "model_max_attempts": 3,
+            "retry_reason": null,
+            "content_batch_id": "ed3b93f3465648deacdaa83b12142e63",
+            "content_source_job_id": "faefee4b0f7743d880f1ecdc35ea03c3",
+            "content_input_sha256": "92d02559cda6e88ed46518ea94a7cf6676b7ae2da6e214c0710de3c37644aeaa",
+            "content_revalidated": true,
+            "asset_tagging": {
+              "requested": false,
+              "attempted": false,
+              "completed": false,
+              "provider": null,
+              "model": null,
+              "attempts": 0,
+              "successful_calls": 0,
+              "duration_seconds": 0.0,
+              "validation": "not_run",
+              "fallback_used": false,
+              "status": "not_requested",
+              "error_code": null,
+              "message": "",
+              "response_id": null,
+              "response_sha256": null,
+              "usage": null,
+              "calls": [],
+              "content_reused_for_variants": 0,
+              "model_attempt": 0,
+              "model_max_attempts": 0,
+              "retry_reason": null
+            }
+          }
+        },
+        {
+          "id": "997d496db50d4db0b069660c3d7b9b77",
+          "status": "completed",
+          "presentation_ids": [
+            "923c3cf4f04a4370bac240b15a625fd7",
+            "59bee2de1ee943c8ab07dbff66b9f424",
+            "71f9213b295e46d481b42272a74d0d95"
+          ],
+          "inference": {
+            "requested": true,
+            "attempted": false,
+            "completed": true,
+            "provider": "genapi",
+            "model": "gemma-4-31b",
+            "attempts": 0,
+            "successful_calls": 0,
+            "duration_seconds": 0.093,
+            "validation": "passed",
+            "fallback_used": false,
+            "status": "completed",
+            "error_code": null,
+            "message": "Общий текст модели проверен для этого шаблона",
+            "response_id": "genapi:56128461",
+            "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8",
+            "usage": null,
+            "calls": [],
+            "content_reused_for_variants": 3,
+            "model_attempt": 1,
+            "model_max_attempts": 3,
+            "retry_reason": null,
+            "content_batch_id": "ed3b93f3465648deacdaa83b12142e63",
+            "content_source_job_id": "faefee4b0f7743d880f1ecdc35ea03c3",
+            "content_input_sha256": "92d02559cda6e88ed46518ea94a7cf6676b7ae2da6e214c0710de3c37644aeaa",
+            "shared_from_job_id": "faefee4b0f7743d880f1ecdc35ea03c3",
+            "content_revalidated": true,
+            "shared_inference": {
+              "requested": true,
+              "attempted": true,
+              "completed": true,
+              "provider": "genapi",
+              "model": "gemma-4-31b",
+              "attempts": 2,
+              "successful_calls": 1,
+              "duration_seconds": 116.971,
+              "validation": "passed",
+              "fallback_used": false,
+              "status": "completed",
+              "error_code": null,
+              "message": "Ответ модели получен и проверен",
+              "response_id": "genapi:56128461",
+              "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8",
+              "usage": {
+                "prompt_tokens": 3960,
+                "completion_tokens": 4090,
+                "total_tokens": 8050
+              },
+              "calls": [
+                {
+                  "attempt": 1,
+                  "status_code": null,
+                  "duration_seconds": 20.168,
+                  "validation": "failed",
+                  "error_code": "timeout",
+                  "response_id": null,
+                  "usage": null
+                },
+                {
+                  "attempt": 2,
+                  "provider": "genapi",
+                  "model": "gemma-4-31b",
+                  "status_code": 200,
+                  "duration_seconds": 96.7,
+                  "validation": "passed",
+                  "error_code": null,
+                  "response_id": "genapi:56128461",
+                  "usage": {
+                    "prompt_tokens": 3960,
+                    "completion_tokens": 4090,
+                    "total_tokens": 8050
+                  },
+                  "response_sha256": "4fa682fd45610707a54aef77b21077e7db8b91391ab5edeb67fe719fdf9f61e8"
+                }
+              ],
+              "content_reused_for_variants": 0,
+              "model_attempt": 1,
+              "model_max_attempts": 3,
+              "retry_reason": null,
+              "content_batch_id": "ed3b93f3465648deacdaa83b12142e63",
+              "content_source_job_id": "faefee4b0f7743d880f1ecdc35ea03c3",
+              "content_input_sha256": "92d02559cda6e88ed46518ea94a7cf6676b7ae2da6e214c0710de3c37644aeaa",
+              "content_revalidated": true
+            },
+            "asset_tagging": {
+              "requested": false,
+              "attempted": false,
+              "completed": false,
+              "provider": null,
+              "model": null,
+              "attempts": 0,
+              "successful_calls": 0,
+              "duration_seconds": 0.0,
+              "validation": "not_run",
+              "fallback_used": false,
+              "status": "not_requested",
+              "error_code": null,
+              "message": "",
+              "response_id": null,
+              "response_sha256": null,
+              "usage": null,
+              "calls": [],
+              "content_reused_for_variants": 0,
+              "model_attempt": 0,
+              "model_max_attempts": 0,
+              "retry_reason": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

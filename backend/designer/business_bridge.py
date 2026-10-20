@@ -155,7 +155,7 @@ def _title(page, analysis, story):
     }[page['id']]
 
 
-def business_outline(sources, limit):
+def business_outline(sources, limit, *, canonical=False):
     from .models import Outline
     from .analytics_bridge import _visuals
     payload = sources[0]['_business']
@@ -216,8 +216,65 @@ def business_outline(sources, limit):
             bullets.append(page['interpretation'])
         notes = json.dumps({'business_slide': page['id'], 'fact_ids': page['fact_ids'], 'context_refs': page['context_refs'],
             'display_selection': selection, 'context_excerpt': page['context_evidence']['text'][:1500]}, ensure_ascii=False)
-        slides.append({'title': _title(page,analysis,story), 'bullets': bullets, 'notes': notes, 'source_refs': refs,
+        block_roles = [('action' if page['id'] == 'actions' and bullet != page['interpretation'] else
+                        'lead' if bullet == page['interpretation'] else
+                        'action' if bullet == page['next_step'] else
+                        'evidence' if bullet == page['answer'] else 'caveat') for bullet in bullets]
+        slides.append({'title': _title(page,analysis,story), 'bullets': bullets, 'block_roles':block_roles, 'notes': notes, 'source_refs': refs,
                        'visual': visual, 'analysis_id': f'business:{page["id"]}:{token}'})
     outline = Outline.model_validate({'title': f'Развитие B2B-продуктов • итоги {_period_label(analysis["period_settings"]["current"])}', 'slides': slides})
     from .business_editorial import replay_editorial
-    return replay_editorial(sources, outline)
+    outline = replay_editorial(sources, outline)
+    return outline if canonical else present_business(sources, outline)
+
+
+def present_business(sources, outline):
+    """Keep the editorial fact contract, then budget the presentation including cover.
+
+    Historical records without this version retain their original twelve pages.
+    At twelve pages the introductory decision and KPI evidence share one page;
+    their distinct facts, actions and limitations survive in text and notes.
+    """
+    from .models import SlideContent
+    settings = sources[0].get('_business_presentation')
+    if not settings:
+        return outline
+    count = settings['slide_count']
+    if count not in (12, 13):
+        raise ValueError('Полный бизнес-отчёт: выберите 12 слайдов с объединённым резюме или 13 с отдельным вступлением; титульник входит в количество.')
+    result = outline.model_copy(deep=True)
+    for slide in result.slides:
+        slide.role = 'content'
+    if count == 12:
+        decision, kpi = result.slides[:2]
+        # Absolute revenue/profit are already native KPI objects. Keep the
+        # unique margin, comparisons, decisions and caveats once each.
+        blocks = list(dict.fromkeys([
+            *((text, 'lead' if role == 'evidence' else 'caveat' if role == 'lead' else role) for text,role in zip(decision.bullets,decision.block_roles)),
+            ('Валовая маржа периода: ' + _compact(sources[0]['_business']['analysis']['facts']['q3_margin']), 'evidence'),
+            *((text,'caveat' if role == 'lead' else role) for text,role in zip(kpi.bullets,kpi.block_roles) if role != 'evidence'),
+        ]))
+        kpi.bullets = [text for text, role in blocks]
+        kpi.block_roles = [role for text, role in blocks]
+        originals = [json.loads(decision.notes), json.loads(kpi.notes)]
+        # Full source context stays in the saved source record. Do not repeat it
+        # three times in speaker notes or exceed the editable Outline contract.
+        notes = {'business_slide':'summary',
+            'fact_ids':list(dict.fromkeys(key for page in originals for key in page['fact_ids'])),
+            'context_refs':list(dict.fromkeys(key for page in originals for key in page['context_refs'])),
+            'merged_pages':[{**{k:v for k,v in page.items() if k not in {'context_excerpt','semantic_blocks'}},
+                             'title':slide.title} for page,slide in zip(originals,[decision,kpi])],
+            'semantic_blocks':{'role':'summary','roles':kpi.block_roles},
+        }
+        if originals[1].get('editorial'):
+            notes['editorial'] = originals[1]['editorial']
+        kpi.notes = json.dumps(notes, ensure_ascii=False)
+        result.slides.pop(0)
+    periods = sources[0]['_business']['analysis']['period_settings']
+    cover = SlideContent(role='cover', title='Коммерческие результаты',
+        bullets=[_period_label(periods['current']) + '\n' + settings['audience']],
+        block_roles=['subtitle'],
+        source_refs=['brief'])
+    result.slides.insert(0, cover)
+    from .models import Outline
+    return Outline.model_validate(result.model_dump())

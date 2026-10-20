@@ -236,7 +236,9 @@ def matches_verified_slide(slide, reference):
     """Only canonical content may inherit the verified analytical status."""
     expected = reference.model_dump()
     return all(slide.get(key) == expected[key] for key in
-               ("analysis_id", "visual", "title", "bullets", "source_refs", "notes"))
+               ("analysis_id", "visual", "title", "bullets", "source_refs", "notes")) and (
+                   reference.role == 'auto' or slide.get('role', 'auto') == reference.role) and (
+                       not reference.block_roles or slide.get('block_roles', []) == reference.block_roles)
 
 
 def verify_outline(outline, results, sources, limit=30):

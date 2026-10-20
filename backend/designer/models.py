@@ -83,12 +83,22 @@ class Visual(StrictModel):
 
 
 class SlideContent(StrictModel):
+    role: Literal['auto', 'cover', 'content', 'closing'] = 'auto'
+    block_roles: list[Literal['lead', 'evidence', 'action', 'caveat', 'source', 'subtitle']] = Field(default_factory=list, max_length=12)
     title: str = Field(min_length=1, max_length=240)
     bullets: list[str] = Field(default_factory=list, max_length=12)
     notes: str = Field(default="", max_length=4000)
     source_refs: list[str] = Field(default_factory=list)
     visual: Visual = Field(default_factory=Visual)
     analysis_id: str = ""
+
+    @model_validator(mode='after')
+    def cover_is_a_title_page(self):
+        if self.block_roles and len(self.block_roles) != len(self.bullets):
+            raise ValueError('У каждого текстового блока должна быть одна семантическая роль.')
+        if self.role == 'cover' and (self.visual.kind != 'none' or len(self.bullets) > 1):
+            raise ValueError('Обложка содержит название и один блок периода/адресата; доказательства и списки перенесите на содержательные страницы.')
+        return self
 
 
 class Outline(StrictModel):
