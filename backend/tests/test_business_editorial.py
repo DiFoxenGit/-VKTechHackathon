@@ -34,9 +34,8 @@ def model_env(monkeypatch):
 def response_for(payload):
     pages = []
     for page in payload['pages']:
-        key = page['fact_ids'][0]
         name = page['id']
-        title = page['approved_titles'][0] if name in {'risks', 'actions'} else f'Приоритет {name}: {{{{fact:{key}}}}}'
+        title = page['approved_titles'][0]
         pages.append(dict(id=name, title=title,
             interpretation=f'{{{{interpretation:{name}}}}}',
             interpretation_kind='observation',

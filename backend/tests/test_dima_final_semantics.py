@@ -66,21 +66,25 @@ def test_legacy_saved_titles_replay_without_rewriting_historical_facts():
     from test_business_editorial import response_for
     sources, _, outline = prepared()
     response = response_for(editor_payload(sources, outline, ''))
+    for edit in response['pages']:
+        edit['title'] = 'Ориентир ' + edit['id'] + ': {{fact:' + edit['fact_ids'][0] + '}}'
     response['pages'][-2]['title'] = 'Риски: {{fact:partners_margin_change}}'
     response['pages'][-1]['title'] = 'Действия: {{fact:q3_margin}}'
     sources[0]['_business_editorial'] = dict(version='business-editorial-2', response=response)
     assert replay_editorial(sources, outline).slides[-2].title.startswith('Риски:')
-    with pytest.raises(ValueError, match='смысловой заголовок'):
+    with pytest.raises(ValueError, match='заголовок-вывод'):
         from designer.business_editorial import validate_editorial
         validate_editorial(response, sources, outline)
 
 
 def test_duplicate_title_feedback_identifies_both_pages():
+    from designer.business_editorial import validate_editorial
+    from test_business_editorial import response_for
     sources, _, outline = prepared()
-    draft = draft_for(editor_payload(sources, outline, ''))
-    draft['pages'][2]['title'] = draft['pages'][0]['title']
+    response = response_for(editor_payload(sources, outline, ''))
+    response['pages'][0]['title'] = response['pages'][2]['title']
     with pytest.raises(ValueError, match=r'страница trend, поле title; повтор decision.title'):
-        validate_draft(draft, sources, outline)
+        validate_editorial(response, sources, outline, conclusions=False)
 
 
 def test_failed_pixel_check_does_not_log_provider_body(tmp_path, monkeypatch, caplog):
