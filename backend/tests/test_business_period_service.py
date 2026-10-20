@@ -100,7 +100,9 @@ def test_http_analysis_outline_and_explained_refusals(tmp_path,monkeypatch):
 def test_generation_save_reopen_native_exports_and_preview(tmp_path,monkeypatch):
     monkeypatch.delenv('DESIGNER_TEMPLATE_DIR',raising=False)
     monkeypatch.delenv('DESIGNER_IMAGE_BASE_URL',raising=False)
-    prs=Presentation();slide=prs.slides.add_slide(prs.slide_layouts[1]);slide.shapes.title.text='Тема';slide.placeholders[1].text='Образец'
+    prs=Presentation()
+    cover=prs.slides.add_slide(prs.slide_layouts[0]);cover.shapes.title.text='Титул';cover.placeholders[1].text='Подзаголовок'
+    slide=prs.slides.add_slide(prs.slide_layouts[1]);slide.shapes.title.text='Тема';slide.placeholders[1].text='Образец'
     stream=io.BytesIO();prs.save(stream)
     with TestClient(create_app(tmp_path)) as client:
         template=client.post('/api/v1/templates',files={'file':('template.pptx',stream.getvalue())}).json()
@@ -113,10 +115,13 @@ def test_generation_save_reopen_native_exports_and_preview(tmp_path,monkeypatch)
         assert job['status']=='completed',job
         identifier=job['presentation_ids'][0]
         record=client.get('/api/v1/presentations/'+identifier).json()
+        assert len(record['deck']['slides']) == request['slide_count'] == 12
+        assert record['deck']['slides'][0]['native_cover']
+        assert record['deck']['slides'][0]['content']['role'] == 'cover'
         assert record['business_request']['settings']==request['business_settings']
         assert record['business_request']['conditions']==request['business_conditions']
         slides=[s['content'] for s in record['deck']['slides']]
-        changed=copy.deepcopy(slides);changed[0]['title']='Подменённый вывод'
+        changed=copy.deepcopy(slides);changed[1]['title']='Подменённый вывод'
         edit={'revision':1,'title':'Сохранённый отчёт Q2','variant':'focus','slides':changed}
         assert client.patch('/api/v1/presentations/'+identifier,json=edit).status_code==422
         edit['slides']=slides[1:]+slides[:1]

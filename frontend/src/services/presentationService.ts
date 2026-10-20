@@ -68,8 +68,8 @@ type BackendPresentation = {
   revision: number;
   created_at?: number;
   analysis?: AnalysisResult[];
-  deck?: { slides?: Array<{ content?: { title?: string; bullets?: string[]; notes?: string; visual?: unknown; analysis_id?: string; source_refs?: string[] } }> };
-  audit?: { issues?: Array<{ id: string; slide_index: number | null; code: string; message: string; fixable: boolean; severity: 'warning' | 'error' }> };
+  deck?: { width?: number; height?: number; slides?: Array<{ content?: { block_roles?: string[]; role?: Slide['role']; title?: string; bullets?: string[]; notes?: string; visual?: unknown; analysis_id?: string; source_refs?: string[] } }> };
+  audit?: { model_checks?: Deck['auditChecks']; issues?: Array<{ id: string; slide_index: number | null; code: string; message: string; fixable: boolean; severity: 'warning' | 'error'; category?: string; box?: number[] | null }> };
   exports?: Partial<Record<'pptx' | 'pdf' | 'html', string>>;
 };
 
@@ -266,7 +266,9 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
       previewUrl: `${API_BASE}/presentations/${encodeURIComponent(record.id)}/slides/${index}/thumbnail?width=1280&revision=${record.revision}`,
       analysisId: content.analysis_id,
       sourceRefs: content.source_refs,
-      kind: index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content',
+      role: content.role,
+      blockRoles: content.block_roles,
+      kind: content.role && content.role !== 'auto' ? content.role : index === 0 ? 'cover' : index === sourceSlides.length - 1 ? 'closing' : 'content',
     };
   });
   const serverIssues: AuditIssue[] = (record.audit?.issues || []).map(issue => {
@@ -279,6 +281,9 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
       description: issue.message,
       fixable: issue.fixable,
       rule: issue.code,
+      source: 'server',
+      category: issue.category || 'deterministic',
+      box: issue.box,
     };
   });
   return {
@@ -293,6 +298,8 @@ function mapPresentation(record: BackendPresentation, brief: Brief): Deck {
     revision: record.revision,
     exports: record.exports,
     serverIssues,
+    auditChecks: record.audit?.model_checks,
+    slideSize: record.deck?.width && record.deck?.height ? {width:record.deck.width,height:record.deck.height} : undefined,
     analysis: record.analysis,
     imageGeneration: record.image_generation,
     inference: parseInference(record.generation?.inference),
@@ -308,19 +315,18 @@ export interface PresentationService {
   analyseContent(packId: string, goal: string, options?: ServiceOptions, selections?: Record<string,AnalysisRequest>): Promise<{items: AnalysisResult[]}>;
   analyseMaterials(brief: Brief, options?: ServiceOptions): Promise<{items: AnalysisResult[]}>;
   generate(brief: Brief, templateId: string, options?: ServiceOptions): Promise<Deck>;
+  open(id: string, brief: Brief, options?: ServiceOptions): Promise<Deck>;
+  generateBatch(brief: Brief, templateIds: string[], options?: ServiceOptions): Promise<{decks: Deck[]; seconds: number}>;
   save(deck: Deck, options?: ServiceOptions): Promise<Deck>;
+  audit(deck: Deck, mode: 'rules' | 'contextual' | 'visual', options?: ServiceOptions): Promise<Deck>;
+  fix(deck: Deck, issueIds: string[], options?: ServiceOptions): Promise<Deck>;
+  restore(deck: Deck, targetRevision: number, options?: ServiceOptions): Promise<Deck>;
   retryIllustration(deck: Deck, options?: ServiceOptions): Promise<Deck>;
   download(deck: Deck, format: 'pptx' | 'pdf' | 'html', options?: ServiceOptions): Promise<void>;
 }
 
-async function renderPresentation(brief: Brief, templateId: string, outline: Outline, options: ServiceOptions, useServerAi: boolean): Promise<Deck> {
-  checkAborted(options.signal);
-  const startedAt = Date.now();
-  options.onProgress?.({ stage: 'submitting', message: 'Отправляем задание на сервер' });
-  const job = await request<Job>('/generations', {
-    method: 'POST',
-    signal: options.signal,
-    body: JSON.stringify({
+function generationPayload(brief: Brief, templateId: string) {
+  return {
       brief: [brief.text, brief.audience ? `Для кого: ${brief.audience}` : '', brief.goal ? `Цель: ${brief.goal}` : '', !brief.contentPackIds?.length ? brief.materials : ''].filter(Boolean).join('\n\n'),
       purpose: 'project',
       language: 'ru',
@@ -335,8 +341,17 @@ async function renderPresentation(brief: Brief, templateId: string, outline: Out
       analysis_goals: Object.fromEntries((brief.materialFiles || []).filter(f=>f.goal?.trim()).map(f=>[f.id,f.goal!.trim()])),
       ...(brief.brandbook ? {brandbook_id: brief.brandbook.id} : {}),
       template_id: templateId,
-      ...(useServerAi ? {} : { outline: toBackendOutline(outline, brief.contentPackIds) }),
-    }),
+  };
+}
+
+async function renderPresentation(brief: Brief, templateId: string, outline: Outline, options: ServiceOptions, useServerAi: boolean): Promise<Deck> {
+  checkAborted(options.signal);
+  const startedAt = Date.now();
+  options.onProgress?.({ stage: 'submitting', message: 'Отправляем задание на сервер' });
+  const job = await request<Job>('/generations', {
+    method: 'POST',
+    signal: options.signal,
+    body: JSON.stringify({...generationPayload(brief, templateId), ...(useServerAi ? {} : {outline:toBackendOutline(outline,brief.contentPackIds)})}),
   });
 
   let current = job;
@@ -387,6 +402,11 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
       return mapTemplate(await upload<BackendTemplate>('/templates', file, options));
     },
 
+    async open(id, brief, options = {}) {
+      const record = await request<BackendPresentation>(`/presentations/${encodeURIComponent(id)}`, {signal:options.signal});
+      return mapPresentation(record,brief);
+    },
+
     async uploadContent(file, options = {}) {
       return upload<ContentPack>('/content-packs', file, options);
     },
@@ -433,16 +453,62 @@ export function createPresentationService(aiDependencies: PipelineDependencies =
       return mapPresentation(record, deck.brief || {text:deck.title,audience:'',goal:'',slideCount:deck.slides.length,templateId:deck.templateId,materials:''});
     },
 
+    async generateBatch(brief, templateIds, options = {}) {
+      if (templateIds.length !== 3 || new Set(templateIds).size !== 3) throw new Error('Выберите три разных шаблона.');
+      const started = performance.now();
+      const batch = await request<{jobs:Job[]}>('/generation-batches', {
+        method:'POST',signal:options.signal,
+        body:JSON.stringify({requests:templateIds.map(id=>generationPayload(brief,id))}),
+      });
+      const jobs = await Promise.all(batch.jobs.map(async original => {
+        let job = original;
+        while (job.status !== 'completed') {
+          if (job.status === 'failed') throw new Error(job.error || 'Одно из заданий завершилось ошибкой.');
+          if (performance.now() - started >= GENERATION_TIMEOUT) throw new Error('Общий запуск превысил пять минут. Сервер может продолжать задания.');
+          options.onProgress?.({...jobProgress(job),message:'Общий запуск: три шаблона × три оформления. Очередь, модель и изображения входят во время.'});
+          await delay(800,options.signal);
+          job = await request<Job>(`/jobs/${encodeURIComponent(job.id)}`,{signal:options.signal});
+        }
+        if (job.presentation_ids?.length !== 3) throw new Error('Сервер вернул неполный набор оформлений.');
+        return job;
+      }));
+      const seconds = (performance.now()-started)/1000;
+      const decks = await Promise.all(jobs.flatMap(job=>job.presentation_ids!).map(async id=>mapPresentation(
+        await request<BackendPresentation>(`/presentations/${encodeURIComponent(id)}`,{signal:options.signal}),brief)));
+      return {decks,seconds};
+    },
+
     async save(deck, options = {}) {
       options.onProgress?.({stage:'processing', message:'Сохраняем изменения и фирменное оформление'});
       const record = await request<BackendPresentation>(`/presentations/${encodeURIComponent(deck.id)}`, {
         method:'PATCH', signal:options.signal, body:JSON.stringify({
           revision:deck.revision, title:deck.title, variant:deck.layout==='story'?'split':deck.layout,
-          slides:deck.slides.map(s=>({title:s.title, bullets:s.body ? s.body.split('\n') : [], notes:s.notes||'',
+          slides:deck.slides.map(s=>({role:s.role||'auto', block_roles:s.blockRoles||[], title:s.title, bullets:s.body ? s.kind === 'cover' && s.role === 'cover' ? [s.body] : s.body.split('\n') : [], notes:s.notes||'',
             source_refs:s.sourceRefs||[], analysis_id:s.analysisId||'', visual:s.visual||s.rawVisual||{kind:'none'}})),
         }),
       }, TRANSFER_TIMEOUT);
-      return {...mapPresentation(record, deck.brief || {text:deck.title, audience:'', goal:'', slideCount:deck.slides.length, templateId:deck.templateId, materials:''}), variantPreviews:deck.variantPreviews};
+      return mapPresentation(record, deck.brief || {text:deck.title, audience:'', goal:'', slideCount:deck.slides.length, templateId:deck.templateId, materials:''});
+    },
+
+    async audit(deck, mode, options = {}) {
+      const base = `/presentations/${encodeURIComponent(deck.id)}`;
+      await request(`${base}/audit${mode === 'rules' ? '' : `?${mode}=true`}`, {method:'POST',signal:options.signal}, GENERATION_TIMEOUT);
+      const record = await request<BackendPresentation>(base, {signal:options.signal});
+      return {...mapPresentation(record, deck.brief!), undoRevision:deck.undoRevision};
+    },
+
+    async fix(deck, issueIds, options = {}) {
+      const record = await request<BackendPresentation>(`/presentations/${encodeURIComponent(deck.id)}/fixes`, {
+        method:'POST',signal:options.signal,body:JSON.stringify({revision:deck.revision,issue_ids:issueIds}),
+      }, TRANSFER_TIMEOUT);
+      return {...mapPresentation(record, deck.brief!), undoRevision:deck.revision};
+    },
+
+    async restore(deck, targetRevision, options = {}) {
+      const record = await request<BackendPresentation>(`/presentations/${encodeURIComponent(deck.id)}/revisions/${targetRevision}/restore`, {
+        method:'POST',signal:options.signal,body:JSON.stringify({revision:deck.revision}),
+      }, TRANSFER_TIMEOUT);
+      return mapPresentation(record, deck.brief!);
     },
 
     async download(deck, format, options = {}) {

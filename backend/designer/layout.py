@@ -326,6 +326,13 @@ def stat_plan(bullets):
     return values
 
 
+def page_role(content, position, total):
+    role = content.get('role', 'auto')
+    if role != 'auto':
+        return role
+    return 'cover' if position == 0 else 'closing' if total > 1 and position == total - 1 else 'content'
+
+
 def slide_mode(content, variant, position, total, assets, used):
     """Как подать слайд с тезисами без визуализации: фактоиды, иконки, картинка.
 
@@ -335,6 +342,8 @@ def slide_mode(content, variant, position, total, assets, used):
     финал не трогаем: там композицию задаёт страница шаблона.
     """
     bullets = content["bullets"]
+    if content.get('role') == 'cover':
+        return None  # Native title artwork must not become a generic picture page.
     from .illustration_plan import target_key
     generated = [a for a in assets if a.get('source') == 'generated' and (
         a.get('target_key') == target_key(content) if a.get('target_key') else
@@ -345,8 +354,7 @@ def slide_mode(content, variant, position, total, assets, used):
     if (
         content["visual"]["kind"] != "none"
         or not bullets
-        or position == 0
-        or (total > 2 and position == total - 1)
+        or page_role(content, position, total) in ('cover', 'closing')
     ):
         return None
     values = stat_plan(bullets)
@@ -378,8 +386,8 @@ def content_demand(content, position=1, total=1, mode=None):
         "has_visual": content["visual"]["kind"] != "none"
         or bool(mode and mode["kind"] in ("stats", "picture")),
         "title_length": len(content["title"]),
-        "cover": position == 0,
-        "closing": total > 1 and position == total - 1,
+        "cover": page_role(content, position, total) == 'cover',
+        "closing": page_role(content, position, total) == 'closing',
         # Сколько карточек пригодилось бы этому слайду.
         "cards": 0 if content["visual"]["kind"] != "none" or (mode and mode['kind'] != 'icons') else len(bullets),
     }
@@ -1531,7 +1539,7 @@ def compose(outline, template, variant, assets=None):
         # A sparse opening slide follows the cover's own title/subtitle frames,
         # including titles below the middle of the page. Content geometry must
         # not lift it into the logo band or stretch it across the brand artwork.
-        if i == 0 and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1:
+        if page_role(content, position, total) == 'cover' and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1:
             cover_box = pattern.get('title_box')
             if cover_box:
                 cx = max(width * margins['x'], width * cover_box['x'])
@@ -1578,6 +1586,17 @@ def compose(outline, template, variant, assets=None):
                     element["icons"] = [asset_ref(icon) for icon in icons]
                     used["icons"].update(icon["id"] for icon in icons)
         # Resolve the text color once, against this slide's real background, so
+        if content.get('block_roles'):
+            # Semantics come from the planner. Rendering never guesses that a
+            # sentence ending with a colon is a conclusion or a source.
+            for element in elements:
+                if element['kind'] == 'text' and element.get('role') != 'title':
+                    element['paragraph_roles'] = [
+                        next((role for text, role in zip(content['bullets'], content['block_roles'])
+                              if line.removeprefix('• ') == text), 'evidence')
+                        for line in element['text'].splitlines()]
+                    element['bold'] = False
+        # Resolve the text color once, against this slide's real background, so
         # layout, export and the contrast audit all agree on what will be rendered.
         # Подогнать текст до аудита: пользователь не должен чинить руками то,
         # что вёрстка умеет посчитать сама.
@@ -1606,7 +1625,7 @@ def compose(outline, template, variant, assets=None):
                 element["font_size"] = size
         if variant == "focus":
             focus_accent(elements, scale)
-        if i == 0 and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1:
+        if page_role(content, position, total) == 'cover' and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1:
             # На обложке подзаголовок подчинён заголовку: рост кегля и акцент
             # focus не должны сделать его крупнее названия колоды.
             title_size = elements[0]["font_size"]
@@ -1670,7 +1689,7 @@ def compose(outline, template, variant, assets=None):
             # Фон не измерен: о его светлоте ничего не известно, поэтому под
             # текст кладётся светлая подложка — самый безопасный вариант.
             background = tokens["theme"].get("lt1", "FFFFFF")
-        native_cover = not outline.get('content_pages') and i == 0 and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1
+        native_cover = page_role(content, position, total) == 'cover' and pattern.get('role') == 'cover' and not has_visual and not mode and len(bullets) <= 1
         if native_cover:
             sampled = pattern.get('title_background')
             if sampled:

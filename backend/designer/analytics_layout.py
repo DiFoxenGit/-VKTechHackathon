@@ -1,5 +1,6 @@
 """Readable native data slides with the template's content page, fonts and palette."""
 import copy
+import json
 from .parsing import best_text_color
 
 
@@ -14,7 +15,8 @@ def compose_analytics(outline, template, variant, assets=None):
     narrative = {}
     if any(is_narrative(s) for s in outline['slides']):
         ordinary = copy.deepcopy(outline)
-        ordinary['content_pages'] = any(s.get('analysis_id', '').startswith('business:') for s in outline['slides'])
+        ordinary['content_pages'] = (any(s.get('analysis_id', '').startswith('business:') for s in outline['slides'])
+                                     and not any(s.get('role') == 'cover' for s in outline['slides']))
         for slide in ordinary['slides']:
             slide.pop('analysis_id', None)
         rich = compose(ordinary, template, variant, assets)
@@ -128,7 +130,7 @@ def compose_analytics(outline, template, variant, assets=None):
                     elif variant!='split' or wide_evidence:elements[0]['box'][2] -= side + width*.02
             elements.append(dict(defaults,id="visual",kind=kind,role="body",data=copy.deepcopy(content["visual"]),box=visual_box))
             if caveats:
-                elements.append(dict(defaults,id="caveats",kind="text",role="body",text="\n".join(content["bullets"]),font_size=12,box=note_box))
+                elements.append(dict(defaults,id="caveats",kind="text",role="body",text="\n".join(content["bullets"]),paragraph_roles=content.get('block_roles', []),font_size=12,box=note_box))
         elif content["bullets"]:
             body_box=[width*left,height*(top+.21),width*usable,height*(bottom-top-.23)]
             if variant == "split":
@@ -139,6 +141,27 @@ def compose_analytics(outline, template, variant, assets=None):
             while size>14 and sum(max(1,math.ceil(len(p)*size*.5/(body_box[2]-8)))+1 for p in content["bullets"])*size*1.25>body_box[3]:
                 size-=1
             elements.append(dict(defaults,id="body",kind="text",role="body",text=text,font_size=size,box=body_box))
+        notes = json.loads(content.get('notes') or '{}') if content.get('analysis_id','').startswith('business:') else {}
+        if kind == 'kpi' and notes.get('semantic_blocks', {}).get('role') == 'summary':
+            # One summary, with an explicit hierarchy, rather than a seven-line
+            # footnote under two repeated KPI values. No new decorative system.
+            elements = [dict(defaults,id='title',kind='text',role='title',text=content['title'],
+                             box=[width*left,height*top,width*usable,height*.16],font_size=title_size,bold=True)]
+            gap=width*.04;column=(width*usable-gap)/2
+            for index,series in enumerate(content['visual']['series']):
+                data=copy.deepcopy(content['visual']);data['series']=[series];data['source']=''
+                elements.append(dict(defaults,id=f'summary_metric_{index}',kind='kpi',role='body',data=data,
+                    box=[width*left+index*(column+gap),height*(top+.18),column,height*.22]))
+            groups=[('lead',{'lead','evidence'},top+.43,.12,18),
+                    ('actions',{'action'},top+.57,.12,14),
+                    ('limitations',{'caveat'},top+.71,max(.07,bottom-top-.76),12)]
+            for identifier,roles,y,h,size in groups:
+                text='\n'.join(text for text,role in zip(content['bullets'],content.get('block_roles',[])) if role in roles)
+                if text:
+                    elements.append(dict(defaults,id=identifier,kind='text',role='body',text=text,
+                        font_size=size,bold=identifier=='lead',box=[width*left,height*y,width*usable,height*h]))
+            elements.append(dict(defaults,id='source',kind='text',role='body',text=content['visual'].get('source',''),
+                font_size=11,box=[width*left,height*(bottom-.035),width*usable,height*.035]))
         from .layout import estimated_text_height
         for element in elements:
             if element['kind']=='text':

@@ -297,9 +297,15 @@ def verify_slide_evidence(record, *, live):
     proof = record["business_proof"]
     fact_ids = set(proof["facts"])
     slides = record["deck"]["slides"]
+    analytical = 0
     for slide in slides:
         content = slide["content"]
         require(bool(content["source_refs"]), "Slide lost source evidence links")
+        if content.get('role') == 'cover':
+            require(not content.get('analysis_id') and content['visual']['kind']=='none'
+                    and len(content['bullets'])<=1, 'Cover became an analytical page')
+            continue
+        analytical += 1
         notes = json.loads(content["notes"])
         require(bool(notes.get("fact_ids")) and set(notes["fact_ids"]) <= fact_ids,
                 "Slide cites an unknown or missing fact")
@@ -311,4 +317,5 @@ def verify_slide_evidence(record, *, live):
         comparisons = record.get("generation", {}).get("editorial", [])
         require(sum(item.get("before") != item.get("after") for item in comparisons) >= 3,
                 "Model prose changes not demonstrated on at least three pages")
-    return {"slide_evidence_links_verified": len(slides), "model_provenance_on_every_slide": live}
+    return {"slide_evidence_links_verified": len(slides), "analytical_pages_verified":analytical,
+            "model_provenance_on_every_analytical_page": live}

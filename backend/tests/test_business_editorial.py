@@ -392,7 +392,10 @@ def test_browser_job_shares_one_actual_validated_answer_and_safe_retry(tmp_path,
         snapshot = client.get(original['exports']['pptx']).content
         assert all(record['generation']['mode'] == 'llm' and record['generation']['inference'] == job['inference'] for record in records)
         exported = Presentation(io.BytesIO(snapshot))
-        assert any('Приоритет decision' in shape.text for slide in exported.slides for shape in slide.shapes if shape.has_text_frame)
+        # The compact report merges the introductory decision into its KPI
+        # summary. Verify an actual remaining model heading, not a demo phrase.
+        summary_title=original['deck']['slides'][1]['content']['title']
+        assert any(summary_title in shape.text for slide in exported.slides for shape in slide.shapes if shape.has_text_frame)
         slides = [slide['content'] for slide in original['deck']['slides']]
         edit = dict(revision=1, title=original['title'], variant=original['variant'], slides=slides)
         assert client.patch('/api/v1/presentations/' + original['id'], json=edit).status_code == 200

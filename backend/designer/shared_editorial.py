@@ -73,7 +73,9 @@ class SharedEditorial:
                 if isinstance(error, asyncio.CancelledError):
                     raise TimeoutError('Исходное задание общей редактуры прервано')
                 raise error
-            candidate, _ = validate_editorial(saved['response'], sources, outline)
+            from .business_bridge import business_outline, present_business
+            canonical = business_outline(sources, 30, canonical=True)
+            candidate, _ = validate_editorial(saved['response'], sources, canonical)
             sources[0]['_business_editorial'] = copy.deepcopy(saved)
             trace.update(completed=True, validation='passed', status='completed',
                          content_revalidated=True, shared_inference=source_trace,
@@ -81,6 +83,6 @@ class SharedEditorial:
                          response_sha256=source_trace.get('response_sha256'),
                          message='Общий текст модели проверен для этого шаблона')
             publish()
-            return candidate
+            return present_business(sources, candidate)
         finally:
             self.listeners.remove(update)

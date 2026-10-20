@@ -828,7 +828,7 @@ def create_app(data_dir=None, seed_dir=None):
         record = store.get("presentations", presentation_id)
         report = audit(
             record["deck"],
-            store.get("templates", record["template_id"]),
+            apply_style(store.get("templates", record["template_id"]), record.get("style")),
             record["sources"],
             record.get("generation", {}).get("language"),
         )
@@ -842,11 +842,23 @@ def create_app(data_dir=None, seed_dir=None):
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
             report["contextual"] = {"status": "completed", "input": "slide_images"}
+            from .inference import inference_route
+            report.setdefault('model_checks', {})['visual'] = {
+                'status': 'completed', 'input': 'slide_images',
+                'provider': 'vlm', 'model': os.getenv('DESIGNER_VLM_MODEL')}
         if contextual:
-            findings = await contextual_audit(record["deck"], record["sources"])
+            from .inference_trace import capture_inference
+            started = time.monotonic()
+            with capture_inference() as audit_trace:
+                findings = await contextual_audit(record["deck"], record["sources"])
+            audit_trace['duration_seconds'] = round(time.monotonic()-started,3)
             report["issues"].extend(findings)
             report["counts"]["warnings"] += len(findings)
             report["contextual"] = {"status": "completed", "input": "structured_text"}
+            from .inference import inference_route
+            report.setdefault('model_checks', {})['contextual'] = {
+                'status': 'completed', 'input': 'structured_text', **(inference_route() or {}),
+                'inference':audit_trace}
         # Отчёт собран заново, поэтому проверки самого файла нужно вернуть: иначе
         # повторный аудит «терял» находки, которые видны только в pptx.
         merge_file_issues(report, record.get("export_check") or {})
@@ -871,10 +883,12 @@ def create_app(data_dir=None, seed_dir=None):
             if retained and not (contextual or visual) and "contextual" in current.get("audit", {}):
                 report["contextual"] = copy.deepcopy(current["audit"]["contextual"])
             current["audit"] = report
+            report['model_checks'] = {**current.get('_model_checks', {}), **report.get('model_checks', {})}
+            current['_model_checks'] = copy.deepcopy(report['model_checks'])
             store.put("presentations", current)
         return {"revision": record["revision"], **report}
 
-    def save_revision(record):
+    def save_revision(record, retained_findings=None):
         template = apply_style(store.get("templates", record["template_id"]), record.get("style"))
         if record.get("analysis"):
             try:
@@ -882,12 +896,20 @@ def create_app(data_dir=None, seed_dir=None):
             except ValueError as exc:
                 raise HTTPException(422, str(exc)) from exc
         record["revision"] += 1
+        record.pop('_model_checks', None)
         record["audit"] = audit(
             record["deck"],
             template,
             record["sources"],
             record.get("generation", {}).get("language"),
         )
+        if retained_findings:
+            # Geometry fixes do not disprove unchecked semantic findings.
+            record['audit']['issues'].extend(retained_findings)
+            record['audit']['counts'] = {
+                'errors': sum(i['severity'] == 'error' for i in record['audit']['issues']),
+                'warnings': sum(i['severity'] != 'error' for i in record['audit']['issues']),
+            }
         folder = store.directory("presentations", record["id"])
         target = folder / f"r{record['revision']}.pptx"
         source = store.directory("templates", template["id"]) / "source.pptx"
@@ -931,19 +953,32 @@ def create_app(data_dir=None, seed_dir=None):
     @api.post("/presentations/{presentation_id}/fixes", tags=["Audit"])
     def fixes(presentation_id: str, request: FixRequest):
         with store.lock:
-            record = store.get("presentations", presentation_id)
+            record = copy.deepcopy(store.get("presentations", presentation_id))
             if record["revision"] != request.revision:
                 raise HTTPException(409, "Stale revision; reload presentation")
+            retained = [copy.deepcopy(i) for i in record['audit']['issues'] if i.get('category') == 'contextual']
             try:
                 record["deck"] = apply_fixes(
                     record["deck"],
                     record["audit"],
                     request.issue_ids,
-                    store.get("templates", record["template_id"]),
+                    apply_style(store.get("templates", record["template_id"]), record.get("style")),
                 )
             except ValueError as exc:
                 raise HTTPException(422, str(exc)) from exc
-            return save_revision(record)
+            return save_revision(record, retained)
+
+    @api.post('/presentations/{presentation_id}/revisions/{target_revision}/restore', tags=['Presentations'])
+    def restore_revision(presentation_id: str, target_revision: int, revision: int = Body(embed=True, ge=1)):
+        with store.lock:
+            current = store.get('presentations', presentation_id)
+            if current['revision'] != revision:
+                raise HTTPException(409, 'Версия изменилась. Откройте презентацию заново.')
+            if not 1 <= target_revision < revision:
+                raise HTTPException(422, 'Выберите предыдущую ревизию этой презентации.')
+            restored = copy.deepcopy(store.get('revisions', f'{presentation_id}_{target_revision}'))
+            restored.update(id=presentation_id, revision=revision)
+            return save_revision(restored)
 
     @api.patch("/presentations/{presentation_id}", tags=["Presentations"])
     def edit_presentation(presentation_id: str, request: PresentationEdit):

@@ -574,6 +574,12 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                     p.space_after = Pt(3)
                     p.alignment = align
                     line_bold = bold or (card and j == 0 and len(lines) > 1)
+                    paragraph_roles = element.get('paragraph_roles') or []
+                    if j < len(paragraph_roles):
+                        # A short main conclusion gets weight, not a whole
+                        # paragraph of numbers. Evidence/actions remain regular.
+                        line_bold = (paragraph_roles[j] == 'lead' and
+                                     len(line)*element['font_size']*.52 <= element['box'][2]-12)
                     size = element["font_size"]
                     if card and j > 0:
                         size = max(10.0, size * 0.88)
@@ -582,7 +588,7 @@ def export_pptx(template_path: Path, template, deck_data, output: Path, asset_ro
                         _font(run.font, font, size, text_color, line_bold)
             elif kind in CHARTS and (kind not in ("bar", "line") or slide_data["content"].get("analysis_id")):
                 chart_palette = [c for c in (template["tokens"].get("accents") or palette) if contrast_ratio(background,c)>=3]
-                add_chart(slide, element["data"], (x, y, w, max(Pt(60), h - Pt(24))), font, chart_palette or [text_color], text_color)
+                add_chart(slide, element["data"], (x, y, w, max(Pt(60), h - Pt(24))), font, chart_palette or [text_color], text_color, background)
                 add_source(slide, element["data"], (x, y, w, h), font, text_color)
             elif kind in ("bar", "line"):
                 visual = element["data"]

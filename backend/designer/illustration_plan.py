@@ -43,7 +43,7 @@ def target_key(content):
 
 
 def eligible(content):
-    return ((content.get('visual') or {}).get('kind', 'none') == 'none'
+    return (content.get('role') != 'cover' and (content.get('visual') or {}).get('kind', 'none') == 'none'
             and len(content.get('bullets') or []) <= 4
             and sum(map(len, content.get('bullets') or [])) <= 800)
 

@@ -267,6 +267,10 @@ def validate_draft(value, sources, outline):
 
 
 async def edit_business(sources, outline, brief):
+    from .business_bridge import business_outline, present_business
+    # The model still edits the twelve canonical fact pages, independently of
+    # whether the user chose a compact summary plus cover or separate summary.
+    outline = business_outline(sources, 30, canonical=True)
     payload = editor_payload(sources, outline, brief)
     result = await ai.complete_json([
         {'role': 'system', 'content': PROMPT},
@@ -276,7 +280,7 @@ async def edit_business(sources, outline, brief):
     sources[0]['_business_editorial'] = dict(version=EDITORIAL_VERSION, response=response,
         before_after=[dict(page=page.id, before=old.title, after=new.title)
                       for page, old, new in zip(Editorial.model_validate(response).pages, outline.slides, candidate.slides)])
-    return candidate
+    return present_business(sources, candidate)
 
 
 def replay_editorial(sources, outline):

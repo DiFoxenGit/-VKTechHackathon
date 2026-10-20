@@ -103,6 +103,10 @@ async def _run_generation(request, template, sources, *, outline_factory, balanc
             sources[0]["_story"] = {"goal": request.brief}
         if sources[0].get('_business'):
             sources[0].pop('_business_editorial', None)
+            sources[0]['_business_presentation'] = {
+                'slide_count': request.slide_count,
+                'audience': 'Для коммерческого директора и руководителя продукта',
+            }
         outline = build_outline(analysis_results, sources, request.slide_count)
         for result in analysis_results:
             warnings.extend(result["warnings"])
