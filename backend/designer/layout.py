@@ -1396,8 +1396,11 @@ def compose(outline, template, variant, assets=None):
             cell_height = (h - gap * (len(pictures) - 1)) / len(pictures)
             for n, asset in enumerate(pictures):
                 box = [image_x, top + n * (cell_height + gap), image_width, cell_height]
+                fitted = picture_box(asset, box)
+                if mode.get('placement') == 'left':
+                    fitted[0] = image_x
                 elements.append(dict(id='picture' if n == 0 else f'picture_{n}', kind='image',
-                                     role='picture', box=picture_box(asset, box),
+                                     role='picture', box=fitted,
                                      asset=asset_ref(asset), fit='contain'))
                 used['pictures'].add(asset['id'])
         elif cards:

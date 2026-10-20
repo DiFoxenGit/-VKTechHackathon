@@ -114,6 +114,8 @@ def test_cover_final_gallery_and_left_placement_survive_layout(variant):
     deck = compose(dict(title='Test', slides=slides), template, variant, assets)
     pics = [e for e in deck['slides'][0]['elements'] if e.get('asset', {}).get('source') == 'generated']
     assert len(pics) == 2
+    assert pics[0]['box'][0] == pics[1]['box'][0]
+    assert pics[0]['box'][0] == deck['slides'][0]['elements'][0]['box'][0]
     assert pics[0]['box'][1] + pics[0]['box'][3] <= pics[1]['box'][1]
     body = next(e for e in deck['slides'][0]['elements'] if e.get('id') in {'body', 'lead'})
     assert all(e['box'][0] + e['box'][2] <= body['box'][0] for e in pics)
