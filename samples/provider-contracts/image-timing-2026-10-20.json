@@ -1,0 +1,722 @@
+{
+  "version": 1,
+  "outline_sha256": "190c6ef21d152c3674cd000e08bbfd8fb453704eeee21056b003132cde210157",
+  "brief_sha256": "cedb3a02f336451ea6359b57e95cac734202891bb0237f02b627e6c7baf535d5",
+  "new_images_budget": 2,
+  "stands": {
+    "primary": {
+      "template_id": "d1e7dc7ca7f8418d96bb6195acdc0be6",
+      "template_sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+      "runs": [
+        {
+          "label": "without_images",
+          "requested_images": 0,
+          "payload_sha256": "38e08bcd169493eee54c06aa02cb1decfe9237fc590da8ac413c5e11614c9072",
+          "outline_sha256": "190c6ef21d152c3674cd000e08bbfd8fb453704eeee21056b003132cde210157",
+          "events": [
+            {
+              "status": "running",
+              "stage": "outline",
+              "observed_seconds": 0.134
+            },
+            {
+              "status": "running",
+              "stage": "layout_and_audit",
+              "observed_seconds": 0.639
+            },
+            {
+              "status": "completed",
+              "stage": "completed",
+              "observed_seconds": 4.175
+            }
+          ],
+          "status": "completed",
+          "job_id": "2c7642d24b554e35906865c502de88fc",
+          "client_ready_seconds": 4.175,
+          "server_ready_seconds": 4.079,
+          "warnings": [],
+          "variants": [
+            {
+              "id": "23cc46c2744e436e92a19ca05fb11fc3",
+              "variant": "classic",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 0,
+              "illustrations_id": null,
+              "planning": null,
+              "exports": {
+                "pptx": {
+                  "seconds": 0.018,
+                  "pages": 3,
+                  "bytes": 354758,
+                  "sha256": "4a450056fd1e9adfe21e00d95cf5f103b344fa1d3c96296f900682dc0ba151f2"
+                },
+                "pdf": {
+                  "seconds": 3.349,
+                  "pages": 3,
+                  "bytes": 397140,
+                  "sha256": "c75cbbbda554eac6f141ca02eefbd5b0a4c20fe5e1e8450f4972b41bf7047380"
+                }
+              },
+              "pptx_total_picture_shapes": 0
+            },
+            {
+              "id": "d1862bf6002e432eaacf81bf4aa4ab6f",
+              "variant": "split",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 0,
+              "illustrations_id": null,
+              "planning": null,
+              "exports": {
+                "pptx": {
+                  "seconds": 0.013,
+                  "pages": 3,
+                  "bytes": 354729,
+                  "sha256": "cd8888a0956c1df65744cf959362348462d3845407f45b1b7851895e6338cf9d"
+                },
+                "pdf": {
+                  "seconds": 2.71,
+                  "pages": 3,
+                  "bytes": 461443,
+                  "sha256": "e8b76e5ff3f2b3bd1b2d5fefe677b91184c70788bf564b9f459b418108898c5c"
+                }
+              },
+              "pptx_total_picture_shapes": 0
+            },
+            {
+              "id": "098e3d50564745ffbb0b144a7e1ff8f4",
+              "variant": "focus",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 0,
+              "illustrations_id": null,
+              "planning": null,
+              "exports": {
+                "pptx": {
+                  "seconds": 0.013,
+                  "pages": 3,
+                  "bytes": 354767,
+                  "sha256": "5a4190f18e4d9cd9c945e48b1159ce5d3055cad957f03ed88defa3923172735b"
+                },
+                "pdf": {
+                  "seconds": 2.729,
+                  "pages": 3,
+                  "bytes": 464841,
+                  "sha256": "1e20e19e6eae2e878e27c68beb40c316b149fb8e9d96ff26d918874f201bdb4b"
+                }
+              },
+              "pptx_total_picture_shapes": 0
+            }
+          ],
+          "export_all_seconds": 8.888,
+          "end_to_end_seconds": 13.065
+        },
+        {
+          "label": "with_image",
+          "requested_images": 1,
+          "payload_sha256": "2a2f35f0cf2bcb9760d47dfcb34d4e78f6731b258072898c3ae76b4dd4c2150e",
+          "outline_sha256": "190c6ef21d152c3674cd000e08bbfd8fb453704eeee21056b003132cde210157",
+          "events": [
+            {
+              "status": "running",
+              "stage": "outline",
+              "observed_seconds": 0.133
+            },
+            {
+              "status": "running",
+              "stage": "illustrations",
+              "observed_seconds": 0.637
+            },
+            {
+              "status": "running",
+              "stage": "layout_and_audit",
+              "observed_seconds": 24.817
+            },
+            {
+              "status": "completed",
+              "stage": "completed",
+              "observed_seconds": 28.862
+            }
+          ],
+          "status": "completed",
+          "job_id": "234688211fa1406894922fe6e701cfde",
+          "client_ready_seconds": 28.863,
+          "server_ready_seconds": 28.576,
+          "warnings": [],
+          "variants": [
+            {
+              "id": "8bf8e88dc051484a94aa39ebb9fbbfcc",
+              "variant": "classic",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 1,
+              "illustrations_id": "0a454d891c774850a6a5008c230bf781",
+              "planning": {
+                "requested": true,
+                "attempted": true,
+                "completed": true,
+                "provider": "vk",
+                "model": "qwen38-27b-fp8",
+                "attempts": 1,
+                "successful_calls": 1,
+                "duration_seconds": 10.189,
+                "validation": "passed",
+                "fallback_used": false,
+                "status": "completed",
+                "error_code": null,
+                "message": "Ответ модели получен и проверен",
+                "response_id": "chatcmpl-b3f55dc6-fbc2-41d9-b51b-69f2b9f2820d",
+                "response_sha256": "9be3e00b3ff7101839bfdd705edade2ed03c0a985985cd6aebe65f2977d00de0",
+                "usage": {
+                  "prompt_tokens": 982,
+                  "completion_tokens": 273,
+                  "total_tokens": 1255
+                },
+                "calls": [
+                  {
+                    "attempt": 1,
+                    "status_code": 200,
+                    "duration_seconds": 10.189,
+                    "validation": "passed",
+                    "error_code": null,
+                    "response_id": "chatcmpl-b3f55dc6-fbc2-41d9-b51b-69f2b9f2820d",
+                    "usage": {
+                      "prompt_tokens": 982,
+                      "completion_tokens": 273,
+                      "total_tokens": 1255
+                    },
+                    "response_sha256": "9be3e00b3ff7101839bfdd705edade2ed03c0a985985cd6aebe65f2977d00de0"
+                  }
+                ],
+                "content_reused_for_variants": 0,
+                "model_attempt": 1,
+                "model_max_attempts": 1,
+                "retry_reason": null
+              },
+              "exports": {
+                "pptx": {
+                  "seconds": 0.02,
+                  "pages": 3,
+                  "bytes": 1813775,
+                  "sha256": "cdfcc39c3f8390839f489b61825ac2360b472e91f7c101dc5096a357aa498ba4"
+                },
+                "pdf": {
+                  "seconds": 2.76,
+                  "pages": 3,
+                  "bytes": 571264,
+                  "sha256": "e61afec14bc512c2c094a967928487e2a67f2d2128f204cc729cc732f725a811"
+                }
+              },
+              "pptx_total_picture_shapes": 1,
+              "native_generated_pictures": [
+                [
+                  2,
+                  "7ea3353efc71d3716c3caa33"
+                ]
+              ]
+            },
+            {
+              "id": "4129cd53edb74d23aaaa07de28232644",
+              "variant": "split",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 1,
+              "illustrations_id": "0a454d891c774850a6a5008c230bf781",
+              "planning": {
+                "requested": true,
+                "attempted": true,
+                "completed": true,
+                "provider": "vk",
+                "model": "qwen38-27b-fp8",
+                "attempts": 1,
+                "successful_calls": 1,
+                "duration_seconds": 10.189,
+                "validation": "passed",
+                "fallback_used": false,
+                "status": "completed",
+                "error_code": null,
+                "message": "Ответ модели получен и проверен",
+                "response_id": "chatcmpl-b3f55dc6-fbc2-41d9-b51b-69f2b9f2820d",
+                "response_sha256": "9be3e00b3ff7101839bfdd705edade2ed03c0a985985cd6aebe65f2977d00de0",
+                "usage": {
+                  "prompt_tokens": 982,
+                  "completion_tokens": 273,
+                  "total_tokens": 1255
+                },
+                "calls": [
+                  {
+                    "attempt": 1,
+                    "status_code": 200,
+                    "duration_seconds": 10.189,
+                    "validation": "passed",
+                    "error_code": null,
+                    "response_id": "chatcmpl-b3f55dc6-fbc2-41d9-b51b-69f2b9f2820d",
+                    "usage": {
+                      "prompt_tokens": 982,
+                      "completion_tokens": 273,
+                      "total_tokens": 1255
+                    },
+                    "response_sha256": "9be3e00b3ff7101839bfdd705edade2ed03c0a985985cd6aebe65f2977d00de0"
+                  }
+                ],
+                "content_reused_for_variants": 0,
+                "model_attempt": 1,
+                "model_max_attempts": 1,
+                "retry_reason": null
+              },
+              "exports": {
+                "pptx": {
+                  "seconds": 0.022,
+                  "pages": 3,
+                  "bytes": 1813775,
+                  "sha256": "e47860b91faa2fc93b59c1314da4c941dd134c3b1c29dbc5fdd279b66c6bb2f4"
+                },
+                "pdf": {
+                  "seconds": 3.173,
+                  "pages": 3,
+                  "bytes": 571264,
+                  "sha256": "c206ef4a2e98ca7ae0204ff39e46b21e6cc86f1890dacd0e549690241d1078a6"
+                }
+              },
+              "pptx_total_picture_shapes": 1,
+              "native_generated_pictures": [
+                [
+                  2,
+                  "7ea3353efc71d3716c3caa33"
+                ]
+              ]
+            },
+            {
+              "id": "21f71745b5554b8992b360f1937fa3b3",
+              "variant": "focus",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 1,
+              "illustrations_id": "0a454d891c774850a6a5008c230bf781",
+              "planning": {
+                "requested": true,
+                "attempted": true,
+                "completed": true,
+                "provider": "vk",
+                "model": "qwen38-27b-fp8",
+                "attempts": 1,
+                "successful_calls": 1,
+                "duration_seconds": 10.189,
+                "validation": "passed",
+                "fallback_used": false,
+                "status": "completed",
+                "error_code": null,
+                "message": "Ответ модели получен и проверен",
+                "response_id": "chatcmpl-b3f55dc6-fbc2-41d9-b51b-69f2b9f2820d",
+                "response_sha256": "9be3e00b3ff7101839bfdd705edade2ed03c0a985985cd6aebe65f2977d00de0",
+                "usage": {
+                  "prompt_tokens": 982,
+                  "completion_tokens": 273,
+                  "total_tokens": 1255
+                },
+                "calls": [
+                  {
+                    "attempt": 1,
+                    "status_code": 200,
+                    "duration_seconds": 10.189,
+                    "validation": "passed",
+                    "error_code": null,
+                    "response_id": "chatcmpl-b3f55dc6-fbc2-41d9-b51b-69f2b9f2820d",
+                    "usage": {
+                      "prompt_tokens": 982,
+                      "completion_tokens": 273,
+                      "total_tokens": 1255
+                    },
+                    "response_sha256": "9be3e00b3ff7101839bfdd705edade2ed03c0a985985cd6aebe65f2977d00de0"
+                  }
+                ],
+                "content_reused_for_variants": 0,
+                "model_attempt": 1,
+                "model_max_attempts": 1,
+                "retry_reason": null
+              },
+              "exports": {
+                "pptx": {
+                  "seconds": 0.02,
+                  "pages": 3,
+                  "bytes": 1813803,
+                  "sha256": "0a26a1fc3ec8112bc1c2bf38c0194e67a020e43c4f090e0e21476224c9b3cbb2"
+                },
+                "pdf": {
+                  "seconds": 3.27,
+                  "pages": 3,
+                  "bytes": 571268,
+                  "sha256": "9e6ba919363510454a7150b6ee301e11ff18397f098ef3d51ab4d6903664c0ad"
+                }
+              },
+              "pptx_total_picture_shapes": 1,
+              "native_generated_pictures": [
+                [
+                  2,
+                  "7ea3353efc71d3716c3caa33"
+                ]
+              ]
+            }
+          ],
+          "export_all_seconds": 9.325,
+          "end_to_end_seconds": 38.189
+        }
+      ],
+      "ready_delta_seconds": 24.497,
+      "download_delta_seconds": 25.124
+    },
+    "autosell": {
+      "template_id": "55c55824dcac4803a87446aa21613b08",
+      "template_sha256": "9ef2323ed5f49f464aee5ae7065f1f57bb92c8be3a635be507d59819e285cfe0",
+      "runs": [
+        {
+          "label": "without_images",
+          "requested_images": 0,
+          "payload_sha256": "4a491bdd78664151d9427ecd8ede3efdfc9a0ce8db984cdbb71f8c8a7e3381aa",
+          "outline_sha256": "190c6ef21d152c3674cd000e08bbfd8fb453704eeee21056b003132cde210157",
+          "events": [
+            {
+              "status": "running",
+              "stage": "layout_and_audit",
+              "observed_seconds": 0.393
+            },
+            {
+              "status": "completed",
+              "stage": "completed",
+              "observed_seconds": 5.467
+            }
+          ],
+          "status": "completed",
+          "job_id": "29392ce8481c445eb0ffaeb0ddab59f2",
+          "client_ready_seconds": 5.469,
+          "server_ready_seconds": 4.675,
+          "warnings": [],
+          "variants": [
+            {
+              "id": "88ed678edff34185a31cd5bddf8445ac",
+              "variant": "classic",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 0,
+              "illustrations_id": null,
+              "planning": null,
+              "exports": {
+                "pptx": {
+                  "seconds": 0.32,
+                  "pages": 3,
+                  "bytes": 354758,
+                  "sha256": "2f2ce68a75fdb0f7bd1d514c68384c4311e19a56c26214cb1ec11f311e41acfe"
+                },
+                "pdf": {
+                  "seconds": 2.619,
+                  "pages": 3,
+                  "bytes": 397140,
+                  "sha256": "d71ba57b070b1e49812cd47b4b3abdc21201a2f071be947f8687445459d91bdf"
+                }
+              },
+              "pptx_total_picture_shapes": 0
+            },
+            {
+              "id": "4d0fc00ff56f41a9b4708c7e8a04fbcd",
+              "variant": "split",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 0,
+              "illustrations_id": null,
+              "planning": null,
+              "exports": {
+                "pptx": {
+                  "seconds": 0.132,
+                  "pages": 3,
+                  "bytes": 354729,
+                  "sha256": "2c9e387d9f6a3659c9853823adf1d7bf68805a1db2c26be54f1bd5561fa44ec8"
+                },
+                "pdf": {
+                  "seconds": 2.949,
+                  "pages": 3,
+                  "bytes": 461443,
+                  "sha256": "1ece63d9b779c785d6618bd948fd45a8cb2cd11958c557e3f91859c02a16a082"
+                }
+              },
+              "pptx_total_picture_shapes": 0
+            },
+            {
+              "id": "d38c649574b7406a9a9b5ce684a849a7",
+              "variant": "focus",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 0,
+              "illustrations_id": null,
+              "planning": null,
+              "exports": {
+                "pptx": {
+                  "seconds": 0.079,
+                  "pages": 3,
+                  "bytes": 354767,
+                  "sha256": "6425934b3238949af94f029bab7e0caf2c40d93c767a4365d57de41b93dc3d1c"
+                },
+                "pdf": {
+                  "seconds": 2.606,
+                  "pages": 3,
+                  "bytes": 464841,
+                  "sha256": "01e7075e73dd543f40c7fb20e2686cd7994ee0b56db58ae1f6f272ddcc999c76"
+                }
+              },
+              "pptx_total_picture_shapes": 0
+            }
+          ],
+          "export_all_seconds": 8.948,
+          "end_to_end_seconds": 14.419
+        },
+        {
+          "label": "with_image",
+          "requested_images": 1,
+          "payload_sha256": "a0413edeb1837f74a43b7c9c7b178a6fc0e0dfa8dd46fe4d1c516750087e0cbe",
+          "outline_sha256": "190c6ef21d152c3674cd000e08bbfd8fb453704eeee21056b003132cde210157",
+          "events": [
+            {
+              "status": "running",
+              "stage": "illustrations",
+              "observed_seconds": 0.173
+            },
+            {
+              "status": "running",
+              "stage": "layout_and_audit",
+              "observed_seconds": 16.261
+            },
+            {
+              "status": "completed",
+              "stage": "completed",
+              "observed_seconds": 21.318
+            }
+          ],
+          "status": "completed",
+          "job_id": "f728d7c9f9e346b9bf74e1327bb3488d",
+          "client_ready_seconds": 21.32,
+          "server_ready_seconds": 20.782,
+          "warnings": [],
+          "variants": [
+            {
+              "id": "6be70700de6a4ea28c351f78c041d0f9",
+              "variant": "classic",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 1,
+              "illustrations_id": "d1ce5fd9d9474d9685973660a5dd5690",
+              "planning": {
+                "requested": true,
+                "attempted": true,
+                "completed": true,
+                "provider": "vk",
+                "model": "qwen38-27b-fp8",
+                "attempts": 1,
+                "successful_calls": 1,
+                "duration_seconds": 5.92,
+                "validation": "passed",
+                "fallback_used": false,
+                "status": "completed",
+                "error_code": null,
+                "message": "Ответ модели получен и проверен",
+                "response_id": "chatcmpl-baa5f094-add7-421d-988a-b22f89d0b9de",
+                "response_sha256": "823531cfb0af88030cebba71e697331cc81f8c16f0d0d42a2ba70594e3e27d99",
+                "usage": {
+                  "prompt_tokens": 982,
+                  "completion_tokens": 241,
+                  "total_tokens": 1223
+                },
+                "calls": [
+                  {
+                    "attempt": 1,
+                    "status_code": 200,
+                    "duration_seconds": 5.92,
+                    "validation": "passed",
+                    "error_code": null,
+                    "response_id": "chatcmpl-baa5f094-add7-421d-988a-b22f89d0b9de",
+                    "usage": {
+                      "prompt_tokens": 982,
+                      "completion_tokens": 241,
+                      "total_tokens": 1223
+                    },
+                    "response_sha256": "823531cfb0af88030cebba71e697331cc81f8c16f0d0d42a2ba70594e3e27d99"
+                  }
+                ],
+                "content_reused_for_variants": 0,
+                "model_attempt": 1,
+                "model_max_attempts": 1,
+                "retry_reason": null
+              },
+              "exports": {
+                "pptx": {
+                  "seconds": 0.376,
+                  "pages": 3,
+                  "bytes": 1799863,
+                  "sha256": "cda27423a4c5dec11058d6ba73763a28c5bd25bc10169248bf924da5e9181325"
+                },
+                "pdf": {
+                  "seconds": 2.855,
+                  "pages": 3,
+                  "bytes": 564931,
+                  "sha256": "d2d872004077268f549282546684b5fbe58b3c9940685049df8208052ae38bdf"
+                }
+              },
+              "pptx_total_picture_shapes": 1,
+              "native_generated_pictures": [
+                [
+                  2,
+                  "4ed58560bfac3f8f53f0c6cc"
+                ]
+              ]
+            },
+            {
+              "id": "12cfead7200c44bd94ee9d4176f932d7",
+              "variant": "split",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 1,
+              "illustrations_id": "d1ce5fd9d9474d9685973660a5dd5690",
+              "planning": {
+                "requested": true,
+                "attempted": true,
+                "completed": true,
+                "provider": "vk",
+                "model": "qwen38-27b-fp8",
+                "attempts": 1,
+                "successful_calls": 1,
+                "duration_seconds": 5.92,
+                "validation": "passed",
+                "fallback_used": false,
+                "status": "completed",
+                "error_code": null,
+                "message": "Ответ модели получен и проверен",
+                "response_id": "chatcmpl-baa5f094-add7-421d-988a-b22f89d0b9de",
+                "response_sha256": "823531cfb0af88030cebba71e697331cc81f8c16f0d0d42a2ba70594e3e27d99",
+                "usage": {
+                  "prompt_tokens": 982,
+                  "completion_tokens": 241,
+                  "total_tokens": 1223
+                },
+                "calls": [
+                  {
+                    "attempt": 1,
+                    "status_code": 200,
+                    "duration_seconds": 5.92,
+                    "validation": "passed",
+                    "error_code": null,
+                    "response_id": "chatcmpl-baa5f094-add7-421d-988a-b22f89d0b9de",
+                    "usage": {
+                      "prompt_tokens": 982,
+                      "completion_tokens": 241,
+                      "total_tokens": 1223
+                    },
+                    "response_sha256": "823531cfb0af88030cebba71e697331cc81f8c16f0d0d42a2ba70594e3e27d99"
+                  }
+                ],
+                "content_reused_for_variants": 0,
+                "model_attempt": 1,
+                "model_max_attempts": 1,
+                "retry_reason": null
+              },
+              "exports": {
+                "pptx": {
+                  "seconds": 0.195,
+                  "pages": 3,
+                  "bytes": 1799863,
+                  "sha256": "949845e40f8121ebbdfd3dd12ab01a4d23577dcb7f841d20752408f7edfd1cc4"
+                },
+                "pdf": {
+                  "seconds": 2.464,
+                  "pages": 3,
+                  "bytes": 564931,
+                  "sha256": "ca16ee298344583be6427218099b13fbca84741e1da3a6e5595b28629d71172f"
+                }
+              },
+              "pptx_total_picture_shapes": 1,
+              "native_generated_pictures": [
+                [
+                  2,
+                  "4ed58560bfac3f8f53f0c6cc"
+                ]
+              ]
+            },
+            {
+              "id": "73b3feb54c914738861e6358cb9acf90",
+              "variant": "focus",
+              "content_sha256": "9eb514078b8175f167dfe43ca0f8bdd2b7baa5f2fc8507963c52e6c8dfec632d",
+              "image_count": 1,
+              "illustrations_id": "d1ce5fd9d9474d9685973660a5dd5690",
+              "planning": {
+                "requested": true,
+                "attempted": true,
+                "completed": true,
+                "provider": "vk",
+                "model": "qwen38-27b-fp8",
+                "attempts": 1,
+                "successful_calls": 1,
+                "duration_seconds": 5.92,
+                "validation": "passed",
+                "fallback_used": false,
+                "status": "completed",
+                "error_code": null,
+                "message": "Ответ модели получен и проверен",
+                "response_id": "chatcmpl-baa5f094-add7-421d-988a-b22f89d0b9de",
+                "response_sha256": "823531cfb0af88030cebba71e697331cc81f8c16f0d0d42a2ba70594e3e27d99",
+                "usage": {
+                  "prompt_tokens": 982,
+                  "completion_tokens": 241,
+                  "total_tokens": 1223
+                },
+                "calls": [
+                  {
+                    "attempt": 1,
+                    "status_code": 200,
+                    "duration_seconds": 5.92,
+                    "validation": "passed",
+                    "error_code": null,
+                    "response_id": "chatcmpl-baa5f094-add7-421d-988a-b22f89d0b9de",
+                    "usage": {
+                      "prompt_tokens": 982,
+                      "completion_tokens": 241,
+                      "total_tokens": 1223
+                    },
+                    "response_sha256": "823531cfb0af88030cebba71e697331cc81f8c16f0d0d42a2ba70594e3e27d99"
+                  }
+                ],
+                "content_reused_for_variants": 0,
+                "model_attempt": 1,
+                "model_max_attempts": 1,
+                "retry_reason": null
+              },
+              "exports": {
+                "pptx": {
+                  "seconds": 0.205,
+                  "pages": 3,
+                  "bytes": 1799892,
+                  "sha256": "d306d8b8f305d7196c11851aeff19977457532f87877775e7e308475ed8193b9"
+                },
+                "pdf": {
+                  "seconds": 2.409,
+                  "pages": 3,
+                  "bytes": 564935,
+                  "sha256": "b7a834ddc50a7e78a9ac8aa7bf6d7bc554f423b7bead833cb530fea981d54a81"
+                }
+              },
+              "pptx_total_picture_shapes": 1,
+              "native_generated_pictures": [
+                [
+                  2,
+                  "4ed58560bfac3f8f53f0c6cc"
+                ]
+              ]
+            }
+          ],
+          "export_all_seconds": 8.746,
+          "end_to_end_seconds": 30.067
+        }
+      ],
+      "ready_delta_seconds": 16.107,
+      "download_delta_seconds": 15.648
+    }
+  },
+  "limitations": [
+    "one pair per stand; not a percentile or SLA",
+    "frozen outline excludes main text generation; image planning, VLM and assembly remain enabled",
+    "server-ready excludes explicit export downloads; export is timed separately"
+  ],
+  "balance_before": 50.29,
+  "balance_after": 45.29,
+  "balance_delta": 5.0,
+  "native_picture_verification": "passed",
+  "tested_main": "29590325f64a45e3c67625883d8057759ee6f1c9",
+  "cross_stand_content_identical": true,
+  "cross_stand_template_identical": true
+}
