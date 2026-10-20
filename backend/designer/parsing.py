@@ -234,7 +234,8 @@ def classify_patterns(patterns):
                              for shape in pattern.get('shapes', []))
         cover_composition = (centered_title and box.get('h', 0) >= .15 and box.get('y', 0) >= .2) or (box.get('y', 0) > .2 and
             sum(s['length'] for s in pattern['slots'] if s['role'] == 'body') <= 100)
-        eligible.append(bool(title and sparse and (large_title or cover_composition)))
+        title_capacity = box.get('h', 0) >= .12 or (size or 0) > large*1.25
+        eligible.append(bool(title and sparse and (cover_composition or (large_title and title_capacity))))
         pattern['role_evidence'] = {'large_title': bool(large_title), 'sparse': sparse,
                                     'opening': index < 3, 'cover_composition': cover_composition}
     # At most two opening alternatives; later matching pages are dividers when

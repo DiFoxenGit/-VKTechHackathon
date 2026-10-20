@@ -205,3 +205,15 @@ def test_centered_cover_is_not_lost_to_larger_content_headlines():
     assert all(p['role']!='cover' for p in patterns[1:])
     selected,_=choose_pattern(patterns,plan()['slides'][0],[],position=0,total=2)
     assert selected['index']==0
+
+
+def test_empty_repeated_content_headers_are_not_invented_covers():
+    base=parse_template(save(cover_template()),'unrelated.pptx')['patterns'][0]
+    base['title_box']={'x':.05,'y':.08,'w':.86,'h':.06}
+    base['slots'][0]['box']=base['title_box']
+    base['slots'][0]['style']['size']=25
+    base['slots'][1]['length']=0
+    patterns=[copy.deepcopy(base) for _ in range(5)]
+    for i,p in enumerate(patterns):p['index']=i
+    classify_patterns(patterns)
+    assert all(p['role']=='content' for p in patterns)

@@ -75,7 +75,7 @@ def embedded_coverage(archive):
 
 @lru_cache(maxsize=1)
 def _system_fonts():
-    directories = [Path(os.getenv("WINDIR", "C:/Windows")) / "Fonts", Path(os.getenv("LOCALAPPDATA", "")) / "Microsoft/Windows/Fonts", Path("/usr/share/fonts"), Path("/usr/local/share/fonts"), Path.home() / ".fonts", Path("/System/Library/Fonts"), Path("/Library/Fonts")]
+    directories = [Path(__file__).parent / "assets/fonts", Path.home() / "Library/Fonts", Path(os.getenv("WINDIR", "C:/Windows")) / "Fonts", Path(os.getenv("LOCALAPPDATA", "")) / "Microsoft/Windows/Fonts", Path("/usr/share/fonts"), Path("/usr/local/share/fonts"), Path.home() / ".fonts", Path("/System/Library/Fonts"), Path("/Library/Fonts")]
     result = {}
     for directory in directories:
         if not directory.is_dir():
